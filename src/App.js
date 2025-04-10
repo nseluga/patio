@@ -1,7 +1,10 @@
-import logo from './logo.svg';
-import './App.css';
+// App.js
+import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
+import Messages from "./pages/Messages";
+import logo from "./logo.svg";
+import "./App.css";
 
-function App() {
+function Home() {
   return (
     <div className="App">
       <header className="App-header">
@@ -17,8 +20,24 @@ function App() {
         >
           One game away from the next BIG WIN
         </a>
+        {/* Link to Messages Page */}
+        <br />
+        <Link to="/messages" className="App-link">
+          Go to Messages Page
+        </Link>
       </header>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/messages" element={<Messages />} />
+      </Routes>
+    </Router>
   );
 }
 
