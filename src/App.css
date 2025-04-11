@@ -45,6 +45,61 @@
   background-color: #4ab3e6;
 }
 
+.leaderboard-page {
+  padding: 40px;
+  background-color: #f8f9fa;
+  font-family: Arial, sans-serif;
+}
+
+.leaderboard-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: white;
+  padding: 16px 20px;
+  margin: 10px 0;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.leaderboard-entry span {
+  flex: 1;
+  text-align: center;
+}
+
+.leaderboard-entry span:first-child {
+  flex: 0.5;
+  text-align: left;
+  font-weight: bold;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background-color: white;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 1000;
+}
+
+.bottom-nav a {
+  font-size: 24px;
+  color: #888;
+  text-decoration: none;
+}
+
+.bottom-nav a.active {
+  color: #da13c9; /* pink highlight */
+  font-weight: bold;
+}
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);

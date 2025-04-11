@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import BottomNav from '../components/BottomNav';
 
 const Messages = () => {
   const [messages, setMessages] = useState([
@@ -83,6 +84,8 @@ const Messages = () => {
         ))}
         <div ref={messagesEndRef} />
       </div>
+      
+      <BottomNav />
 
       {/* Message Input Area */}
       <div className="absolute bottom-16 left-0 w-full bg-white/80 border-t p-4 flex gap-2 backdrop-blur-md">
