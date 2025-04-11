@@ -1,0 +1,102 @@
+.pvp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 12px; /* brings the content inward from the edges */
+}
+
+.pvp-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  color: #333;
+}
+
+.bet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.create-bet-button {
+  font-size: 24px;
+  background: #da13c9;        /* bright pink */
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 6px;
+}
+
+.bet-card {
+  background: white;
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  font-size: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+}
+
+/* Top row: name + time + x */
+.bet-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #777;
+}
+
+.poster-time {
+  font-weight: 500;
+}
+
+/* Dismiss (X) button */
+.dismiss-button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #aaa;
+  cursor: pointer;
+}
+
+/* Subject = Game */
+.subject {
+  font-weight: 600;
+  font-size: 15px;
+  color: #333;
+  word-wrap: break-word;
+  line-height: 1.3;
+}
+
+/* Bottom = amount + line */
+.bet-bottom {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 500;
+  color: #444;
+}
+
+/* Accept button */
+.accept-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #17738c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 15px;
+  margin-top: 10px;
+}
