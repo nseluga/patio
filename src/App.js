@@ -1,6 +1,7 @@
 // App.js
 import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
 import Messages from "./pages/Messages";
+import Leaderboard from './pages/Leaderboard';
 import logo from "./logo.svg";
 import "./App.css";
 
@@ -12,18 +13,14 @@ function Home() {
         <p>
           Patio Sports Betting 
         </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          One game away from the next BIG WIN
-        </a>
+        <br />
+        <Link to="/leaderboard" className="nav-button">
+          Leaderboard
+        </Link>
         {/* Link to Messages Page */}
         <br />
-        <Link to="/messages" className="App-link">
-          Go to Messages Page
+        <Link to="/messages" className="nav-button">
+          Messages
         </Link>
       </header>
     </div>
@@ -36,6 +33,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/messages" element={<Messages />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
       </Routes>
     </Router>
   );
