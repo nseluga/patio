@@ -1,0 +1,9 @@
+.profile-page {
+    padding: 20px;
+    padding-bottom: 60px; /* make space for BottomNav */
+  }
+  
+  .profile-info p {
+    margin: 10px 0;
+  }
+  
