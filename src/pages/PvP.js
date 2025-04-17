@@ -1,4 +1,5 @@
 import BottomNav from '../components/BottomNav';
+import { useState } from 'react';
 import './PvP.css';
 
 const bets = [
@@ -19,12 +20,19 @@ const bets = [
 ];
 
 export default function PvP() {
+  const [showModal, setShowModal] = useState(false);
+  const [gameType, setGameType] = useState("Shots Made");
+
   return (
     <>
       <div className="pvp-page">
         <div className="pvp-header">
           <h2 className="pvp-title">PvP Bets</h2>
-          <button className="create-bet-button">＋</button>
+          <button 
+            className="create-bet-button"
+            onClick={() => setShowModal(true)}
+            >＋
+          </button>
         </div>
   
         <div className="bet-list">
@@ -46,6 +54,44 @@ export default function PvP() {
             </div>
           ))}
         </div>
+
+        {showModal && (
+          <div className="bet-modal-overlay">
+            <div className="bet-modal">
+              <h3>Create a Bet</h3>
+
+              <input type="text" placeholder="Matchup" className="modal-input" />
+              <input 
+                type="number"
+                step="any"
+                placeholder="Amount (caps)"
+                className="modal-input"
+              />
+              <input
+                type="number"
+                step="any"
+                placeholder="Line"
+                className="modal-input"
+              />
+
+              <select
+                value={gameType}
+                onChange={(e) => setGameType(e.target.value)}
+                className="modal-input"
+              >
+                <option value="Shots Made">Shots Made</option>
+                <option value="Score">Score</option>
+                <option value="Other">Other</option>
+              </select>
+
+              <div className="modal-actions">
+                <button onClick={() => setShowModal(false)} className="cancel-button">Cancel</button>
+                <button className="confirm-button">Post</button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
   
       <BottomNav />
