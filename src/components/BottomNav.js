@@ -11,6 +11,7 @@ export default function BottomNav() {
       <div className="nav-item"><Link to="/house" className={location.pathname === '/house' ? 'active' : ''}>🤖</Link></div>
       <div className="nav-item"><Link to="/ongoing" className={location.pathname === '/ongoing' ? 'active' : ''}>⏳</Link></div>
       <div className="nav-item no-border"><Link to="/messages" className={location.pathname === '/messages' ? 'active' : ''}>💬</Link></div>
+      <div className="nav-item no-border"><Link to="/profile" className={location.pathname === '/profile' ? 'active' : ''}>👤</Link></div>
     </nav>
   );
 }

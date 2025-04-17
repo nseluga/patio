@@ -4,6 +4,7 @@ import Leaderboard from './pages/Leaderboard';
 import PvP from './pages/PvP';
 import Ongoing from './pages/Ongoing';
 import CPU from './pages/CPU';
+import Profile from './pages/Profile';
 import "./App.css";
 
 function App() {
@@ -15,9 +16,13 @@ function App() {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/ongoing" element={<Ongoing />} />
         <Route path="/house" element={<CPU />} />
+        <Route path="/profile" element={<Profile />} />
       </Routes>
     </Router>
   );
 }
 
 export default App;
+
+
+

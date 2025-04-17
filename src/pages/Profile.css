@@ -1,0 +1,116 @@
+/* Profile.css */
+
+.profile-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    justify-content: space-between;
+    padding: 24px;
+  }
+  
+  .profile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  
+  .profile-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+  
+  .profile-settings-icon {
+    font-size: 1.25rem;
+    cursor: pointer;
+  }
+  
+  .profile-pic {
+    width: 96px;
+    height: 96px;
+    border: 4px solid black;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    margin: 0 auto;
+  }
+  
+  .profile-stats {
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+    margin: 16px 0;
+  }
+  
+  .profile-stat {
+    font-size: 0.85rem;
+  }
+  
+  .profile-stat-number {
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+  
+  .story-section {
+    margin: 12px 0;
+    text-align: left;
+    font-size: 1.25rem;
+    font-weight: 500;
+  }
+  
+  .story-buttons {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 1.5rem;
+  }
+  
+  .story-button {
+    width: 48px;
+    height: 48px;
+    border: 2px solid black;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+  
+  .recent-bets-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+  
+  .recent-bet-card {
+    border: 2px solid black;
+    border-radius: 1rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .bet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .bet-details {
+    font-size: 0.9rem;
+    line-height: 1.2;
+  }
+  
+  .bet-tag {
+    margin-top: 0.5rem;
+    padding: 4px 12px;
+    font-size: 0.75rem;
+    color: white;
+    background: black;
+    border-radius: 9999px;
+    text-align: center;
+    width: fit-content;
+    align-self: center;
+  }
