@@ -5,6 +5,7 @@ import PvP from './pages/PvP';
 import Ongoing from './pages/Ongoing';
 import CPU from './pages/CPU';
 import Profile from './pages/Profile';
+import Login from './pages/Login';
 import "./App.css";
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
         <Route path="/ongoing" element={<Ongoing />} />
         <Route path="/house" element={<CPU />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/login" element={<Login />} />
       </Routes>
     </Router>
   );
