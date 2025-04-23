@@ -4,10 +4,19 @@ import { useState, useEffect } from 'react';
 export default function Leaderboard() {
   const [players, setPlayers] = useState([]);
   useEffect(() => {
-    fetch('http://localhost:5000/leaderboard')
-      .then(res => res.json())
-      .then(data => setPlayers(data))
-      .catch(err => console.error('Failed to fetch leaderboard:', err));
+    fetch('http://localhost:5001/leaderboard')
+      .then(res => {
+        console.log("Raw response:", res);
+        return res.json();
+      })
+      .then(data => {
+        console.log('Fetched leaderboard:', data);
+        setPlayers(data);
+      })
+      .catch(err => {
+        console.error('Failed to fetch leaderboard:', err);
+        alert('Failed to load leaderboard. Check console for details.');
+      });
   }, []);
     return (
       <div className="leaderboard-page">
