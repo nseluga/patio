@@ -34,6 +34,17 @@ def me():
         'caps_balance': player[3]
     })
 
+@app.route('/leaderboard', methods=['GET'])
+def public_leaderboard():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT name, caps FROM players ORDER BY caps DESC")
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return jsonify([{'name': row[0], 'caps': row[1]} for row in rows])
+
 @app.route('/')
 def hello():
     return 'Flask is working!'
