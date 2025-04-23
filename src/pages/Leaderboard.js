@@ -27,7 +27,12 @@ export default function Leaderboard() {
         <div className="leaderboard-list">
           {players.map((player, index) => (
             <div key={index} className="leaderboard-entry">
-              <span>#{index + 1}</span>
+              <span>
+                {index === 0 && '🥇'}
+                {index === 1 && '🥈'}
+                {index === 2 && '🥉'}
+                {index > 2 && `#${index + 1}`}
+              </span>
               <span>{player.name}</span>
               <span>{player.caps} caps</span>
             </div>
