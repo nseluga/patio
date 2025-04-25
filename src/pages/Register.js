@@ -10,7 +10,7 @@ export default function Register() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // ✅ Redirect if user is already logged in
+  // ✅ Redirect if already logged in
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -19,11 +19,13 @@ export default function Register() {
   }, [navigate]);
 
   const handleRegister = async () => {
+    console.log("🔁 Submitting register form...", { username, email, password });
     try {
       await api.post('/register', { username, email, password });
       navigate('/login');
     } catch (err) {
-      setError('Registration failed. Try a different email or username.');
+      console.error("❌ Registration failed:", err);
+      setError("Registration failed. Try again.");
     }
   };
 
@@ -51,8 +53,16 @@ export default function Register() {
         value={password}
         onChange={e => setPassword(e.target.value)}
       /><br />
-      <button className={styles.button} onClick={handleRegister}>Register</button>
-      <p>Already have an account? <Link to="/login">Log in</Link></p>
+      <button
+        type="button"
+        className={styles.button}
+        onClick={handleRegister}
+      >
+        Register
+      </button>
+      <p>
+        Already have an account? <Link to="/login">Log in</Link>
+      </p>
     </div>
   );
 }
