@@ -163,3 +163,10 @@
   border-radius: 6px;
   cursor: pointer;
 }
+
+.tab-container {
+  background-color: #f3f4f6; /* same as messages tab */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}

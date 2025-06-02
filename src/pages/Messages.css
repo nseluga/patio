@@ -1,0 +1,74 @@
+.messages-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #f3f4f6; /* gray-100 */
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .messages-header {
+    padding: 1rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827; /* gray-900 */
+  }
+  
+  .message-card {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    transition: box-shadow 0.2s ease;
+  }
+  
+  .message-card:hover {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  }
+  
+  .message-info {
+    flex: 1;
+    cursor: pointer;
+  }
+  
+  .message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+  }
+  
+  .message-name {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: #1f2937; /* gray-800 */
+  }
+  
+  .message-time {
+    font-size: 0.75rem;
+    color: #9ca3af; /* gray-400 */
+  }
+  
+  .message-preview {
+    font-size: 0.875rem;
+    color: #4b5563; /* gray-600 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .delete-button {
+    font-size: 1.25rem;
+    color: #9ca3af; /* gray-400 */
+    background: none;
+    border: none;
+    padding: 0 0.5rem;
+    cursor: pointer;
+  }
+  
+  .delete-button:hover {
+    color: #ef4444; /* red-500 */
+  }
+  

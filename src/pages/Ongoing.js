@@ -18,7 +18,6 @@ export default function Ongoing() {
           <div className="bet-card">
             <div className="bet-top">
               <span className="poster-time">nate · 1m ago</span>
-              <button className="dismiss-button">×</button>
             </div>
             <div className="subject">Nate vs Logan: Final Score</div>
             <div className="bet-bottom">
