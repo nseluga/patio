@@ -1,18 +1,22 @@
+/* Center all text inside the App component */
 .App {
   text-align: center;
 }
 
+/* Logo size and interaction */
 .App-logo {
   height: 40vmin;
   pointer-events: none;
 }
 
+/* Animate logo spin if motion preference allows */
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
     animation: App-logo-spin infinite 20s linear;
   }
 }
 
+/* Header styling for full-page hero view */
 .App-header {
   background-color: #da13c9;
   min-height: 100vh;
@@ -24,10 +28,12 @@
   color: white;
 }
 
+/* Style for links inside App */
 .App-link {
   color: #17738c;
 }
 
+/* Reusable navigation button */
 .nav-button {
   padding: 10px 20px;
   background-color: #61dafb;
@@ -41,16 +47,19 @@
   transition: background-color 0.2s;
 }
 
+/* Hover state for nav-button */
 .nav-button:hover {
   background-color: #4ab3e6;
 }
 
+/* Leaderboard page container */
 .leaderboard-page {
   padding: 40px;
   background-color: #f8f9fa;
   font-family: Arial, sans-serif;
 }
 
+/* Each player row in leaderboard */
 .leaderboard-entry {
   display: flex;
   justify-content: space-between;
@@ -64,17 +73,20 @@
   font-weight: 500;
 }
 
+/* Uniform spacing for each column in leaderboard */
 .leaderboard-entry span {
   flex: 1;
   text-align: center;
 }
 
+/* Special style for the leftmost item (rank/emoji) */
 .leaderboard-entry span:first-child {
   flex: 0.5;
   text-align: left;
   font-weight: bold;
 }
 
+/* Keyframes for rotating logo */
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);

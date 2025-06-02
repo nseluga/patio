@@ -1,7 +1,9 @@
+// Import dependencies
 import BottomNav from "../components/BottomNav";
 import { useState, useEffect } from "react";
-import "./PvP.css";
+import "./PvP.css"; // Shared styles
 
+// Load initial bets from localStorage or use fallback demo data
 const loadInitialBets = () => {
   const saved = localStorage.getItem("pvpBets");
   return saved ? JSON.parse(saved) : [
@@ -22,7 +24,9 @@ const loadInitialBets = () => {
   ];
 };
 
+// PvP component
 export default function PvP() {
+  // UI and form state
   const [showModal, setShowModal] = useState(false);
   const [gameType, setGameType] = useState("Shots Made");
   const [lineType, setLineType] = useState("Over");
@@ -31,22 +35,26 @@ export default function PvP() {
   const [amount, setAmount] = useState("");
   const [line, setLine] = useState("");
 
+  // Save bets to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem("pvpBets", JSON.stringify(bets));
   }, [bets]);
 
+  // Remove a bet from the list
   const removeBet = (indexToRemove) => {
     setBets((prevBets) =>
       prevBets.filter((_, index) => index !== indexToRemove)
     );
   };
 
+  // Accept a bet (currently removes it)
   const acceptBet = (indexToAccept) => {
     setBets((prevBets) =>
       prevBets.filter((_, index) => index !== indexToAccept)
     );
   };
 
+  // Handle posting a new bet
   const handlePost = () => {
     if (!matchup.trim() || !amount.trim() || !line.trim()) {
       alert("Please fill out all fields before posting.");
@@ -54,14 +62,16 @@ export default function PvP() {
     }
 
     const newBet = {
-      poster: "you", // placeholder for now
+      poster: "you", // Placeholder for now
       time: "Just now",
       amount: `${amount} caps`,
       matchup,
-      line: `Over ${line}`, // or however you want to format it
+      line: `${lineType} ${line}`,
     };
 
+    // Add new bet to top of list
     setBets((prev) => [newBet, ...prev]);
+    // Reset form and close modal
     setShowModal(false);
     setMatchup("");
     setAmount("");
@@ -71,7 +81,9 @@ export default function PvP() {
 
   return (
     <>
+      {/* Main PvP page layout */}
       <div className="pvp-page">
+        {/* Header with title and + button */}
         <div className="pvp-header">
           <h2 className="pvp-title">PvP Bets</h2>
           <button
@@ -82,6 +94,7 @@ export default function PvP() {
           </button>
         </div>
 
+        {/* Display all current bets */}
         <div className="bet-list">
           {bets.map((bet, index) => (
             <div className="bet-card" key={index}>
@@ -114,11 +127,13 @@ export default function PvP() {
           ))}
         </div>
 
+        {/* Modal for creating a new bet */}
         {showModal && (
           <div className="bet-modal-overlay">
             <div className="bet-modal">
               <h3>Create a Bet</h3>
 
+              {/* Matchup input */}
               <input
                 type="text"
                 placeholder="Matchup"
@@ -126,6 +141,8 @@ export default function PvP() {
                 value={matchup}
                 onChange={(e) => setMatchup(e.target.value)}
               />
+
+              {/* Amount input */}
               <input
                 type="number"
                 step="any"
@@ -134,6 +151,8 @@ export default function PvP() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
+
+              {/* Over/Under selection */}
               <div className="line-type-toggle">
                 <label>
                   <input
@@ -154,6 +173,8 @@ export default function PvP() {
                   Under
                 </label>
               </div>
+
+              {/* Line value input */}
               <input
                 type="number"
                 step="any"
@@ -163,6 +184,7 @@ export default function PvP() {
                 onChange={(e) => setLine(e.target.value)}
               />
 
+              {/* Game type dropdown */}
               <select
                 value={gameType}
                 onChange={(e) => setGameType(e.target.value)}
@@ -173,6 +195,7 @@ export default function PvP() {
                 <option value="Other">Other</option>
               </select>
 
+              {/* Modal actions: Cancel / Post */}
               <div className="modal-actions">
                 <button
                   onClick={() => setShowModal(false)}
@@ -180,16 +203,16 @@ export default function PvP() {
                 >
                   Cancel
                 </button>
-                <button className="confirm-button" onClick={() => handlePost()}>
+                <button className="confirm-button" onClick={handlePost}>
                   Post
                 </button>
               </div>
             </div>
           </div>
         )}
-        
       </div>
 
+      {/* Fixed bottom navigation bar */}
       <BottomNav />
     </>
   );

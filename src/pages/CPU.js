@@ -1,7 +1,9 @@
+// Import dependencies and components
 import BottomNav from "../components/BottomNav";
 import { useState, useEffect } from "react";
-import "./PvP.css"; // reuse the styles
+import "./PvP.css"; // Reuse PvP styles for layout and cards
 
+// Load bets from localStorage or use a default bet
 const loadInitialCPUBets = () => {
   const saved = localStorage.getItem("cpuBets");
   return saved
@@ -10,25 +12,29 @@ const loadInitialCPUBets = () => {
         {
           time: "5m ago",
           amount: "500 caps",
-          matchup: "Chungus Dicks Sucked",
+          matchup: "Chungus Dicks Sucked", // Placeholder matchup
           line: "Over 2.5",
         },
       ];
 };
 
+// CPU bets page component
 export default function CPU() {
-  const [bets, setBets] = useState(loadInitialCPUBets);
+  const [bets, setBets] = useState(loadInitialCPUBets); // Store CPU bets
 
+  // Save bets to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem("cpuBets", JSON.stringify(bets));
   }, [bets]);
 
+  // Remove a bet by index
   const removeBet = (indexToRemove) => {
     setBets((prevBets) =>
       prevBets.filter((_, index) => index !== indexToRemove)
     );
   };
 
+  // Accept a bet (currently same as remove)
   const acceptBet = (indexToAccept) => {
     setBets((prevBets) =>
       prevBets.filter((_, index) => index !== indexToAccept)
@@ -37,7 +43,9 @@ export default function CPU() {
 
   return (
     <>
+      {/* Page layout */}
       <div className="pvp-page">
+        {/* Header and reset button */}
         <div className="pvp-header">
           <h2 className="pvp-title">CPU Bets</h2>
           <button
@@ -47,8 +55,8 @@ export default function CPU() {
               localStorage.removeItem("ongoingBets");
               window.location.reload();
             }}
-            style={{
-              position: "fixed",
+            style={{                              // I noticed you did the styling directly in js file rather than use a css here
+              position: "fixed",                  // It works fine but we should prob be uniform with how we do styling
               bottom: "80px",
               right: "20px",
               backgroundColor: "#ef4444",
@@ -63,9 +71,10 @@ export default function CPU() {
           </button>
         </div>
 
+        {/* Bet cards list */}
         <div className="bet-list">
           {bets.map((bet, index) => (
-            <div className="bet-card">
+            <div className="bet-card" key={index}>
               <div className="bet-top">
                 <span className="poster-time">CPU · {bet.time}</span>
                 <button
@@ -91,6 +100,7 @@ export default function CPU() {
         </div>
       </div>
 
+      {/* Bottom nav bar */}
       <BottomNav />
     </>
   );

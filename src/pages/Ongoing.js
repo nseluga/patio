@@ -1,8 +1,11 @@
+// Import dependencies
 import { useState } from 'react';
 import BottomNav from '../components/BottomNav';
-import './PvP.css';
+import './PvP.css'; // Reuse existing styles
 
+// Main component for ongoing bets
 export default function Ongoing() {
+  // Sample hardcoded bet data
   const [bets, setBets] = useState([
     {
       id: 1,
@@ -50,11 +53,13 @@ export default function Ongoing() {
     },
   ]);
 
+  // UI state for modal and stat input
   const [showModal, setShowModal] = useState(false);
   const [inputStats, setInputStats] = useState("");
   const [activeBetId, setActiveBetId] = useState(null);
   const [popupMessage, setPopupMessage] = useState("");
 
+  // Handle stat submission
   const handleSubmit = () => {
     setBets(prev =>
       prev.flatMap(bet => {
@@ -65,7 +70,7 @@ export default function Ongoing() {
           if (isMatch) {
             setPopupMessage("✅ Match confirmed!");
             setTimeout(() => setPopupMessage(""), 3000);
-            return []; // Remove this bet from the list
+            return []; // Remove matched bet
           }
 
           return [updated];
@@ -78,11 +83,13 @@ export default function Ongoing() {
     setShowModal(false);
   };
 
+  // Get game type of active bet
   const getGameType = () => {
     const bet = bets.find(b => b.id === activeBetId);
     return bet?.gameType || "Shots Made";
   };
 
+  // Get dynamic status message for each bet
   const getStatusMessage = (bet) => {
     if (bet.yourStats && !bet.opponentStats) return "Waiting for other player to input stats";
     if (!bet.yourStats && bet.opponentStats) return "Waiting for you to input stats";
@@ -93,11 +100,13 @@ export default function Ongoing() {
 
   return (
     <>
+      {/* Page container */}
       <div className="pvp-page">
         <div className="pvp-header">
           <h2 className="pvp-title">Ongoing Bets</h2>
         </div>
 
+        {/* Bet list display */}
         <div className="bet-list" style={{ paddingBottom: '100px', overflowY: 'auto' }}>
           {bets.map((bet) => (
             <div className="bet-card" key={bet.id}>
@@ -126,11 +135,13 @@ export default function Ongoing() {
         </div>
       </div>
 
+      {/* Modal for entering stats */}
       {showModal && (
         <div className="bet-modal-overlay">
           <div className="bet-modal">
             <h3>Enter Stats</h3>
 
+            {/* Input shown depends on game type */}
             {getGameType() === "Shots Made" && (
               <input
                 type="number"
@@ -161,6 +172,7 @@ export default function Ongoing() {
               />
             )}
 
+            {/* Modal buttons */}
             <div className="modal-actions">
               <button
                 onClick={() => {
@@ -179,12 +191,14 @@ export default function Ongoing() {
         </div>
       )}
 
+      {/* Popup message for match confirmation */}
       {popupMessage && (
         <div className="popup-banner">
           {popupMessage}
         </div>
       )}
 
+      {/* Fixed bottom navigation */}
       <BottomNav />
     </>
   );

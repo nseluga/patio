@@ -1,3 +1,4 @@
+/* Header section at top of PvP page */
 .pvp-header {
   display: flex;
   justify-content: space-between;
@@ -6,6 +7,7 @@
   padding: 0 12px; /* brings the content inward from the edges */
 }
 
+/* Main title text */
 .pvp-title {
   font-size: 28px;
   font-weight: 700;
@@ -13,15 +15,17 @@
   color: #333;
 }
 
+/* Container for all bet cards */
 .bet-list {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
+/* Circular + button for creating bets */
 .create-bet-button {
   font-size: 24px;
-  background: #da13c9;        /* bright pink */
+  background: #da13c9;
   color: white;
   border: none;
   border-radius: 50%;
@@ -35,6 +39,7 @@
   margin-top: 6px;
 }
 
+/* Each individual bet card */
 .bet-card {
   background: white;
   border-radius: 10px;
@@ -47,7 +52,7 @@
   position: relative;
 }
 
-/* Top row: name + time + x */
+/* Top row of bet card: poster + time + dismiss */
 .bet-top {
   display: flex;
   justify-content: space-between;
@@ -56,11 +61,12 @@
   color: #777;
 }
 
+/* Poster name + timestamp */
 .poster-time {
   font-weight: 500;
 }
 
-/* Dismiss (X) button */
+/* 'X' button to dismiss a bet */
 .dismiss-button {
   background: none;
   border: none;
@@ -69,7 +75,7 @@
   cursor: pointer;
 }
 
-/* Subject = Game */
+/* Bet subject (e.g., matchup name) */
 .subject {
   font-weight: 600;
   font-size: 15px;
@@ -78,7 +84,7 @@
   line-height: 1.3;
 }
 
-/* Bottom = amount + line */
+/* Bottom row: bet amount and line info */
 .bet-bottom {
   display: flex;
   justify-content: space-between;
@@ -87,7 +93,7 @@
   color: #444;
 }
 
-/* Accept button */
+/* Button to enter or accept a bet */
 .accept-button {
   width: 100%;
   padding: 10px;
@@ -101,21 +107,21 @@
   margin-top: 10px;
 }
 
-/* This is the dark transparent background */
+/* Modal backdrop overlay */
 .bet-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3); /* slightly dark but transparent */
+  background: rgba(0, 0, 0, 0.3);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 3;
 }
 
-/* This is the centered white modal box */
+/* Modal box */
 .bet-modal {
   background: white;
   padding: 24px;
@@ -129,7 +135,7 @@
   gap: 12px;
 }
 
-/* Optional: Style the input fields */
+/* Input inside the modal */
 .modal-input {
   padding: 10px;
   border: 1px solid #ccc;
@@ -140,13 +146,14 @@
   box-sizing: border-box;
 }
 
-/* Buttons in the modal */
+/* Container for cancel/confirm modal buttons */
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
 }
 
+/* Cancel button style */
 .cancel-button {
   background: #ccc;
   border: none;
@@ -155,6 +162,7 @@
   cursor: pointer;
 }
 
+/* Confirm button style */
 .confirm-button {
   background: #da13c9;
   color: white;
@@ -164,13 +172,15 @@
   cursor: pointer;
 }
 
+/* Page layout background */
 .tab-container {
-  background-color: #f3f4f6; /* same as messages tab */
+  background-color: #f3f4f6;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
+/* Temporary confirmation popup */
 .popup-banner {
   position: fixed;
   bottom: 90px;

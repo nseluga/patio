@@ -1,24 +1,28 @@
+/* Main container layout */
 .container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-top: 100px;
-  }
-  
-  .input {
-    padding: 10px;
-    margin: 10px;
-    width: 250px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-  }
-  
-  .button {
-    padding: 10px 20px;
-    background: #333;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-  }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 100px;
+}
+
+/* Input field styling */
+.input {
+  padding: 10px;
+  margin: 10px;
+  width: 250px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+/* Button styling */
+.button {
+  padding: 10px 20px;
+  background: #333;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
   

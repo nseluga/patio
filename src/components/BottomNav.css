@@ -1,38 +1,43 @@
+/* Bottom navigation container */
 .bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background-color: white;
-    border-top: 1px solid #ddd;
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    z-index: 1;
-  }
-  
-  .nav-item {
-    flex: 1;
-    text-align: center;
-    border-right: 1px solid #ccc;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  .nav-item.no-border {
-    border-right: none;
-  }
-  
-  .bottom-nav a {
-    font-size: 24px;
-    color: #888;
-    text-decoration: none;
-  }
-  
-  .bottom-nav a.active {
-    color: #da13c9;
-    font-weight: bold;
-  }
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background-color: white;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 1;
+}
+
+/* Navigation item */
+.nav-item {
+  flex: 1;
+  text-align: center;
+  border-right: 1px solid #ccc;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Last nav item (no right border) */
+.nav-item.no-border {
+  border-right: none;
+}
+
+/* Navigation links */
+.bottom-nav a {
+  font-size: 24px;
+  color: #888;
+  text-decoration: none;
+}
+
+/* Active link style */
+.bottom-nav a.active {
+  color: #da13c9;
+  font-weight: bold;
+}

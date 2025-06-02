@@ -1,7 +1,7 @@
 import BottomNav from '../components/BottomNav';
 import { useState, useEffect } from 'react';
 
-export default function Leaderboard() {
+export default function Leaderboard() { // For Mike: Fix this after backend frontend connection works
   const players = [
     { name: 'Nate', caps: 300 },
     { name: 'Drake', caps: 250 },
