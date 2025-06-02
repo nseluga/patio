@@ -1,11 +1,95 @@
 import { useState } from 'react';
 import BottomNav from '../components/BottomNav';
-import './PvP.css'; // assuming you're using shared styles
+import './PvP.css';
 
 export default function Ongoing() {
+  const [bets, setBets] = useState([
+    {
+      id: 1,
+      poster: "mike",
+      matchup: "Mike vs CPU: Score",
+      amount: "100 caps",
+      lineType: "Under",
+      lineValue: "10.0",
+      yourStats: "",
+      opponentStats: "",
+      gameType: "Score",
+    },
+    {
+      id: 2,
+      poster: "drake",
+      matchup: "Logan Bedtime",
+      amount: "50 caps",
+      lineType: "Over",
+      lineValue: "10.5",
+      yourStats: "",
+      opponentStats: "11",
+      gameType: "Score",
+    },
+    {
+      id: 3,
+      poster: "drake",
+      matchup: "Drake vs Nate: Shots Made",
+      amount: "60 caps",
+      lineType: "Under",
+      lineValue: "10.5",
+      yourStats: "9",
+      opponentStats: "",
+      gameType: "Shots Made",
+    },
+    {
+      id: 4,
+      poster: "skib",
+      matchup: "Skib vs Nate: Score",
+      amount: "120 caps",
+      lineType: "Over",
+      lineValue: "15",
+      yourStats: "16",
+      opponentStats: "13",
+      gameType: "Score",
+    },
+  ]);
+
   const [showModal, setShowModal] = useState(false);
-  const [playerName, setPlayerName] = useState("Player Name");
-  const gameType = "Shots Made";
+  const [inputStats, setInputStats] = useState("");
+  const [activeBetId, setActiveBetId] = useState(null);
+  const [popupMessage, setPopupMessage] = useState("");
+
+  const handleSubmit = () => {
+    setBets(prev =>
+      prev.flatMap(bet => {
+        if (bet.id === activeBetId) {
+          const updated = { ...bet, yourStats: inputStats };
+          const isMatch = updated.opponentStats && updated.opponentStats === inputStats;
+
+          if (isMatch) {
+            setPopupMessage("✅ Match confirmed!");
+            setTimeout(() => setPopupMessage(""), 3000);
+            return []; // Remove this bet from the list
+          }
+
+          return [updated];
+        }
+        return [bet];
+      })
+    );
+
+    setInputStats("");
+    setShowModal(false);
+  };
+
+  const getGameType = () => {
+    const bet = bets.find(b => b.id === activeBetId);
+    return bet?.gameType || "Shots Made";
+  };
+
+  const getStatusMessage = (bet) => {
+    if (bet.yourStats && !bet.opponentStats) return "Waiting for other player to input stats";
+    if (!bet.yourStats && bet.opponentStats) return "Waiting for you to input stats";
+    if (bet.yourStats && bet.opponentStats && bet.yourStats === bet.opponentStats) return "✅ Match confirmed";
+    if (bet.yourStats && bet.opponentStats && bet.yourStats !== bet.opponentStats) return "❌ Stats not matching, please communicate";
+    return "No stats submitted";
+  };
 
   return (
     <>
@@ -14,23 +98,31 @@ export default function Ongoing() {
           <h2 className="pvp-title">Ongoing Bets</h2>
         </div>
 
-        <div className="bet-list">
-          <div className="bet-card">
-            <div className="bet-top">
-              <span className="poster-time">nate · 1m ago</span>
+        <div className="bet-list" style={{ paddingBottom: '100px', overflowY: 'auto' }}>
+          {bets.map((bet) => (
+            <div className="bet-card" key={bet.id}>
+              <div className="bet-top">
+                <span className="poster-time">{bet.poster} · 1m ago</span>
+              </div>
+              <div className="subject">{bet.matchup}</div>
+              <div className="bet-bottom">
+                <div className="amount">{bet.amount}</div>
+                <div className="line">
+                  {bet.lineType} {bet.lineValue}
+                </div>
+              </div>
+              <div className="status-text">{getStatusMessage(bet)}</div>
+              <button
+                className="accept-button"
+                onClick={() => {
+                  setShowModal(true);
+                  setActiveBetId(bet.id);
+                }}
+              >
+                Enter Stats
+              </button>
             </div>
-            <div className="subject">Nate vs Logan: Final Score</div>
-            <div className="bet-bottom">
-              <div className="amount">75 caps</div>
-              <div className="line">Line: 11.5</div>
-            </div>
-            <button
-              className="accept-button"
-              onClick={() => setShowModal(true)}
-            >
-              Enter Stats
-            </button>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -39,77 +131,57 @@ export default function Ongoing() {
           <div className="bet-modal">
             <h3>Enter Stats</h3>
 
-            {gameType === "Other" && (
+            {getGameType() === "Shots Made" && (
               <input
                 type="number"
-                placeholder="Score"
-                style={{ padding: '10px', fontSize: '16px' }}
+                placeholder="Shots Made"
+                value={inputStats}
+                onChange={(e) => setInputStats(e.target.value)}
+                className="modal-input"
               />
             )}
-            
-            {gameType === "Shots Made" && (
-              <>
-                <select
-                  value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
-                  className="modal-input"
-                >
-                  <option value="Player Name">Player Name</option>
-                  <option value="Other Players">Other Players</option>
-                </select>
 
-                <input
-                  type="number"
-                  placeholder="Shots Made"
-                  style={{ padding: '10px', fontSize: '16px' }}
-                />
-              </>
+            {getGameType() === "Score" && (
+              <input
+                type="number"
+                placeholder="Your Score"
+                value={inputStats}
+                onChange={(e) => setInputStats(e.target.value)}
+                className="modal-input"
+              />
             )}
 
-            {gameType === "Score" && (
-                <>
-                    <select
-                      value={playerName}
-                      onChange={(e) => setPlayerName(e.target.value)}
-                      className="modal-input"
-                    >
-                      <option value="Player Name">Player Name</option>
-                      <option value="Other Players">Other Players</option>
-                    </select>
-
-                    <input
-                    type="number"
-                    placeholder="Score"
-                    style={{ padding: '10px', fontSize: '16px' }}
-                    />
-
-                    <select
-                      value={playerName}
-                      onChange={(e) => setPlayerName(e.target.value)}
-                      className="modal-input"
-                    >
-                      <option value="Player Name">Player Name</option>
-                      <option value="Other Players">Other Players</option>
-                    </select>
-
-                    <input
-                    type="number"
-                    placeholder="Score"
-                    style={{ padding: '10px', fontSize: '16px' }}
-                    />
-                </>
+            {getGameType() === "Other" && (
+              <input
+                type="text"
+                placeholder="Describe Outcome"
+                value={inputStats}
+                onChange={(e) => setInputStats(e.target.value)}
+                className="modal-input"
+              />
             )}
 
             <div className="modal-actions">
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setInputStats("");
+                }}
                 className="cancel-button"
               >
                 Cancel
               </button>
-              <button className="confirm-button">Submit</button>
+              <button onClick={handleSubmit} className="confirm-button">
+                Submit
+              </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {popupMessage && (
+        <div className="popup-banner">
+          {popupMessage}
         </div>
       )}
 
