@@ -30,26 +30,32 @@ def register():
 # Route to log in an existing player
 @auth.route('/login', methods=['POST'])
 def login():
-    # Get JSON data from the request
     data = request.json
 
-    # Fetch the user's ID and hashed password from the database using their email
+    # Fetch the user's full info using their email
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT id, password_hash FROM players WHERE email = %s", (data['email'],))
+    cur.execute("SELECT id, username, email, password_hash, caps_balance FROM players WHERE email = %s", (data['email'],))
     result = cur.fetchone()
     cur.close()
     conn.close()
 
-    # If user doesn't exist or password is incorrect, return error
-    if not result or not check_password_hash(result[1], data['password']):
+    if not result or not check_password_hash(result[3], data['password']):
         return jsonify({'error': 'Invalid credentials'}), 401
 
-    # Create a JWT token valid for 24 hours
+    user_id, username, email, _, caps_balance = result
+
+    # Create JWT token
     token = jwt.encode(
-        {'id': result[0], 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)},
+        {'id': user_id, 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)},
         SECRET_KEY, algorithm='HS256'
     )
 
-    # Return the token
-    return jsonify({'token': token})
+    return jsonify({
+        'token': token,
+        'user': {
+            'username': username,
+            'email': email,
+            'caps_balance': caps_balance
+        }
+    })

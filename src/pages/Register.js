@@ -26,7 +26,7 @@ export default function Register() {
     console.log("🔁 Submitting register form...", { username, email, password });
     try {
       await api.post('/register', { username, email, password }); // Send data to backend
-      navigate('/login'); // Redirect to login on success
+      navigate('/login'); // ✅ Go to login (not profile)
     } catch (err) {
       console.error("❌ Registration failed:", err);
       setError("Registration failed. Try again."); // Show error message
