@@ -68,20 +68,22 @@ export default function Ongoing() {
   // State for Other bets
   const [yourInfo, setYourInfo] = useState("");
 
-  // Handle stat submission
+  // Submit handler to update bet with user’s input and check for match
   const handleSubmit = () => {
     setBets((prev) =>
       prev.flatMap((bet) => {
-        if (bet.id !== activeBetId) return [bet];
+        if (bet.id !== activeBetId) return [bet]; // only update the selected bet
 
-        const updated = { ...bet };
+        const updated = { ...bet }; // make a copy to mutate safely
 
+        // Handle Score bets
         if (bet.gameType === "Score") {
           updated.yourPlayerA = yourPlayerA;
           updated.yourStatsA = yourStatsA;
           updated.yourPlayerB = yourPlayerB;
           updated.yourStatsB = yourStatsB;
 
+          // Full match check: players AND stats must match
           const match =
             updated.oppPlayerA &&
             updated.oppStatsA &&
@@ -105,8 +107,9 @@ export default function Ongoing() {
             setYourInfo("");
 
             setTimeout(() => setPopupMessage(""), 3000);
-            return []; // remove from list
+            return []; // Remove bet from list
           }
+          // Handle Shots Made bets
         } else if (bet.gameType === "Shots Made") {
           updated.yourPlayer = yourPlayer;
           updated.yourStats = yourStats;
@@ -132,6 +135,7 @@ export default function Ongoing() {
             setTimeout(() => setPopupMessage(""), 3000);
             return [];
           }
+          // Handle Other bets (text/info match)
         } else if (bet.gameType === "Other") {
           updated.yourInfo = yourInfo;
 
@@ -154,11 +158,11 @@ export default function Ongoing() {
           }
         }
 
-        return [updated];
+        return [updated]; // if no match, keep updated bet
       })
     );
 
-    // Clear inputs and close modal
+    // Reset all form fields and close modal
     setShowModal(false);
     setYourPlayerA("");
     setYourStatsA("");
@@ -178,34 +182,44 @@ export default function Ongoing() {
   // Get dynamic status message for each bet
   const getStatusMessage = (bet) => {
     const { gameType } = bet;
-  
+
+    // Score game: requires full player and stat match
     if (gameType === "Score") {
-      if (bet.yourPlayerA && bet.oppPlayerA && bet.yourPlayerB && bet.oppPlayerB &&
-          bet.yourStatsA && bet.oppStatsA && bet.yourStatsB && bet.oppStatsB) {
+      if (
+        bet.yourPlayerA &&
+        bet.oppPlayerA &&
+        bet.yourPlayerB &&
+        bet.oppPlayerB &&
+        bet.yourStatsA &&
+        bet.oppStatsA &&
+        bet.yourStatsB &&
+        bet.oppStatsB
+      ) {
         const playersMatch =
           bet.yourPlayerA === bet.oppPlayerA &&
           bet.yourPlayerB === bet.oppPlayerB;
         const statsMatch =
-          bet.yourStatsA === bet.oppStatsA &&
-          bet.yourStatsB === bet.oppStatsB;
-  
+          bet.yourStatsA === bet.oppStatsA && bet.yourStatsB === bet.oppStatsB;
+
         if (playersMatch && statsMatch) return "✅ Match confirmed";
         if (!playersMatch) return "❌ Player names do not match";
         return "❌ Stats not matching, please communicate";
       }
     }
-  
+
+    // Shots Made: player + stat match
     if (gameType === "Shots Made") {
       if (bet.yourPlayer && bet.oppPlayer && bet.yourStats && bet.oppStats) {
         const playersMatch = bet.yourPlayer === bet.oppPlayer;
         const statsMatch = bet.yourStats === bet.oppStats;
-  
+
         if (playersMatch && statsMatch) return "✅ Match confirmed";
         if (!playersMatch) return "❌ Player names do not match";
         return "❌ Stats not matching, please communicate";
       }
     }
-  
+
+    // Other: text match
     if (gameType === "Other") {
       if (bet.yourInfo && bet.oppInfo) {
         return bet.yourInfo === bet.oppInfo
@@ -213,7 +227,7 @@ export default function Ongoing() {
           : "❌ Info not matching, please communicate";
       }
     }
-  
+
     // Fallbacks for missing inputs
     if (
       gameType === "Score" &&
@@ -221,24 +235,17 @@ export default function Ongoing() {
     ) {
       return "Waiting for other player to input stats";
     }
-  
-    if (
-      gameType === "Shots Made" &&
-      (bet.yourStats || bet.yourPlayer)
-    ) {
+
+    if (gameType === "Shots Made" && (bet.yourStats || bet.yourPlayer)) {
       return "Waiting for other player to input stats";
     }
-  
-    if (
-      gameType === "Other" &&
-      bet.yourInfo
-    ) {
+
+    if (gameType === "Other" && bet.yourInfo) {
       return "Waiting for other player to input stats";
     }
-  
+
     return "No stats submitted";
   };
-  
 
   return (
     <>
