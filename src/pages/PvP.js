@@ -1,26 +1,37 @@
 // Import dependencies
 import BottomNav from "../components/BottomNav";
+import { createStandardBet } from '../utils/betCreation'; // Utility function for creating bets
 import { useState, useEffect } from "react";
 import "./PvP.css"; // Shared styles
+
 
 // Load initial bets from localStorage or use fallback demo data
 const loadInitialBets = () => {
   const saved = localStorage.getItem("pvpBets");
-  return saved ? JSON.parse(saved) : [
-    {
+  if (saved) return JSON.parse(saved);
+
+  // Hardcoded Test Bets
+  return [
+    createStandardBet({
+      id: 1,
       poster: "nate",
-      time: "2m ago",
-      amount: "50 caps",
+      timePosted: "2m ago",
       matchup: "Nate and Skib W vs Drake and Mike: Caps",
-      line: "Over 2.5",
-    },
-    {
+      amount: "50 caps",
+      lineType: "Over",
+      lineNumber: 2.5,
+      gameType: "Score",
+    }),
+    createStandardBet({
+      id: 2,
       poster: "mike",
-      time: "10m ago",
-      amount: "10000 caps",
+      timePosted: "10m ago",
       matchup: "Logan Bedtime",
-      line: "Under 10.5",
-    },
+      amount: "10000 caps",
+      lineType: "Under",
+      lineNumber: 10.5,
+      gameType: "Other",
+    }),
   ];
 };
 
@@ -33,7 +44,7 @@ export default function PvP() {
   const [bets, setBets] = useState(loadInitialBets);
   const [matchup, setMatchup] = useState("");
   const [amount, setAmount] = useState("");
-  const [line, setLine] = useState("");
+  const [lineNumber, setLineNumber] = useState("");
 
   // Save bets to localStorage whenever they change
   useEffect(() => {
@@ -56,7 +67,7 @@ export default function PvP() {
 
   // Handle posting a new bet
   const handlePost = () => {
-    if (!matchup.trim() || !amount.trim() || !line.trim()) {
+    if (!matchup.trim() || !amount.trim() || !lineNumber.trim()) {
       alert("Please fill out all fields before posting.");
       return;
     }
@@ -66,7 +77,7 @@ export default function PvP() {
       time: "Just now",
       amount: `${amount} caps`,
       matchup,
-      line: `${lineType} ${line}`,
+      lineNumber: `${lineType} ${lineNumber}`,
     };
 
     // Add new bet to top of list
@@ -75,8 +86,8 @@ export default function PvP() {
     setShowModal(false);
     setMatchup("");
     setAmount("");
-    setLine("");
-    setGameType("Shots Made");
+    setLineNumber("");
+    setGameType("Score");
   };
 
   return (
@@ -180,8 +191,8 @@ export default function PvP() {
                 step="any"
                 placeholder="Line"
                 className="modal-input"
-                value={line}
-                onChange={(e) => setLine(e.target.value)}
+                value={lineNumber}
+                onChange={(e) => setLineNumber(e.target.value)}
               />
 
               {/* Game type dropdown */}

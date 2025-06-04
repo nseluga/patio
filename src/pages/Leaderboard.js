@@ -1,5 +1,5 @@
 import BottomNav from '../components/BottomNav';
-import { useState, useEffect } from 'react';
+// import { useState, useEffect } from 'react';
 
 export default function Leaderboard() { // For Mike: Fix this after backend frontend connection works
   const players = [
