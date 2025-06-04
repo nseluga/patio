@@ -1,21 +1,26 @@
 // Import dependencies and components
 import BottomNav from "../components/BottomNav";
 import { useState, useEffect } from "react";
+import { createStandardBet } from '../utils/betCreation';
 import "./PvP.css"; // Reuse PvP styles for layout and cards
 
 // Load bets from localStorage or use a default bet
 const loadInitialCPUBets = () => {
   const saved = localStorage.getItem("cpuBets");
-  return saved
-    ? JSON.parse(saved)
-    : [
-        {
-          time: "5m ago",
-          amount: "500 caps",
-          matchup: "Chungus Dicks Sucked", // Placeholder matchup
-          line: "Over 2.5",
-        },
-      ];
+  if (saved) return JSON.parse(saved);
+  return [
+    // Hardcoded test bet for CPU
+    createStandardBet({
+      id: 1,
+      poster: "CPU",
+      timePosted: "just now",
+      matchup: "Mike vs CPU",
+      amount: "40 caps",
+      lineType: "Over",
+      lineNumber: 12.0,
+      gameType: "Shots Made",
+    }),
+  ];
 };
 
 // CPU bets page component
@@ -55,8 +60,8 @@ export default function CPU() {
               localStorage.removeItem("ongoingBets");
               window.location.reload();
             }}
-            style={{                              // I noticed you did the styling directly in js file rather than use a css here
-              position: "fixed",                  // It works fine but we should prob be uniform with how we do styling
+            style={{                              // Defined style directly here just because this is a temporary reset button
+              position: "fixed",                  
               bottom: "80px",
               right: "20px",
               backgroundColor: "#ef4444",
@@ -76,7 +81,7 @@ export default function CPU() {
           {bets.map((bet, index) => (
             <div className="bet-card" key={index}>
               <div className="bet-top">
-                <span className="poster-time">CPU · {bet.time}</span>
+                <span className="poster-time">CPU · {bet.timePosted}</span>
                 <button
                   className="dismiss-button"
                   onClick={() => removeBet(index)}
@@ -87,7 +92,7 @@ export default function CPU() {
               <div className="subject">{bet.matchup}</div>
               <div className="bet-bottom">
                 <div className="amount">{bet.amount}</div>
-                <div className="line">{bet.line}</div>
+                <div className="line">{bet.lineNumber}</div>
               </div>
               <button
                 className="accept-button"

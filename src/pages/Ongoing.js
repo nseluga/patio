@@ -1,102 +1,244 @@
 // Import dependencies
-import { useState } from 'react';
-import BottomNav from '../components/BottomNav';
-import './PvP.css'; // Reuse existing styles
+import { useState } from "react";
+import { createStandardBet } from "../utils/betCreation";
+import BottomNav from "../components/BottomNav";
+import "./PvP.css"; // Reuse existing styles
 
 // Main component for ongoing bets
 export default function Ongoing() {
   // Sample hardcoded bet data
   const [bets, setBets] = useState([
-    {
+    createStandardBet({
       id: 1,
       poster: "mike",
+      timePosted: "1m ago",
       matchup: "Mike vs CPU: Score",
       amount: "100 caps",
       lineType: "Under",
-      lineValue: "10.0",
-      yourStats: "",
-      opponentStats: "",
+      lineNumber: 10.5,
       gameType: "Score",
-    },
-    {
+    }),
+    createStandardBet({
       id: 2,
       poster: "drake",
+      timePosted: "1m ago",
       matchup: "Logan Bedtime",
       amount: "50 caps",
       lineType: "Over",
-      lineValue: "10.5",
-      yourStats: "",
-      opponentStats: "11",
-      gameType: "Score",
-    },
-    {
+      lineNumber: 10.5,
+      gameType: "Other",
+    }),
+    createStandardBet({
       id: 3,
       poster: "drake",
+      timePosted: "1m ago",
       matchup: "Drake vs Nate: Shots Made",
       amount: "60 caps",
       lineType: "Under",
-      lineValue: "10.5",
-      yourStats: "9",
-      opponentStats: "",
+      lineNumber: 10.5,
       gameType: "Shots Made",
-    },
-    {
+    }),
+    createStandardBet({
       id: 4,
       poster: "skib",
+      timePosted: "1m ago",
       matchup: "Skib vs Nate: Score",
       amount: "120 caps",
       lineType: "Over",
-      lineValue: "15",
-      yourStats: "16",
-      opponentStats: "13",
+      lineNumber: 15.5,
       gameType: "Score",
-    },
+    }),
   ]);
 
   // UI state for modal and stat input
   const [showModal, setShowModal] = useState(false);
-  const [inputStats, setInputStats] = useState("");
   const [activeBetId, setActiveBetId] = useState(null);
   const [popupMessage, setPopupMessage] = useState("");
 
+  // State for Score bets
+  const [yourPlayerA, setYourPlayerA] = useState("");
+  const [yourStatsA, setYourStatsA] = useState("");
+  const [yourPlayerB, setYourPlayerB] = useState("");
+  const [yourStatsB, setYourStatsB] = useState("");
+
+  // State for Shots Made
+  const [yourPlayer, setYourPlayer] = useState("");
+  const [yourStats, setYourStats] = useState("");
+
+  // State for Other bets
+  const [yourInfo, setYourInfo] = useState("");
+
   // Handle stat submission
   const handleSubmit = () => {
-    setBets(prev =>
-      prev.flatMap(bet => {
-        if (bet.id === activeBetId) {
-          const updated = { ...bet, yourStats: inputStats };
-          const isMatch = updated.opponentStats && updated.opponentStats === inputStats;
+    setBets((prev) =>
+      prev.flatMap((bet) => {
+        if (bet.id !== activeBetId) return [bet];
 
-          if (isMatch) {
+        const updated = { ...bet };
+
+        if (bet.gameType === "Score") {
+          updated.yourPlayerA = yourPlayerA;
+          updated.yourStatsA = yourStatsA;
+          updated.yourPlayerB = yourPlayerB;
+          updated.yourStatsB = yourStatsB;
+
+          const match =
+            updated.oppPlayerA &&
+            updated.oppStatsA &&
+            updated.oppPlayerB &&
+            updated.oppStatsB &&
+            updated.yourPlayerA === updated.oppPlayerA &&
+            updated.yourPlayerB === updated.oppPlayerB &&
+            updated.yourStatsA === updated.oppStatsA &&
+            updated.yourStatsB === updated.oppStatsB;
+
+          if (match) {
             setPopupMessage("✅ Match confirmed!");
-            setTimeout(() => setPopupMessage(""), 3000);
-            return []; // Remove matched bet
-          }
 
-          return [updated];
+            // Reset all input state fields
+            setYourPlayerA("");
+            setYourStatsA("");
+            setYourPlayerB("");
+            setYourStatsB("");
+            setYourPlayer("");
+            setYourStats("");
+            setYourInfo("");
+
+            setTimeout(() => setPopupMessage(""), 3000);
+            return []; // remove from list
+          }
+        } else if (bet.gameType === "Shots Made") {
+          updated.yourPlayer = yourPlayer;
+          updated.yourStats = yourStats;
+
+          const match =
+            updated.oppPlayer &&
+            updated.oppStats &&
+            updated.yourPlayer === updated.oppPlayer &&
+            updated.yourStats === updated.oppStats;
+
+          if (match) {
+            setPopupMessage("✅ Match confirmed!");
+
+            // Reset all input state fields
+            setYourPlayerA("");
+            setYourStatsA("");
+            setYourPlayerB("");
+            setYourStatsB("");
+            setYourPlayer("");
+            setYourStats("");
+            setYourInfo("");
+
+            setTimeout(() => setPopupMessage(""), 3000);
+            return [];
+          }
+        } else if (bet.gameType === "Other") {
+          updated.yourInfo = yourInfo;
+
+          const match = updated.oppInfo && updated.yourInfo === updated.oppInfo;
+
+          if (match) {
+            setPopupMessage("✅ Match confirmed!");
+
+            // Reset all input state fields
+            setYourPlayerA("");
+            setYourStatsA("");
+            setYourPlayerB("");
+            setYourStatsB("");
+            setYourPlayer("");
+            setYourStats("");
+            setYourInfo("");
+
+            setTimeout(() => setPopupMessage(""), 3000);
+            return [];
+          }
         }
-        return [bet];
+
+        return [updated];
       })
     );
 
-    setInputStats("");
+    // Clear inputs and close modal
     setShowModal(false);
+    setYourPlayerA("");
+    setYourStatsA("");
+    setYourPlayerB("");
+    setYourStatsB("");
+    setYourPlayer("");
+    setYourStats("");
+    setYourInfo("");
   };
 
   // Get game type of active bet
   const getGameType = () => {
-    const bet = bets.find(b => b.id === activeBetId);
+    const bet = bets.find((b) => b.id === activeBetId);
     return bet?.gameType || "Shots Made";
   };
 
   // Get dynamic status message for each bet
   const getStatusMessage = (bet) => {
-    if (bet.yourStats && !bet.opponentStats) return "Waiting for other player to input stats";
-    if (!bet.yourStats && bet.opponentStats) return "Waiting for you to input stats";
-    if (bet.yourStats && bet.opponentStats && bet.yourStats === bet.opponentStats) return "✅ Match confirmed";
-    if (bet.yourStats && bet.opponentStats && bet.yourStats !== bet.opponentStats) return "❌ Stats not matching, please communicate";
+    const { gameType } = bet;
+  
+    if (gameType === "Score") {
+      if (bet.yourPlayerA && bet.oppPlayerA && bet.yourPlayerB && bet.oppPlayerB &&
+          bet.yourStatsA && bet.oppStatsA && bet.yourStatsB && bet.oppStatsB) {
+        const playersMatch =
+          bet.yourPlayerA === bet.oppPlayerA &&
+          bet.yourPlayerB === bet.oppPlayerB;
+        const statsMatch =
+          bet.yourStatsA === bet.oppStatsA &&
+          bet.yourStatsB === bet.oppStatsB;
+  
+        if (playersMatch && statsMatch) return "✅ Match confirmed";
+        if (!playersMatch) return "❌ Player names do not match";
+        return "❌ Stats not matching, please communicate";
+      }
+    }
+  
+    if (gameType === "Shots Made") {
+      if (bet.yourPlayer && bet.oppPlayer && bet.yourStats && bet.oppStats) {
+        const playersMatch = bet.yourPlayer === bet.oppPlayer;
+        const statsMatch = bet.yourStats === bet.oppStats;
+  
+        if (playersMatch && statsMatch) return "✅ Match confirmed";
+        if (!playersMatch) return "❌ Player names do not match";
+        return "❌ Stats not matching, please communicate";
+      }
+    }
+  
+    if (gameType === "Other") {
+      if (bet.yourInfo && bet.oppInfo) {
+        return bet.yourInfo === bet.oppInfo
+          ? "✅ Match confirmed"
+          : "❌ Info not matching, please communicate";
+      }
+    }
+  
+    // Fallbacks for missing inputs
+    if (
+      gameType === "Score" &&
+      (bet.yourStatsA || bet.yourStatsB || bet.yourPlayerA || bet.yourPlayerB)
+    ) {
+      return "Waiting for other player to input stats";
+    }
+  
+    if (
+      gameType === "Shots Made" &&
+      (bet.yourStats || bet.yourPlayer)
+    ) {
+      return "Waiting for other player to input stats";
+    }
+  
+    if (
+      gameType === "Other" &&
+      bet.yourInfo
+    ) {
+      return "Waiting for other player to input stats";
+    }
+  
     return "No stats submitted";
   };
+  
 
   return (
     <>
@@ -107,7 +249,10 @@ export default function Ongoing() {
         </div>
 
         {/* Bet list display */}
-        <div className="bet-list" style={{ paddingBottom: '100px', overflowY: 'auto' }}>
+        <div
+          className="bet-list"
+          style={{ paddingBottom: "100px", overflowY: "auto" }}
+        >
           {bets.map((bet) => (
             <div className="bet-card" key={bet.id}>
               <div className="bet-top">
@@ -117,7 +262,7 @@ export default function Ongoing() {
               <div className="bet-bottom">
                 <div className="amount">{bet.amount}</div>
                 <div className="line">
-                  {bet.lineType} {bet.lineValue}
+                  {bet.lineType} {bet.lineNumber}
                 </div>
               </div>
               <div className="status-text">{getStatusMessage(bet)}</div>
@@ -126,6 +271,19 @@ export default function Ongoing() {
                 onClick={() => {
                   setShowModal(true);
                   setActiveBetId(bet.id);
+
+                  // Reset all state fields for score
+                  setYourPlayerA("");
+                  setYourStatsA("");
+                  setYourPlayerB("");
+                  setYourStatsB("");
+
+                  // Reset all state fields for shots made
+                  setYourPlayer("");
+                  setYourStats("");
+
+                  // Reset for other
+                  setYourInfo("");
                 }}
               >
                 Enter Stats
@@ -143,31 +301,63 @@ export default function Ongoing() {
 
             {/* Input shown depends on game type */}
             {getGameType() === "Shots Made" && (
-              <input
-                type="number"
-                placeholder="Shots Made"
-                value={inputStats}
-                onChange={(e) => setInputStats(e.target.value)}
-                className="modal-input"
-              />
+              <>
+                <input
+                  type="text"
+                  placeholder="Your Player"
+                  value={yourPlayer}
+                  onChange={(e) => setYourPlayer(e.target.value)}
+                  className="modal-input"
+                />
+                <input
+                  type="number"
+                  placeholder="Shots Made"
+                  value={yourStats}
+                  onChange={(e) => setYourStats(e.target.value)}
+                  className="modal-input"
+                />
+              </>
             )}
 
             {getGameType() === "Score" && (
-              <input
-                type="number"
-                placeholder="Your Score"
-                value={inputStats}
-                onChange={(e) => setInputStats(e.target.value)}
-                className="modal-input"
-              />
+              <>
+                <input
+                  type="text"
+                  placeholder="Your Player A"
+                  value={yourPlayerA}
+                  onChange={(e) => setYourPlayerA(e.target.value)}
+                  className="modal-input"
+                />
+                <input
+                  type="number"
+                  placeholder="Player A Score"
+                  value={yourStatsA}
+                  onChange={(e) => setYourStatsA(e.target.value)}
+                  className="modal-input"
+                />
+                <input
+                  type="text"
+                  placeholder="Your Player B"
+                  value={yourPlayerB}
+                  onChange={(e) => setYourPlayerB(e.target.value)}
+                  className="modal-input"
+                />
+                <input
+                  type="number"
+                  placeholder="Player B Score"
+                  value={yourStatsB}
+                  onChange={(e) => setYourStatsB(e.target.value)}
+                  className="modal-input"
+                />
+              </>
             )}
 
             {getGameType() === "Other" && (
               <input
-                type="text"
+                type="number"
                 placeholder="Describe Outcome"
-                value={inputStats}
-                onChange={(e) => setInputStats(e.target.value)}
+                value={yourInfo}
+                onChange={(e) => setYourInfo(e.target.value)}
                 className="modal-input"
               />
             )}
@@ -177,7 +367,6 @@ export default function Ongoing() {
               <button
                 onClick={() => {
                   setShowModal(false);
-                  setInputStats("");
                 }}
                 className="cancel-button"
               >
@@ -192,11 +381,7 @@ export default function Ongoing() {
       )}
 
       {/* Popup message for match confirmation */}
-      {popupMessage && (
-        <div className="popup-banner">
-          {popupMessage}
-        </div>
-      )}
+      {popupMessage && <div className="popup-banner">{popupMessage}</div>}
 
       {/* Fixed bottom navigation */}
       <BottomNav />

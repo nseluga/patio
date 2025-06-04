@@ -1,9 +1,8 @@
 // Import dependencies
 import BottomNav from "../components/BottomNav";
-import { createStandardBet } from '../utils/betCreation'; // Utility function for creating bets
+import { createStandardBet } from "../utils/betCreation"; // Utility function for creating bets
 import { useState, useEffect } from "react";
 import "./PvP.css"; // Shared styles
-
 
 // Load initial bets from localStorage or use fallback demo data
 const loadInitialBets = () => {
@@ -67,18 +66,21 @@ export default function PvP() {
 
   // Handle posting a new bet
   const handlePost = () => {
-    if (!matchup.trim() || !amount.trim() || !lineNumber.trim()) {
+    if (!matchup.trim() || !amount.trim() || !lineType.trim() || !lineNumber.trim()) {
       alert("Please fill out all fields before posting.");
       return;
     }
 
-    const newBet = {
+    const newBet = createStandardBet({
+      id: Date.now(), // Use timestamp as unique ID
       poster: "you", // Placeholder for now
-      time: "Just now",
-      amount: `${amount} caps`,
+      timePosted: "Just now",
       matchup,
+      amount: `${amount} caps`,
+      lineType,
       lineNumber: `${lineType} ${lineNumber}`,
-    };
+      gameType,
+    });
 
     // Add new bet to top of list
     setBets((prev) => [newBet, ...prev]);
@@ -87,7 +89,8 @@ export default function PvP() {
     setMatchup("");
     setAmount("");
     setLineNumber("");
-    setGameType("Score");
+    setLineType("Over");
+    setGameType("Shots Made");
   };
 
   return (
