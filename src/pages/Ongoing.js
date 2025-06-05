@@ -17,6 +17,10 @@ export default function Ongoing() {
       lineType: "Under",
       lineNumber: 10.5,
       gameType: "Score",
+      oppPlayerA: "Player1",
+      oppStatsA: "5",
+      oppPlayerB: "Player2",
+      oppStatsB: "7",
     }),
     createStandardBet({
       id: 2,
@@ -27,6 +31,7 @@ export default function Ongoing() {
       lineType: "Over",
       lineNumber: 10.5,
       gameType: "Other",
+      oppInfo: "9",
     }),
     createStandardBet({
       id: 3,
@@ -37,6 +42,8 @@ export default function Ongoing() {
       lineType: "Under",
       lineNumber: 10.5,
       gameType: "Shots Made",
+      oppPlayer: "Nate",
+      oppStats: "13",
     }),
     createStandardBet({
       id: 4,

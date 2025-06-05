@@ -8,42 +8,60 @@ export function createStandardBet({
     lineType,
     lineNumber,
     gameType,
+    yourPlayerA,
+    yourPlayerB,
+    yourStatsA,
+    yourStatsB,
+    yourPlayer,
+    yourStats,
+    yourInfo,
+    oppPlayerA,
+    oppPlayerB,
+    oppStatsA,
+    oppStatsB,
+    oppPlayer,
+    oppStats,
+    oppInfo,
   }) {
-    return {
+    const base = {
       id,
       poster,
-      timePosted,
+      time: timePosted,
       matchup,
       amount,
       lineType,
       lineNumber,
       gameType,
-  
-      // Score-specific
-      // Your inputs
-      yourPlayerA: "",
-      yourPlayerB: "",
-      yourStatsA: "",
-      yourStatsB: "",
-
-      // Opponnent inputs
-      oppPlayerA: "",
-      oppPlayerB: "",
-      oppStatsA: "",
-      oppStatsB: "",
-  
-      // Shots Made-specific
-      // Your inputs
-      yourPlayer: "",
-      yourStats: "",
-
-      // Opponent inputs
-      oppPlayer: "",
-      oppStats: "",
-
-      // Other specific
-      yourInfo: "",
-      oppInfo: "",
     };
+  
+    if (gameType === "Score") {
+      return {
+        ...base,
+        yourPlayerA,
+        yourPlayerB,
+        yourStatsA,
+        yourStatsB,
+        oppPlayerA,
+        oppPlayerB,
+        oppStatsA,
+        oppStatsB,
+      };
+    } else if (gameType === "Shots Made") {
+      return {
+        ...base,
+        yourPlayer,
+        yourStats,
+        oppPlayer,
+        oppStats,
+      };
+    } else if (gameType === "Other") {
+      return {
+        ...base,
+        yourInfo,
+        oppInfo,
+      };
+    }
+  
+    return base;
   }
   
