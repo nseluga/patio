@@ -8,6 +8,7 @@ import Ongoing from './pages/Ongoing';
 import CPU from './pages/CPU';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
+import LoggedIn from './pages/LoggedIn';
 import Register from './pages/Register';
 import UserContext from './UserContext'; // import context
 import "./App.css"; // Global styles
@@ -24,6 +25,7 @@ function App() {
           <Route path="/" element={<PvP />} />
 
           {/* App page routes */}
+          <Route path="/pvp" element={<PvP />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/ongoing" element={<Ongoing />} />
@@ -32,6 +34,7 @@ function App() {
 
           {/* Auth routes */}
           <Route path="/login" element={<Login />} />
+          <Route path="/loggedin" element={<LoggedIn />} />
           <Route path="/register" element={<Register />} />
         </Routes>
       </Router>

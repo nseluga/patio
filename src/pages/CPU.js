@@ -1,7 +1,8 @@
 // Import dependencies and components
 import BottomNav from "../components/BottomNav";
 import { useState, useEffect } from "react";
-import { createStandardBet } from '../utils/betCreation';
+import { createStandardBet } from "../utils/betCreation";
+import { useNavigate } from "react-router-dom";
 import "./PvP.css"; // Reuse PvP styles for layout and cards
 
 // Load bets from localStorage or use a default bet
@@ -17,7 +18,7 @@ const loadInitialCPUBets = () => {
       matchup: "Mike vs CPU",
       amount: "40 caps",
       lineType: "Over",
-      lineNumber: 12.0,
+      lineNumber: 12.5,
       gameType: "Shots Made",
     }),
   ];
@@ -26,6 +27,7 @@ const loadInitialCPUBets = () => {
 // CPU bets page component
 export default function CPU() {
   const [bets, setBets] = useState(loadInitialCPUBets); // Store CPU bets
+  const navigate = useNavigate(); // For temporary navigation to login page
 
   // Save bets to localStorage whenever they change
   useEffect(() => {
@@ -60,8 +62,9 @@ export default function CPU() {
               localStorage.removeItem("ongoingBets");
               window.location.reload();
             }}
-            style={{                              // Defined style directly here just because this is a temporary reset button
-              position: "fixed",                  
+            style={{
+              // Defined style directly here just because this is a temporary reset button
+              position: "fixed",
               bottom: "80px",
               right: "20px",
               backgroundColor: "#ef4444",
@@ -73,6 +76,9 @@ export default function CPU() {
             }}
           >
             🔄 Reset All
+          </button>
+          <button onClick={() => navigate("/login")} className="temp-button">
+            Go to Login
           </button>
         </div>
 
@@ -92,7 +98,7 @@ export default function CPU() {
               <div className="subject">{bet.matchup}</div>
               <div className="bet-bottom">
                 <div className="amount">{bet.amount}</div>
-                <div className="line">{bet.lineNumber}</div>
+                <div className="line">{bet.lineType} {bet.lineNumber}</div>
               </div>
               <button
                 className="accept-button"

@@ -78,7 +78,7 @@ export default function PvP() {
       matchup,
       amount: `${amount} caps`,
       lineType,
-      lineNumber: `${lineType} ${lineNumber}`,
+      lineNumber,
       gameType,
     });
 
@@ -128,7 +128,7 @@ export default function PvP() {
 
               <div className="bet-bottom">
                 <div className="amount">{bet.amount}</div>
-                <div className="line">{bet.line}</div>
+                <div className="line">{bet.lineType} {bet.lineNumber}</div>
               </div>
 
               <button
