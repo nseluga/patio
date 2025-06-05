@@ -1,8 +1,13 @@
 // Import dependencies and components
 import BottomNav from "../components/BottomNav";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createStandardBet } from "../utils/betCreation";
 import { useNavigate } from "react-router-dom";
+import {
+  useAutoSaveBets,
+  removeBetByIndex,
+  acceptBetWithOngoing,
+} from "../utils/acceptHandling";
 import "./PvP.css"; // Reuse PvP styles for layout and cards
 
 // Load bets from localStorage or use a default bet
@@ -25,28 +30,16 @@ const loadInitialCPUBets = () => {
 };
 
 // CPU bets page component
-export default function CPU() {
+export default function CPU({ addOngoingBet }) {
   const [bets, setBets] = useState(loadInitialCPUBets); // Store CPU bets
   const navigate = useNavigate(); // For temporary navigation to login page
 
-  // Save bets to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem("cpuBets", JSON.stringify(bets));
-  }, [bets]);
+  // Auto-save
+  useAutoSaveBets(bets, "cpuBets");
 
-  // Remove a bet by index
-  const removeBet = (indexToRemove) => {
-    setBets((prevBets) =>
-      prevBets.filter((_, index) => index !== indexToRemove)
-    );
-  };
-
-  // Accept a bet (currently same as remove)
-  const acceptBet = (indexToAccept) => {
-    setBets((prevBets) =>
-      prevBets.filter((_, index) => index !== indexToAccept)
-    );
-  };
+  // Functions
+  const removeBet = (index) => removeBetByIndex(index, setBets);
+  const acceptBet = (index) => acceptBetWithOngoing(index, setBets, addOngoingBet);
 
   return (
     <>
@@ -98,7 +91,9 @@ export default function CPU() {
               <div className="subject">{bet.matchup}</div>
               <div className="bet-bottom">
                 <div className="amount">{bet.amount}</div>
-                <div className="line">{bet.lineType} {bet.lineNumber}</div>
+                <div className="line">
+                  {bet.lineType} {bet.lineNumber}
+                </div>
               </div>
               <button
                 className="accept-button"

@@ -2,34 +2,58 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { useState } from "react";
 import Messages from "./pages/Messages";
-import Leaderboard from './pages/Leaderboard';
-import PvP from './pages/PvP';
-import Ongoing from './pages/Ongoing';
-import CPU from './pages/CPU';
-import Profile from './pages/Profile';
-import Login from './pages/Login';
-import LoggedIn from './pages/LoggedIn';
-import Register from './pages/Register';
-import UserContext from './UserContext'; // import context
+import Leaderboard from "./pages/Leaderboard";
+import PvP from "./pages/PvP";
+import Ongoing from "./pages/Ongoing";
+import CPU from "./pages/CPU";
+import Profile from "./pages/Profile";
+import Login from "./pages/Login";
+import LoggedIn from "./pages/LoggedIn";
+import Register from "./pages/Register";
+import UserContext from "./UserContext"; // import context
 import "./App.css"; // Global styles
 
 // Main app component with route definitions
 function App() {
   const [user, setUser] = useState(null); // global player info
 
+  const [ongoingBets, setOngoingBets] = useState(() => {
+    const saved = localStorage.getItem("ongoingBets");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Add a bet to ongoing and sync to localStorage
+  const addOngoingBet = (newBet) => {
+    setOngoingBets((prev) => {
+      const updated = [...prev, newBet];
+      localStorage.setItem("ongoingBets", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   return (
-    <UserContext.Provider value={{ user, setUser }}> {/* wrap entire app */}
+    <UserContext.Provider value={{ user, setUser }}>
+      {" "}
+      {/* wrap entire app */}
       <Router>
         <Routes>
           {/* Home route defaults to PvP */}
-          <Route path="/" element={<PvP />} />
+          <Route path="/" element={<PvP addOngoingBet={addOngoingBet} />} />
 
           {/* App page routes */}
-          <Route path="/pvp" element={<PvP />} />
+          <Route path="/pvp" element={<PvP addOngoingBet={addOngoingBet} />} />
           <Route path="/messages" element={<Messages />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/ongoing" element={<Ongoing />} />
-          <Route path="/house" element={<CPU />} />
+          <Route
+            path="/ongoing"
+            element={
+              <Ongoing
+                ongoingBets={ongoingBets}
+                setOngoingBets={setOngoingBets}
+              />
+            }
+          />
+          <Route path="/house" element={<CPU addOngoingBet={addOngoingBet} />} />
           <Route path="/profile" element={<Profile />} />
 
           {/* Auth routes */}

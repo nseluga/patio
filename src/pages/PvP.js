@@ -1,7 +1,12 @@
 // Import dependencies
 import BottomNav from "../components/BottomNav";
 import { createStandardBet } from "../utils/betCreation"; // Utility function for creating bets
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import {
+  useAutoSaveBets,
+  removeBetByIndex,
+  acceptBetWithOngoing,
+} from "../utils/acceptHandling";
 import "./PvP.css"; // Shared styles
 
 // Load initial bets from localStorage or use fallback demo data
@@ -35,7 +40,7 @@ const loadInitialBets = () => {
 };
 
 // PvP component
-export default function PvP() {
+export default function PvP({ addOngoingBet }) {
   // UI and form state
   const [showModal, setShowModal] = useState(false);
   const [gameType, setGameType] = useState("Shots Made");
@@ -46,27 +51,22 @@ export default function PvP() {
   const [lineNumber, setLineNumber] = useState("");
 
   // Save bets to localStorage whenever they change
-  useEffect(() => {
-    localStorage.setItem("pvpBets", JSON.stringify(bets));
-  }, [bets]);
 
-  // Remove a bet from the list
-  const removeBet = (indexToRemove) => {
-    setBets((prevBets) =>
-      prevBets.filter((_, index) => index !== indexToRemove)
-    );
-  };
+  // Auto-save
+  useAutoSaveBets(bets, "pvpBets");
 
-  // Accept a bet (currently removes it)
-  const acceptBet = (indexToAccept) => {
-    setBets((prevBets) =>
-      prevBets.filter((_, index) => index !== indexToAccept)
-    );
-  };
+  // Functions
+  const removeBet = (index) => removeBetByIndex(index, setBets);
+  const acceptBet = (index) => acceptBetWithOngoing(index, setBets, addOngoingBet);
 
   // Handle posting a new bet
   const handlePost = () => {
-    if (!matchup.trim() || !amount.trim() || !lineType.trim() || !lineNumber.trim()) {
+    if (
+      !matchup.trim() ||
+      !amount.trim() ||
+      !lineType.trim() ||
+      !lineNumber.trim()
+    ) {
       alert("Please fill out all fields before posting.");
       return;
     }
@@ -128,7 +128,9 @@ export default function PvP() {
 
               <div className="bet-bottom">
                 <div className="amount">{bet.amount}</div>
-                <div className="line">{bet.lineType} {bet.lineNumber}</div>
+                <div className="line">
+                  {bet.lineType} {bet.lineNumber}
+                </div>
               </div>
 
               <button

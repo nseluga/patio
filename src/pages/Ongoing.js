@@ -1,61 +1,62 @@
 // Import dependencies
 import { useState } from "react";
-import { createStandardBet } from "../utils/betCreation";
+// import { createStandardBet } from "../utils/betCreation"; // Function for creating hardcoded bets
 import BottomNav from "../components/BottomNav";
 import "./PvP.css"; // Reuse existing styles
 
 // Main component for ongoing bets
-export default function Ongoing() {
-  // Sample hardcoded bet data
-  const [bets, setBets] = useState([
-    createStandardBet({
-      id: 1,
-      poster: "mike",
-      timePosted: "1m ago",
-      matchup: "Mike vs CPU: Score",
-      amount: "100 caps",
-      lineType: "Under",
-      lineNumber: 10.5,
-      gameType: "Score",
-      oppPlayerA: "Player1",
-      oppStatsA: "5",
-      oppPlayerB: "Player2",
-      oppStatsB: "7",
-    }),
-    createStandardBet({
-      id: 2,
-      poster: "drake",
-      timePosted: "1m ago",
-      matchup: "Logan Bedtime",
-      amount: "50 caps",
-      lineType: "Over",
-      lineNumber: 10.5,
-      gameType: "Other",
-      oppInfo: "9",
-    }),
-    createStandardBet({
-      id: 3,
-      poster: "drake",
-      timePosted: "1m ago",
-      matchup: "Drake vs Nate: Shots Made",
-      amount: "60 caps",
-      lineType: "Under",
-      lineNumber: 10.5,
-      gameType: "Shots Made",
-      oppPlayer: "Nate",
-      oppStats: "13",
-    }),
-    createStandardBet({
-      id: 4,
-      poster: "skib",
-      timePosted: "1m ago",
-      matchup: "Skib vs Nate: Score",
-      amount: "120 caps",
-      lineType: "Over",
-      lineNumber: 15.5,
-      gameType: "Score",
-    }),
-  ]);
+export default function Ongoing({ ongoingBets, setOngoingBets }) {
+  const bets = ongoingBets;
+  const setBets = setOngoingBets;
+
+    // Hardcoded test bets, left in case we ever need
+    // createStandardBet({
+    //   id: 1,
+    //   poster: "mike",
+    //   timePosted: "1m ago",
+    //   matchup: "Mike vs CPU: Score",
+    //   amount: "100 caps",
+    //   lineType: "Under",
+    //   lineNumber: 10.5,
+    //   gameType: "Score",
+    //   oppPlayerA: "Player1",
+    //   oppStatsA: "5",
+    //   oppPlayerB: "Player2",
+    //   oppStatsB: "7",
+    // }),
+    // createStandardBet({
+    //   id: 2,
+    //   poster: "drake",
+    //   timePosted: "1m ago",
+    //   matchup: "Logan Bedtime",
+    //   amount: "50 caps",
+    //   lineType: "Over",
+    //   lineNumber: 10.5,
+    //   gameType: "Other",
+    //   oppInfo: "9",
+    // }),
+    // createStandardBet({
+    //   id: 3,
+    //   poster: "drake",
+    //   timePosted: "1m ago",
+    //   matchup: "Drake vs Nate: Shots Made",
+    //   amount: "60 caps",
+    //   lineType: "Under",
+    //   lineNumber: 10.5,
+    //   gameType: "Shots Made",
+    //   oppPlayer: "Nate",
+    //   oppStats: "13",
+    // }),
+    // createStandardBet({
+    //   id: 4,
+    //   poster: "skib",
+    //   timePosted: "1m ago",
+    //   matchup: "Skib vs Nate: Score",
+    //   amount: "120 caps",
+    //   lineType: "Over",
+    //   lineNumber: 15.5,
+    //   gameType: "Score",
+    // }),
 
   // UI state for modal and stat input
   const [showModal, setShowModal] = useState(false);
@@ -401,4 +402,16 @@ export default function Ongoing() {
       <BottomNav />
     </>
   );
+}
+
+export function addToOngoingBets(bet) {
+  const saved = localStorage.getItem("ongoingBets");
+  const existing = saved ? JSON.parse(saved) : [];
+
+  // Prevent duplicates
+  const alreadyExists = existing.some((b) => b.id === bet.id);
+  if (!alreadyExists) {
+    const updated = [...existing, bet];
+    localStorage.setItem("ongoingBets", JSON.stringify(updated));
+  }
 }
