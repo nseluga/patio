@@ -17,7 +17,7 @@ const loadInitialCPUBets = () => {
   return [
     // Hardcoded test bet for CPU
     createStandardBet({
-      id: 1,
+      id: 3,
       poster: "CPU",
       timePosted: "just now",
       matchup: "Mike vs CPU",

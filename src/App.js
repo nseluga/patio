@@ -24,11 +24,15 @@ function App() {
 
   // Add a bet to ongoing and sync to localStorage
   const addOngoingBet = (newBet) => {
-    setOngoingBets((prev) => {
-      const updated = [...prev, newBet];
-      localStorage.setItem("ongoingBets", JSON.stringify(updated));
-      return updated;
-    });
+    const local = localStorage.getItem("ongoingBets");
+    const current = local ? JSON.parse(local) : [];
+  
+    const alreadyExists = current.some((bet) => bet.id === newBet.id);
+    if (alreadyExists) return;
+  
+    const updated = [...current, newBet];
+    localStorage.setItem("ongoingBets", JSON.stringify(updated));
+    setOngoingBets(updated); // sync React state
   };
 
   return (
