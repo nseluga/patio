@@ -1,14 +1,19 @@
 import { User } from "lucide-react";
 import BottomNav from "../components/BottomNav";
+import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 
 export default function Profile() {
+  const navigate = useNavigate(); // For temporary navigation to login page
   return (
     <div className="profile-container">
       <div className="profile-inner">
         {/* Profile Picture */}
         <div className="profile-pic">
           <User className="w-12 h-12 text-black" />
+          <button onClick={() => navigate("/login")} className="temp-button">
+            Go to Login
+          </button>
         </div>
 
         {/* Stats Row */}

@@ -2,7 +2,6 @@
 import BottomNav from "../components/BottomNav";
 import { useState } from "react";
 import { createStandardBet } from "../utils/betCreation";
-import { useNavigate } from "react-router-dom";
 import {
   useAutoSaveBets,
   removeBetByIndex,
@@ -19,6 +18,7 @@ const loadInitialCPUBets = () => {
     createStandardBet({
       id: 3,
       poster: "CPU",
+      posterId: "0",
       timePosted: "just now",
       matchup: "Mike vs CPU",
       amount: "40 caps",
@@ -32,7 +32,6 @@ const loadInitialCPUBets = () => {
 // CPU bets page component
 export default function CPU({ addOngoingBet }) {
   const [bets, setBets] = useState(loadInitialCPUBets); // Store CPU bets
-  const navigate = useNavigate(); // For temporary navigation to login page
 
   // Auto-save
   useAutoSaveBets(bets, "cpuBets");
@@ -69,9 +68,6 @@ export default function CPU({ addOngoingBet }) {
             }}
           >
             🔄 Reset All
-          </button>
-          <button onClick={() => navigate("/login")} className="temp-button">
-            Go to Login
           </button>
         </div>
 

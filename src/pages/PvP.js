@@ -19,6 +19,7 @@ const loadInitialBets = () => {
     createStandardBet({
       id: 1,
       poster: "nate",
+      posterId: "1",
       timePosted: "2m ago",
       matchup: "Nate and Skib W vs Drake and Mike: Caps",
       amount: "50 caps",
@@ -29,6 +30,7 @@ const loadInitialBets = () => {
     createStandardBet({
       id: 2,
       poster: "mike",
+      posterId: "2",
       timePosted: "10m ago",
       matchup: "Logan Bedtime",
       amount: "10000 caps",

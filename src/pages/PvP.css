@@ -85,6 +85,12 @@
   cursor: pointer;
 }
 
+/* Delete button hover state */
+.dismiss-button:hover {
+  color: #ef4444; /* red-500 */
+}
+
+
 /* Bet subject (e.g., matchup name) */
 .subject {
   font-weight: 600;
@@ -204,4 +210,42 @@
   font-weight: bold;
   z-index: 999;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.help-button {
+  font-size: 24px;
+  background: #da13c9;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-left: auto;
+}
+
+.help-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.help-content {
+  background: white;
+  padding: 20px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  text-align: left;
 }

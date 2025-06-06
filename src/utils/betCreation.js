@@ -2,6 +2,7 @@
 export function createStandardBet({
     id,
     poster,
+    posterId,
     timePosted,
     matchup,
     amount,
@@ -26,6 +27,7 @@ export function createStandardBet({
     const base = {
       id,
       poster,
+      posterId,
       time: timePosted,
       matchup,
       amount,

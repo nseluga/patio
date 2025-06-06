@@ -9,57 +9,58 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
   const bets = ongoingBets;
   const setBets = setOngoingBets;
 
-    // Hardcoded test bets, left in case we ever need
-    // createStandardBet({
-    //   id: 1,
-    //   poster: "mike",
-    //   timePosted: "1m ago",
-    //   matchup: "Mike vs CPU: Score",
-    //   amount: "100 caps",
-    //   lineType: "Under",
-    //   lineNumber: 10.5,
-    //   gameType: "Score",
-    //   oppPlayerA: "Player1",
-    //   oppStatsA: "5",
-    //   oppPlayerB: "Player2",
-    //   oppStatsB: "7",
-    // }),
-    // createStandardBet({
-    //   id: 2,
-    //   poster: "drake",
-    //   timePosted: "1m ago",
-    //   matchup: "Logan Bedtime",
-    //   amount: "50 caps",
-    //   lineType: "Over",
-    //   lineNumber: 10.5,
-    //   gameType: "Other",
-    //   oppInfo: "9",
-    // }),
-    // createStandardBet({
-    //   id: 3,
-    //   poster: "drake",
-    //   timePosted: "1m ago",
-    //   matchup: "Drake vs Nate: Shots Made",
-    //   amount: "60 caps",
-    //   lineType: "Under",
-    //   lineNumber: 10.5,
-    //   gameType: "Shots Made",
-    //   oppPlayer: "Nate",
-    //   oppStats: "13",
-    // }),
-    // createStandardBet({
-    //   id: 4,
-    //   poster: "skib",
-    //   timePosted: "1m ago",
-    //   matchup: "Skib vs Nate: Score",
-    //   amount: "120 caps",
-    //   lineType: "Over",
-    //   lineNumber: 15.5,
-    //   gameType: "Score",
-    // }),
+  // Hardcoded test bets, left in case we ever need
+  // createStandardBet({
+  //   id: 1,
+  //   poster: "mike",
+  //   timePosted: "1m ago",
+  //   matchup: "Mike vs CPU: Score",
+  //   amount: "100 caps",
+  //   lineType: "Under",
+  //   lineNumber: 10.5,
+  //   gameType: "Score",
+  //   oppPlayerA: "Player1",
+  //   oppStatsA: "5",
+  //   oppPlayerB: "Player2",
+  //   oppStatsB: "7",
+  // }),
+  // createStandardBet({
+  //   id: 2,
+  //   poster: "drake",
+  //   timePosted: "1m ago",
+  //   matchup: "Logan Bedtime",
+  //   amount: "50 caps",
+  //   lineType: "Over",
+  //   lineNumber: 10.5,
+  //   gameType: "Other",
+  //   oppInfo: "9",
+  // }),
+  // createStandardBet({
+  //   id: 3,
+  //   poster: "drake",
+  //   timePosted: "1m ago",
+  //   matchup: "Drake vs Nate: Shots Made",
+  //   amount: "60 caps",
+  //   lineType: "Under",
+  //   lineNumber: 10.5,
+  //   gameType: "Shots Made",
+  //   oppPlayer: "Nate",
+  //   oppStats: "13",
+  // }),
+  // createStandardBet({
+  //   id: 4,
+  //   poster: "skib",
+  //   timePosted: "1m ago",
+  //   matchup: "Skib vs Nate: Score",
+  //   amount: "120 caps",
+  //   lineType: "Over",
+  //   lineNumber: 15.5,
+  //   gameType: "Score",
+  // }),
 
   // UI state for modal and stat input
   const [showModal, setShowModal] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [activeBetId, setActiveBetId] = useState(null);
   const [popupMessage, setPopupMessage] = useState("");
 
@@ -261,6 +262,9 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
       <div className="pvp-page">
         <div className="pvp-header">
           <h2 className="pvp-title">Ongoing Bets</h2>
+          <button className="help-button" onClick={() => setShowHelp(true)}>
+            ?
+          </button>
         </div>
 
         {/* Bet list display */}
@@ -307,6 +311,26 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
           ))}
         </div>
       </div>
+
+      {/* Help modal */}
+      {showHelp && (
+        <div className="help-modal">
+          <div className="help-content">
+            <h3>How to Enter Stats</h3>
+            <p>While entering player stats, please follow these guidelines:</p>
+            <p>Enter each player's real name with the first letter capitalized.</p>
+            <p>ie: "Nate", "Mike", "Stryker"</p>
+            <p>For Score bets, enter each side's total points at end of game.</p>
+            <p>For Shots Made, enter the number of successful shots made by the player.</p>
+            <p>For Other, enter the stat value relevant to the custom line.</p>
+            <p>Entering stats and player names accurately is crucial for confirming matches and tracking stats.</p>
+            <p>In order for a match to be confirmed both players must have matching players and stats.</p>
+            <p>If you have a disagreement on stats, please communicate with the other player.</p>
+            <p>If a disagreement persists feel free to reach out to the developers.</p>
+            <button onClick={() => setShowHelp(false)}>Close</button>
+          </div>
+        </div>
+      )}
 
       {/* Modal for entering stats */}
       {showModal && (
