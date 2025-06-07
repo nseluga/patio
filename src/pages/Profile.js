@@ -21,31 +21,33 @@ export default function Profile() {
   return (
     <div className="profile-container">
       <div className="profile-inner">
-        <div className="profile-header">
-  <div className="profile-pic-wrapper">
-    <div className="profile-pic">
-      <span className="profile-initial">
-        {user.username?.charAt(0).toUpperCase()}
-      </span>
-    </div>
-    <p className="profile-username">{user.username}</p>
-  </div>
 
-  <div className="profile-stats-inline">
-    <div className="profile-stat-block">
-      <p className="profile-stat-number">{user.caps_balance}</p>
-      <p className="profile-stat">caps</p>
-    </div>
-    <div className="profile-stat-block">
-      <p className="profile-stat-number">{user.bets_won ?? 0}</p>
-      <p className="profile-stat">bets won</p>
-    </div>
-    <div className="profile-stat-block">
-      <p className="profile-stat-number">{user.bets_played ?? 0}</p>
-      <p className="profile-stat">bets played</p>
-    </div>
-  </div>
-</div>
+        {/* Profile Header */}
+        <div className="profile-header">
+          <div className="profile-pic-wrapper">
+            <div className="profile-pic">
+              <span className="profile-initial">
+                {user.username?.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <p className="profile-username">{user.username}</p>
+          </div>
+
+          <div className="profile-stats-inline">
+            <div className="profile-stat-block">
+              <p className="profile-stat-number">{user.caps_balance}</p>
+              <p className="profile-stat">caps</p>
+          </div>
+          <div className="profile-stat-block">
+            <p className="profile-stat-number">{user.bets_won ?? 0}</p>
+            <p className="profile-stat">bets won</p>
+          </div>
+          <div className="profile-stat-block">
+            <p className="profile-stat-number">{user.bets_played ?? 0}</p>
+            <p className="profile-stat">bets played</p>
+          </div>
+        </div>
+      </div>
 
 
         {/* Story Buttons
