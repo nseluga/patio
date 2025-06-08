@@ -7,6 +7,8 @@ import {
   removeBetByIndex,
   acceptBetWithOngoing,
 } from "../utils/acceptHandling";
+import { useContext } from "react";
+import UserContext from "../UserContext";
 import "./PvP.css"; // Reuse PvP styles for layout and cards
 
 // Load bets from localStorage or use a default bet
@@ -20,25 +22,28 @@ const loadInitialCPUBets = () => {
       poster: "CPU",
       posterId: "0",
       timePosted: "just now",
-      matchup: "Mike vs CPU",
+      matchup: "Skib vs Eddy",
       amount: "40 caps",
       lineType: "Over",
       lineNumber: 12.5,
       gameType: "Shots Made",
+      gamePlayed: "Caps",
     }),
   ];
 };
 
 // CPU bets page component
 export default function CPU({ addOngoingBet }) {
-  const [bets, setBets] = useState(loadInitialCPUBets); // Store CPU bets
+  const [bets, setBets] = useState(loadInitialCPUBets);
+  const { user } = useContext(UserContext); // Store CPU bets
 
   // Auto-save
   useAutoSaveBets(bets, "cpuBets");
 
   // Functions
   const removeBet = (index) => removeBetByIndex(index, setBets);
-  const acceptBet = (index) => acceptBetWithOngoing(index, setBets, addOngoingBet);
+  const acceptBet = (index) => acceptBetWithOngoing(index, setBets, addOngoingBet, user?.playerId);
+
 
   return (
     <>
@@ -76,7 +81,7 @@ export default function CPU({ addOngoingBet }) {
           {bets.map((bet, index) => (
             <div className="bet-card" key={index}>
               <div className="bet-top">
-                <span className="poster-time">CPU · {bet.timePosted}</span>
+                <span className="poster-time">CPU · {bet.time}</span>
                 <button
                   className="dismiss-button"
                   onClick={() => removeBet(index)}
@@ -85,6 +90,7 @@ export default function CPU({ addOngoingBet }) {
                 </button>
               </div>
               <div className="subject">{bet.matchup}</div>
+              <div className="game-played">Game: {bet.gamePlayed}</div>
               <div className="bet-bottom">
                 <div className="amount">{bet.amount}</div>
                 <div className="line">

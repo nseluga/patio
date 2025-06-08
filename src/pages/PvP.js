@@ -7,6 +7,8 @@ import {
   removeBetByIndex,
   acceptBetWithOngoing,
 } from "../utils/acceptHandling";
+import { useContext } from "react";
+import UserContext from "../UserContext";
 import "./PvP.css"; // Shared styles
 
 // Load initial bets from localStorage or use fallback demo data
@@ -21,11 +23,12 @@ const loadInitialBets = () => {
       poster: "nate",
       posterId: "1",
       timePosted: "2m ago",
-      matchup: "Nate and Skib W vs Drake and Mike: Caps",
+      matchup: "Nate vs Mike",
       amount: "50 caps",
       lineType: "Over",
       lineNumber: 2.5,
       gameType: "Score",
+      gamePlayed: "Caps",
     }),
     createStandardBet({
       id: 2,
@@ -37,6 +40,7 @@ const loadInitialBets = () => {
       lineType: "Under",
       lineNumber: 10.5,
       gameType: "Other",
+      gamePlayed: "Other",
     }),
   ];
 };
@@ -51,6 +55,8 @@ export default function PvP({ addOngoingBet }) {
   const [matchup, setMatchup] = useState("");
   const [amount, setAmount] = useState("");
   const [lineNumber, setLineNumber] = useState("");
+  const [gamePlayed, setGamePlayed] = useState("Caps"); // default game
+  const { user } = useContext(UserContext);
 
   // Save bets to localStorage whenever they change
 
@@ -59,7 +65,7 @@ export default function PvP({ addOngoingBet }) {
 
   // Functions
   const removeBet = (index) => removeBetByIndex(index, setBets);
-  const acceptBet = (index) => acceptBetWithOngoing(index, setBets, addOngoingBet);
+  const acceptBet = (index) => acceptBetWithOngoing(index, setBets, addOngoingBet, user?.playerId);
 
   // Handle posting a new bet
   const handlePost = () => {
@@ -75,13 +81,15 @@ export default function PvP({ addOngoingBet }) {
 
     const newBet = createStandardBet({
       id: Date.now(), // Use timestamp as unique ID
-      poster: "you", // Placeholder for now
+      poster: user?.username,
+      posterId: user?.playerId,
       timePosted: "Just now",
       matchup,
       amount: `${amount} caps`,
       lineType,
       lineNumber,
       gameType,
+      gamePlayed,
     });
 
     // Add new bet to top of list
@@ -127,6 +135,7 @@ export default function PvP({ addOngoingBet }) {
               </div>
 
               <div className="subject">{bet.matchup}</div>
+              <div className="game-played">Game: {bet.gamePlayed}</div>
 
               <div className="bet-bottom">
                 <div className="amount">{bet.amount}</div>
@@ -210,6 +219,18 @@ export default function PvP({ addOngoingBet }) {
               >
                 <option value="Shots Made">Shots Made</option>
                 <option value="Score">Score</option>
+                <option value="Other">Other</option>
+              </select>
+
+              <select
+                value={gamePlayed}
+                onChange={(e) => setGamePlayed(e.target.value)}
+                className="modal-input"
+              >
+                <option value="Caps">Caps</option>
+                <option value="Pong">Pong</option>
+                <option value="Beerball">Beerball</option>
+                <option value="Campus Golf">Campus Golf</option>
                 <option value="Other">Other</option>
               </select>
 
