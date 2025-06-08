@@ -1,60 +1,80 @@
-import { User } from "lucide-react";
+// import { User } from "lucide-react";       May need to put back when giving users ability to change from default profile pic
+import { useContext, useEffect } from "react";
+import UserContext from "../UserContext";
 import BottomNav from "../components/BottomNav";
 import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 
 export default function Profile() {
-  const navigate = useNavigate(); // For temporary navigation to login page
+  const { user } = useContext(UserContext);
+
+  // Optional: redirect if no user
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!user) {
+      navigate("/login");
+    }
+  }, [user, navigate]);
+
+  if (!user) return null; // avoid rendering empty page before redirect
+
   return (
     <div className="profile-container">
       <div className="profile-inner">
-        {/* Profile Picture */}
-        <div className="profile-pic">
-          <User className="w-12 h-12 text-black" />
-          <button onClick={() => navigate("/login")} className="temp-button">
-            Go to Login
-          </button>
-        </div>
 
-        {/* Stats Row */}
-        <div className="profile-stats">
-          <div>
-            <p className="profile-stat-number">#</p>
-            <p className="profile-stat">caps</p>
+        {/* Profile Header */}
+        <div className="profile-header">
+          <div className="profile-pic-wrapper">
+            <div className="profile-pic">
+              <span className="profile-initial">
+                {user.username?.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <p className="profile-username">{user.username}</p>
           </div>
-          <div>
-            <p className="profile-stat-number">#</p>
+
+          <div className="profile-stats-inline">
+            <div className="profile-stat-block">
+              <p className="profile-stat-number">{user.caps_balance}</p>
+              <p className="profile-stat">caps</p>
+          </div>
+          <div className="profile-stat-block">
+            <p className="profile-stat-number">{user.bets_won ?? 0}</p>
             <p className="profile-stat">bets won</p>
           </div>
-          <div>
-            <p className="profile-stat-number">#</p>
+          <div className="profile-stat-block">
+            <p className="profile-stat-number">{user.bets_played ?? 0}</p>
             <p className="profile-stat">bets played</p>
           </div>
         </div>
+      </div>
 
-        {/* Story Buttons */}
+
+        {/* Story Buttons
         <div className="story-buttons">
           <div className="story-button">?</div>
           <div className="story-button">?</div>
           <div className="story-button">?</div>
-        </div>
+        </div> */}
 
         {/* Recent Bets */}
         <div className="recent-bets-section">
           <h2 className="recent-bets-title">Recent Bets</h2>
-          <div className="bet-card">
-            <div className="bet-top">
-              <span className="poster-time">SS</span>
-              <span>1h</span>
-              <button className="dismiss-button">×</button>
+          {user.recent_bets?.map((bet, index) => (
+            <div className="bet-card" key={index}>
+              <div className="bet-top">
+                <span className="poster-time">{bet.poster}</span>
+                <span>{bet.timePosted}</span>
+                <button className="dismiss-button">×</button>
+              </div>
+              <div className="subject">{bet.subject}</div>
+              <div className="bet-bottom">
+                <span>{bet.player}</span>
+                <span>{bet.line}</span>
+              </div>
+              <button className="accept-button">{bet.gameType}</button>
             </div>
-            <div className="subject">Caps Made Over</div>
-            <div className="bet-bottom">
-              <span>SS</span>
-              <span>15.5</span>
-            </div>
-            <button className="accept-button">Shots made</button>
-          </div>
+          ))}
         </div>
       </div>
 

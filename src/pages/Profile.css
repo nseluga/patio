@@ -11,7 +11,7 @@
 .profile-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 32px;
   margin-bottom: 1rem;
 }
 
@@ -25,7 +25,21 @@
   cursor: pointer;
 }
 
-/* Profile picture circle */
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 16px;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.profile-pic-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .profile-pic {
   width: 96px;
   height: 96px;
@@ -35,7 +49,18 @@
   align-items: center;
   justify-content: center;
   background-color: white;
-  margin: 16px;
+}
+
+.profile-initial {
+  font-size: 2rem;
+  font-weight: bold;
+  color: black;
+}
+
+.profile-username {
+  font-weight: 600;
+  font-size: 1.2rem;
+  margin-top: 8px;
 }
 
 /* Stats section under profile (e.g. wins, caps) */
@@ -48,6 +73,15 @@
 
 .profile-stat {
   font-size: 0.85rem;
+}
+
+.profile-stats-inline {
+  display: flex;
+  gap: 24px;
+}
+
+.profile-stat-block {
+  text-align: center;
 }
 
 .profile-stat-number {

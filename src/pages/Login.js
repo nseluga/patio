@@ -5,6 +5,7 @@ import api from "../api"; // Axios instance
 import styles from "./Login.module.css"; // Styling
 import UserContext from "../UserContext"; // Global context
 
+
 // Login page component
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -21,7 +22,7 @@ export default function Login() {
         .get("/me")
         .then((res) => {
           setUser(res.data); // Set global user
-          navigate("/loggedin"); // Redirect
+          navigate("/profile"); // Redirect
         })
         .catch(() => {
           localStorage.removeItem("token"); // Remove invalid token
@@ -31,17 +32,22 @@ export default function Login() {
 
   // Handle login
   const handleLogin = async () => {
-    try {
-      const res = await api.post("/login", { email, password });
+  try {
+    const res = await api.post('/login', { email, password });
 
-      localStorage.setItem("token", res.data.token); // Save token
-      setUser(res.data.user); // Set global user info
-      navigate("/loggedin"); // Go to logged in page
-    } catch (err) {
-      console.error("Login failed:", err);
-      setError("Invalid email or password");
-    }
-  };
+    // ✅ Store the token for future auth
+    localStorage.setItem('token', res.data.token);
+
+    // ✅ Set user globally for Profile page
+    setUser(res.data.user);
+
+    // ✅ Redirect to /profile
+    navigate('/profile');
+  } catch (err) {
+    setError('Invalid email or password');
+  }
+};
+
 
   return (
     <div className={styles.container}>
