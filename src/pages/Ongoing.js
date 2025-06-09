@@ -278,6 +278,7 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
                 <span className="poster-time">{bet.poster} · 1m ago</span>
               </div>
               <div className="subject">{bet.matchup}</div>
+              <div className="game-played">Game: {bet.gamePlayed}</div>
               <div className="bet-bottom">
                 <div className="amount">{bet.amount}</div>
                 <div className="line">

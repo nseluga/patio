@@ -1,73 +1,82 @@
 // Create a standard bet object with the provided parameters
 export function createStandardBet({
+  id,
+  poster,
+  posterId,
+  accepterId = null,
+  timePosted,
+  matchup,
+  amount,
+  lineType,
+  lineNumber,
+  gameType,
+  gamePlayed,
+
+  // Score-specific
+  gameSize,
+  yourTeamA,
+  yourTeamB,
+  oppTeamA,
+  oppTeamB,
+  yourScoreA,
+  yourScoreB,
+  oppScoreA,
+  oppScoreB,
+
+  // Shots Made
+  yourPlayer,
+  yourShots,
+  oppPlayer,
+  oppShots,
+
+  // Other
+  yourOutcome,
+  oppOutcome
+}) {
+  const base = {
     id,
     poster,
     posterId,
     accepterId,
     timePosted,
     matchup,
-    amount,
+    amount: parseInt(amount),
     lineType,
-    lineNumber,
+    lineNumber: parseFloat(lineNumber),
     gameType,
     gamePlayed,
-    yourPlayerA,
-    yourPlayerB,
-    yourStatsA,
-    yourStatsB,
-    yourPlayer,
-    yourStats,
-    yourInfo,
-    oppPlayerA,
-    oppPlayerB,
-    oppStatsA,
-    oppStatsB,
-    oppPlayer,
-    oppStats,
-    oppInfo,
-  }) {
-    const base = {
-      id,
-      poster,
-      posterId,
-      accepterId,
-      time: timePosted,
-      matchup,
-      amount,
-      lineType,
-      lineNumber,
-      gameType,
-      gamePlayed,
+  };
+
+  if (gameType === "Score") {
+    return {
+      ...base,
+      gameSize,
+      yourTeamA,
+      yourTeamB,
+      oppTeamA,
+      oppTeamB,
+      yourScoreA,
+      yourScoreB,
+      oppScoreA,
+      oppScoreB,
     };
-  
-    if (gameType === "Score") {
-      return {
-        ...base,
-        yourPlayerA,
-        yourPlayerB,
-        yourStatsA,
-        yourStatsB,
-        oppPlayerA,
-        oppPlayerB,
-        oppStatsA,
-        oppStatsB,
-      };
-    } else if (gameType === "Shots Made") {
-      return {
-        ...base,
-        yourPlayer,
-        yourStats,
-        oppPlayer,
-        oppStats,
-      };
-    } else if (gameType === "Other") {
-      return {
-        ...base,
-        yourInfo,
-        oppInfo,
-      };
-    }
-  
-    return base;
+  } else if (gameType === "Shots Made") {
+    return {
+      ...base,
+      yourPlayer,
+      yourShots,
+      oppPlayer,
+      oppShots,
+    };
+  } else if (gameType === "Other") {
+    return {
+      ...base,
+      yourPlayer,
+      yourOutcome,
+      oppPlayer,
+      oppOutcome,
+    };
   }
-  
+
+  return base;
+}
