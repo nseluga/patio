@@ -25,6 +25,7 @@ export default function Register() {
   const handleRegister = async () => {
     console.log("🔁 Submitting register form...", { username, email, password });
     try {
+      console.log("👉 Axios is using URL:", api.defaults.baseURL);
       await api.post('/register', { username, email, password }); // Send data to backend
       navigate('/login'); // ✅ Go to login (not profile)
     } catch (err) {
@@ -32,7 +33,7 @@ export default function Register() {
       setError("Registration failed. Try again."); // Show error message
     }
   };
-
+ 
   // Render registration form
   return (
     <div className={styles.container}>

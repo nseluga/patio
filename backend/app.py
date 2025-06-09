@@ -7,7 +7,13 @@ from config import SECRET_KEY
 
 # Initialize the Flask app and enable CORS
 app = Flask(__name__)
-CORS(app)
+CORS(
+    app,
+    resources={r"/*": {"origins": "http://localhost:3000"}},
+    supports_credentials=True,
+    methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"]
+)
 
 # Register authentication-related routes from a separate blueprint
 app.register_blueprint(auth)
@@ -57,7 +63,6 @@ def public_leaderboard():
     # Return the leaderboard as a JSON list
     return jsonify([{'name': row[0], 'caps': row[1]} for row in rows])
 
-# Simple root endpoint to test if the server is running
-@app.route('/')
-def hello():
-    return 'Flask is working!'
+if __name__ == "__main__":
+    # ensure we bind to 0.0.0.0:5000 so the browser can reach us
+    app.run(host="0.0.0.0", port=5001, debug=True)

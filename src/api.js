@@ -3,7 +3,8 @@ import axios from 'axios';
 
 // Create a reusable Axios instance with base URL
 const api = axios.create({
-  baseURL: 'http://localhost:5000', // Flask backend base URL
+  baseURL: 'http://localhost:5001',
+  withCredentials: true,
 });
 
 // Add an interceptor to include the auth token (if present)
