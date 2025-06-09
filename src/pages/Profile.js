@@ -16,14 +16,25 @@ export default function Profile() {
     }
   }, [user, navigate]);
 
+  const handleLogout = () => {
+    // Clear user data from localStorage or context
+    localStorage.removeItem("playerId");
+    localStorage.removeItem("token"); // if you're storing a JWT
+
+    // Redirect to login page (or landing page)
+    navigate("/login");
+  };
+
   if (!user) return null; // avoid rendering empty page before redirect
 
   return (
     <div className="profile-container">
       <div className="profile-inner">
-
         {/* Profile Header */}
         <div className="profile-header">
+          <button onClick={handleLogout} className="logout-button">
+            Log Out
+          </button>
           <div className="profile-pic-wrapper">
             <div className="profile-pic">
               <span className="profile-initial">
@@ -37,18 +48,17 @@ export default function Profile() {
             <div className="profile-stat-block">
               <p className="profile-stat-number">{user.caps_balance}</p>
               <p className="profile-stat">caps</p>
-          </div>
-          <div className="profile-stat-block">
-            <p className="profile-stat-number">{user.bets_won ?? 0}</p>
-            <p className="profile-stat">bets won</p>
-          </div>
-          <div className="profile-stat-block">
-            <p className="profile-stat-number">{user.bets_played ?? 0}</p>
-            <p className="profile-stat">bets played</p>
+            </div>
+            <div className="profile-stat-block">
+              <p className="profile-stat-number">{user.bets_won ?? 0}</p>
+              <p className="profile-stat">bets won</p>
+            </div>
+            <div className="profile-stat-block">
+              <p className="profile-stat-number">{user.bets_played ?? 0}</p>
+              <p className="profile-stat">bets played</p>
+            </div>
           </div>
         </div>
-      </div>
-
 
         {/* Story Buttons
         <div className="story-buttons">

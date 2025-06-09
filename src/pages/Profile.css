@@ -154,3 +154,19 @@
   width: fit-content;
   align-self: center;
 }
+
+.logout-button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background: #e63946;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.logout-button:hover {
+  background: #c53030;
+}
