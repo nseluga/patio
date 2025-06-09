@@ -1,6 +1,6 @@
 // Import dependencies and components
 import BottomNav from "../components/BottomNav";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createStandardBet } from "../utils/betCreation";
 import {
   useAutoSaveBets,
@@ -9,6 +9,7 @@ import {
 } from "../utils/acceptHandling";
 import { useContext } from "react";
 import UserContext from "../UserContext";
+import { formatTimeAgo } from "../utils/timeUtils";
 import "./PvP.css"; // Reuse PvP styles for layout and cards
 
 // Load bets from localStorage or use a default bet
@@ -16,18 +17,18 @@ const loadInitialCPUBets = () => {
   const saved = localStorage.getItem("cpuBets");
   if (saved) return JSON.parse(saved);
   return [
-    // Hardcoded test bet for CPU
     createStandardBet({
-      id: 3,
+      id: crypto.randomUUID(),
       poster: "CPU",
       posterId: "0",
-      timePosted: "just now",
+      timePosted: new Date().toISOString(),
       matchup: "Skib vs Eddy",
-      amount: "40 caps",
+      amount: 40,
       lineType: "Over",
       lineNumber: 12.5,
-      gameType: "Shots Made",
+      gameType: "Score",
       gamePlayed: "Caps",
+      gameSize: "2v2",
     }),
   ];
 };
@@ -35,21 +36,28 @@ const loadInitialCPUBets = () => {
 // CPU bets page component
 export default function CPU({ addOngoingBet }) {
   const [bets, setBets] = useState(loadInitialCPUBets);
-  const { user } = useContext(UserContext); // Store CPU bets
+  const { user } = useContext(UserContext);
+  // eslint-disable-next-line no-unused-vars
+  const [_, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(Date.now()); // just triggers a re-render
+    }, 1000); // every second
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Auto-save
   useAutoSaveBets(bets, "cpuBets");
 
-  // Functions
   const removeBet = (index) => removeBetByIndex(index, setBets);
-  const acceptBet = (index) => acceptBetWithOngoing(index, setBets, addOngoingBet, user?.playerId);
-
+  const acceptBet = (index) =>
+    acceptBetWithOngoing(index, setBets, addOngoingBet, user?.playerId);
 
   return (
     <>
-      {/* Page layout */}
       <div className="pvp-page">
-        {/* Header and reset button */}
         <div className="pvp-header">
           <h2 className="pvp-title">CPU Bets</h2>
           <button
@@ -60,7 +68,6 @@ export default function CPU({ addOngoingBet }) {
               window.location.reload();
             }}
             style={{
-              // Defined style directly here just because this is a temporary reset button
               position: "fixed",
               bottom: "80px",
               right: "20px",
@@ -76,12 +83,13 @@ export default function CPU({ addOngoingBet }) {
           </button>
         </div>
 
-        {/* Bet cards list */}
         <div className="bet-list">
           {bets.map((bet, index) => (
             <div className="bet-card" key={index}>
               <div className="bet-top">
-                <span className="poster-time">CPU · {bet.time}</span>
+                <span className="poster-time">
+                  CPU · {formatTimeAgo(bet.timePosted)}
+                </span>
                 <button
                   className="dismiss-button"
                   onClick={() => removeBet(index)}
@@ -92,7 +100,7 @@ export default function CPU({ addOngoingBet }) {
               <div className="subject">{bet.matchup}</div>
               <div className="game-played">Game: {bet.gamePlayed}</div>
               <div className="bet-bottom">
-                <div className="amount">{bet.amount}</div>
+                <div className="amount">{bet.amount} caps</div>
                 <div className="line">
                   {bet.lineType} {bet.lineNumber}
                 </div>
@@ -108,7 +116,6 @@ export default function CPU({ addOngoingBet }) {
         </div>
       </div>
 
-      {/* Bottom nav bar */}
       <BottomNav />
     </>
   );
