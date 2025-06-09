@@ -62,7 +62,3 @@ def public_leaderboard():
 
     # Return the leaderboard as a JSON list
     return jsonify([{'name': row[0], 'caps': row[1]} for row in rows])
-
-if __name__ == "__main__":
-    # ensure we bind to 0.0.0.0:5000 so the browser can reach us
-    app.run(host="0.0.0.0", port=5001, debug=True)
