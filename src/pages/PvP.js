@@ -31,6 +31,10 @@ const loadInitialBets = () => {
       gameType: "Score",
       gameSize: "1v1",
       gamePlayed: "Caps",
+      oppTeamA: "Player1",
+      oppTeamB: "Player2",
+      oppScoreA: "10",
+      oppStatsB: "7",
     }),
     createStandardBet({
       id: 2,

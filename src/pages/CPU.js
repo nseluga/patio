@@ -27,8 +27,8 @@ const loadInitialCPUBets = () => {
       lineType: "Over",
       lineNumber: 12.5,
       gameType: "Score",
+      gameSize: "1v1",
       gamePlayed: "Caps",
-      gameSize: "2v2",
     }),
   ];
 };

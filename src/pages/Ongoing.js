@@ -35,9 +35,10 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
   //   lineType: "Under",
   //   lineNumber: 10.5,
   //   gameType: "Score",
-  //   oppPlayerA: "Player1",
-  //   oppStatsA: "5",
-  //   oppPlayerB: "Player2",
+  //   gameSize: "1v1",
+  //   gamePlayed: "Caps",
+  //   yourTeamA: "",
+  //   oppTeamA: "Player1",
   //   oppStatsB: "7",
   // }),
   // createStandardBet({
@@ -432,7 +433,7 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
                 <input
                   type="number"
                   placeholder="Total Score for Team B"
-                  value={yourScoreA}
+                  value={yourScoreB}
                   onChange={(e) => setYourScoreB(Number(e.target.value))}
                   className="modal-input"
                 />
