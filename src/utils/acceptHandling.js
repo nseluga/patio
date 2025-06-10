@@ -16,12 +16,15 @@ export const removeBetByIndex = (indexToRemove, setBets) => {
 
 // Accept a bet: adds it to ongoingBets if not already there, then removes it
 export const acceptBetWithOngoing = (indexToAccept, setBets, addOngoingBet) => {
-    setBets((prevBets) => {
-      const acceptedBet = prevBets[indexToAccept];
-  
-      // Call passed-in addOngoingBet instead of writing to localStorage
-      addOngoingBet(acceptedBet);
-  
-      return prevBets.filter((_, index) => index !== indexToAccept);
-    });
-  };
+  let acceptedBet = null;
+
+  setBets((prevBets) => {
+    acceptedBet = prevBets[indexToAccept];
+    return prevBets.filter((_, index) => index !== indexToAccept);
+  });
+
+  // Delay to next tick so it doesn’t run during render
+  setTimeout(() => {
+    addOngoingBet(acceptedBet);
+  }, 0);
+};

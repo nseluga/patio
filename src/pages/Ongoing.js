@@ -105,19 +105,44 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
         // Handle Score bets
         if (bet.gameType === "Score") {
           // Save input to bet object
-          updated.yourTeamA = yourTeamA;
-          updated.yourTeamB = yourTeamB;
+          updated.yourTeamA = yourTeamA.map((p) => p.name);
+          updated.yourTeamB = yourTeamB.map((p) => p.name);
           updated.yourScoreA = Number(yourScoreA);
           updated.yourScoreB = Number(yourScoreB);
 
           // Match logic: check players and scores
           const match =
-            JSON.stringify(yourTeamA.map((p) => p.name)) ===
-              JSON.stringify((bet.oppTeamA || []).map((p) => p.name)) &&
-            JSON.stringify(yourTeamB.map((p) => p.name)) ===
-              JSON.stringify((bet.oppTeamB || []).map((p) => p.name)) &&
+            JSON.stringify(updated.yourTeamA) ===
+              JSON.stringify(bet.oppTeamA || []) &&
+            JSON.stringify(updated.yourTeamB) ===
+              JSON.stringify(bet.oppTeamB || []) &&
             updated.yourScoreA === bet.oppScoreA &&
             updated.yourScoreB === bet.oppScoreB;
+
+          console.log(
+            "yourTeamA:",
+            yourTeamA.map((p) => p.name)
+          );
+          console.log(
+            "oppTeamA:",
+            (bet.oppTeamA || []).map((p) => p.name)
+          );
+          console.log(
+            "yourTeamB:",
+            yourTeamB.map((p) => p.name)
+          );
+          console.log(
+            "oppTeamB:",
+            (bet.oppTeamB || []).map((p) => p.name)
+          );
+          console.log(
+            "Scores:",
+            updated.yourScoreA,
+            bet.oppScoreA,
+            updated.yourScoreB,
+            bet.oppScoreB
+          );
+          console.log("Match?", match);
 
           if (match) {
             setPopupMessage("✅ Match confirmed!");
@@ -180,6 +205,14 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
 
     // Reset all form fields and close modal
     setShowModal(false);
+    setActiveBetId(null);
+    setYourTeamA([]);
+    setYourTeamB([]);
+    setYourScoreA("");
+    setYourScoreB("");
+    setYourPlayer("");
+    setYourShots("");
+    setYourOutcome("");
   };
 
   // Get game type of active bet
@@ -204,12 +237,11 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
         bet.yourScoreB != null &&
         bet.oppScoreB != null
       ) {
+        // Check if teams and scores match
         const teamAMatch =
-          JSON.stringify(bet.yourTeamA.map((p) => p.name)) ===
-          JSON.stringify(bet.oppTeamA.map((p) => p.name));
+          JSON.stringify(bet.yourTeamA) === JSON.stringify(bet.oppTeamA);
         const teamBMatch =
-          JSON.stringify(bet.yourTeamB.map((p) => p.name)) ===
-          JSON.stringify(bet.oppTeamB.map((p) => p.name));
+          JSON.stringify(bet.yourTeamB) === JSON.stringify(bet.oppTeamB);
         const scoresMatch =
           bet.yourScoreA === bet.oppScoreA && bet.yourScoreB === bet.oppScoreB;
 
@@ -284,7 +316,9 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
           {bets.map((bet) => (
             <div className="bet-card" key={bet.id}>
               <div className="bet-top">
-                <span className="poster-time">{bet.poster} · {formatTimeAgo(bet.timePosted)}</span>
+                <span className="poster-time">
+                  {bet.poster} · {formatTimeAgo(bet.timePosted)}
+                </span>
               </div>
               <div className="subject">{bet.matchup}</div>
               <div className="game-played">Game: {bet.gamePlayed}</div>
@@ -418,7 +452,7 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
                     <div className="team-player-row">
                       <input
                         type="text"
-                        placeholder={`Player ${i + 1} Name`}
+                        placeholder={`Player ${i + 2} Name`}
                         value={player.name}
                         onChange={(e) => {
                           const newTeam = [...yourTeamB];
