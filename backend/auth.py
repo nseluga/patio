@@ -59,3 +59,109 @@ def login():
             'caps_balance': caps_balance
         }
     })
+
+@auth.route('/me', methods=['GET'])
+def get_current_user():
+    token = request.headers.get('Authorization')
+    if not token:
+        return jsonify({'error': 'Missing token'}), 401
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        user_id = payload['id']
+    except jwt.ExpiredSignatureError:
+        return jsonify({'error': 'Token expired'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'error': 'Invalid token'}), 401
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Get player info
+    cur.execute("SELECT username, email, caps_balance FROM players WHERE id = %s", (user_id,))
+    player = cur.fetchone()
+
+    if not player:
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'User not found'}), 404
+
+    # Get stats
+    cur.execute("SELECT COUNT(*) FROM bets WHERE winner_id = %s", (user_id,))
+    bets_won = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM bets WHERE poster_id = %s OR accepter_id = %s", (user_id, user_id))
+    bets_played = cur.fetchone()[0]
+
+    # Get recent bets
+    cur.execute("""
+        SELECT subject, player, line, game_type, posted_at
+        FROM bets
+        WHERE poster_id = %s OR accepter_id = %s
+        ORDER BY posted_at DESC LIMIT 5
+    """, (user_id, user_id))
+    recent_bets = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        'username': player[0],
+        'email': player[1],
+        'caps_balance': player[2],
+        'bets_won': bets_won,
+        'bets_played': bets_played,
+        'recent_bets': [
+            {
+                'subject': r[0],
+                'player': r[1],
+                'line': r[2],
+                'gameType': r[3],
+                'timePosted': r[4].isoformat()
+            } for r in recent_bets
+        ]
+    })
+
+from flask import Blueprint, request, jsonify
+from db import get_db
+import jwt
+from config import SECRET_KEY
+
+bets = Blueprint('bets', __name__)
+
+@bets.route('/bets', methods=['POST'])
+def create_bet():
+    # Extract token from Authorization header
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+
+    try:
+        # Decode JWT token to get the user ID
+        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        player_id = payload['id']
+    except:
+        # Return error if token is invalid
+        return jsonify({'error': 'Invalid token'}), 401
+
+    # Get bet data from the request body
+    data = request.json
+
+    # Connect to the database
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Insert the new bet into the database and return its ID
+    cur.execute('''
+        INSERT INTO bets (poster_id, game_type, subject, line)
+        VALUES (%s, %s, %s, %s)
+        RETURNING id
+    ''', (player_id, data['game_type'], data['subject'], data['line']))
+    bet_id = cur.fetchone()[0]
+
+    # Commit the transaction and close the connection
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    # Respond with success and the new bet ID
+    return jsonify({'message': 'Bet created', 'bet_id': bet_id})
+

@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import BottomNav from "../components/BottomNav";
 import { formatTimeAgo } from "../utils/timeUtils";
 import "./PvP.css"; // Reuse existing styles
+import api from "../api";
+
 
 function getNumPlayers(gameSize) {
   if (!gameSize) return 2; // fallback default
@@ -19,11 +21,19 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
   const [_, setNow] = useState(Date.now());
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setNow(Date.now()); // force re-render every 10s
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
+  const fetchBets = async () => {
+    try {
+      const res = await api.get("/bets"); // Replace with your actual endpoint if different
+      setBets(res.data); // Update state with fetched bets
+      console.log("✅ Loaded bets from backend:", res.data);
+    } catch (err) {
+      console.error("❌ Failed to fetch bets from DB:", err);
+    }
+  };
+
+  fetchBets();
+}, []);
+
 
   // Hardcoded test bets, left in case we ever need
   // createStandardBet({
@@ -509,16 +519,4 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
       <BottomNav />
     </>
   );
-}
-
-export function addToOngoingBets(bet) {
-  const saved = localStorage.getItem("ongoingBets");
-  const existing = saved ? JSON.parse(saved) : [];
-
-  // Prevent duplicates
-  const alreadyExists = existing.some((b) => b.id === bet.id);
-  if (!alreadyExists) {
-    const updated = [...existing, bet];
-    localStorage.setItem("ongoingBets", JSON.stringify(updated));
-  }
 }

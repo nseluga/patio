@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Create a reusable Axios instance with base URL
 const api = axios.create({
-  baseURL: 'http://localhost:5001',
+  baseURL: 'http://localhost:5000', // deployed backend URL eventually*******
   withCredentials: true,
 });
 
@@ -11,7 +11,7 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
-    config.headers.Authorization = token; // Add token to request headers
+    config.headers.Authorization = `Bearer ${token}`; // Standard format
   }
   return config;
 });

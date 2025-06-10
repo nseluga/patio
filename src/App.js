@@ -10,29 +10,37 @@ import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import UserContext from "./UserContext"; // import context
+import api from "./api"; // make sure api.js is set up correctly
 import "./App.css"; // Global styles
 
 // Main app component with route definitions
 function App() {
   const [user, setUser] = useState(null); // global player info
 
-  const [ongoingBets, setOngoingBets] = useState(() => {
-    const saved = localStorage.getItem("ongoingBets");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [ongoingBets, setOngoingBets] = useState([]);
 
-  // Add a bet to ongoing and sync to localStorage
-  const addOngoingBet = (newBet) => {
-    const local = localStorage.getItem("ongoingBets");
-    const current = local ? JSON.parse(local) : [];
-  
-    const alreadyExists = current.some((bet) => bet.id === newBet.id);
-    if (alreadyExists) return;
-  
-    const updated = [...current, newBet];
-    localStorage.setItem("ongoingBets", JSON.stringify(updated));
-    setOngoingBets(updated); // sync React state
-  };
+
+// Save a new bet to the database and update React state
+const addOngoingBet = async (newBet) => {
+  console.log("📤 Sending bet to backend:", newBet);
+  try {
+    // Send POST request to create the bet in the backend
+    const res = await api.post("/bets", {
+      game_type: newBet.gameType,
+      subject: newBet.subject,
+      line: newBet.line
+    });
+
+    // Log success response with new bet ID
+    console.log("✅ Bet saved to DB:", res.data);
+
+    // Update state with the new bet (including its DB ID)
+    setOngoingBets((prev) => [...prev, { ...newBet, id: res.data.bet_id }]);
+  } catch (err) {
+    // Log any error during bet creation
+    console.error("❌ Failed to save bet:", err);
+  }
+};
 
   return (
     <UserContext.Provider value={{ user, setUser }}>
