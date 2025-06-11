@@ -14,12 +14,35 @@ export const removeBetByIndex = (indexToRemove, setBets) => {
   );
 };
 
-// Accept a bet: adds it to ongoingBets if not already there, then removes it
-export const acceptBetWithOngoing = (indexToAccept, setBets, addOngoingBet) => {
+// Accept a CPU bet: do NOT remove from the list, just add to ongoing
+export const acceptBetForCPU = (indexToAccept, setBets, addOngoingBet, userPlayerId) => {
   let acceptedBet = null;
 
   setBets((prevBets) => {
-    acceptedBet = prevBets[indexToAccept];
+    const bet = prevBets[indexToAccept];
+    acceptedBet = { ...bet, accepterId: userPlayerId };
+
+    // Hide the bet from this user only
+    const updated = prevBets.map((b, i) =>
+      i === indexToAccept
+        ? { ...b, hiddenFrom: [...(b.hiddenFrom || []), userPlayerId] }
+        : b
+    );
+    return updated;
+  });
+
+  setTimeout(() => {
+    addOngoingBet(acceptedBet);
+  }, 0);
+};
+
+// Accept a bet: adds it to ongoingBets if not already there, then removes it
+export const acceptBetWithOngoing = (indexToAccept, setBets, addOngoingBet, userPlayerId) => {
+  let acceptedBet = null;
+
+  setBets((prevBets) => {
+    const bet = prevBets[indexToAccept];
+    acceptedBet = { ...bet, accepterId: userPlayerId }; // inject accepter ID
     return prevBets.filter((_, index) => index !== indexToAccept);
   });
 

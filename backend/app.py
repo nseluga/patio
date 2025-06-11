@@ -43,6 +43,7 @@ def me():
 
     # Return the user info as JSON
     return jsonify({
+        'playerId': player_id,
         'username': player[0],
         'email': player[1],
         'profile_pic_url': player[2],

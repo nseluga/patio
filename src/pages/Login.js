@@ -1,6 +1,6 @@
 // Import dependencies
 import { useState, useEffect, useContext } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Navigate, Link } from "react-router-dom";
 import api from "../api"; // Axios instance
 import styles from "./Login.module.css"; // Styling
 import UserContext from "../UserContext"; // Global context
@@ -11,24 +11,32 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { setUser } = useContext(UserContext); // Global user setter
+  const { user, setUser } = useContext(UserContext); // Global user setter
   const navigate = useNavigate();
 
   // If token exists, try to auto-login
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) {
+    if (token && !user) {
       api
         .get("/me")
         .then((res) => {
-          setUser(res.data); // Set global user
-          navigate("/profile"); // Redirect
+          setUser(res.data);
+          // Only navigate if still on login page
+          if (window.location.pathname === "/login") {
+            navigate("/pvp");
+          }
         })
         .catch(() => {
-          localStorage.removeItem("token"); // Remove invalid token
+          localStorage.removeItem("token");
         });
     }
-  }, [navigate, setUser]);
+  }, [navigate, user, setUser]);
+
+  // Redirect only if you're on login and already logged in
+  if (user && window.location.pathname === "/login") {
+    return <Navigate to="/pvp" />;
+  }
 
   // Handle login
   const handleLogin = async () => {
@@ -39,7 +47,10 @@ export default function Login() {
     localStorage.setItem('token', res.data.token);
 
     // ✅ Set user globally for Profile page
-    setUser(res.data.user);
+    setUser({
+      ...res.data.user,
+      playerId: res.data.user.id // 👈 explicitly add playerId
+    });
 
     // ✅ Redirect to /profile
     navigate('/profile');
@@ -51,9 +62,6 @@ export default function Login() {
 
   return (
     <div className={styles.container}>
-      <button onClick={() => navigate("/PvP")} className="temp-button">
-        Back to PvP
-      </button>
       <h2>Login</h2>
       {error && <p className={styles.error}>{error}</p>}
 

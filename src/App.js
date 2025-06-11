@@ -1,5 +1,5 @@
 // Import routing tools and page components
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import { useState } from "react";
 import Messages from "./pages/Messages";
 import Leaderboard from "./pages/Leaderboard";
@@ -21,47 +21,48 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Add a bet to ongoing and sync to localStorage
   const addOngoingBet = (newBet) => {
     const local = localStorage.getItem("ongoingBets");
     const current = local ? JSON.parse(local) : [];
-  
-    const alreadyExists = current.some((bet) => bet.id === newBet.id);
+
+    const alreadyExists = current.some((bet) => bet?.id === newBet?.id);
     if (alreadyExists) return;
-  
+
     const updated = [...current, newBet];
     localStorage.setItem("ongoingBets", JSON.stringify(updated));
-    setOngoingBets(updated); // sync React state
+    setOngoingBets(updated);
   };
 
   return (
     <UserContext.Provider value={{ user, setUser }}>
-      {" "}
-      {/* wrap entire app */}
       <Router>
         <Routes>
-          {/* Home route defaults to PvP */}
-          <Route path="/" element={<PvP addOngoingBet={addOngoingBet} />} />
-
-          {/* App page routes */}
-          <Route path="/pvp" element={<PvP addOngoingBet={addOngoingBet} />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route
-            path="/ongoing"
-            element={
-              <Ongoing
-                ongoingBets={ongoingBets}
-                setOngoingBets={setOngoingBets}
-              />
-            }
-          />
-          <Route path="/house" element={<CPU addOngoingBet={addOngoingBet} />} />
-          <Route path="/profile" element={<Profile />} />
+          {/* Redirect root to login or PvP based on auth */}
+          <Route path="/" element={<Navigate to={user ? "/pvp" : "/login"} />} />
 
           {/* Auth routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+
+          {/* Protected routes */}
+          {user && (
+            <>
+              <Route path="/pvp" element={<PvP addOngoingBet={addOngoingBet} />} />
+              <Route path="/messages" element={<Messages />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/ongoing" element={
+                <Ongoing
+                  ongoingBets={ongoingBets}
+                  setOngoingBets={setOngoingBets}
+                />
+              } />
+              <Route path="/house" element={<CPU addOngoingBet={addOngoingBet} />} />
+              <Route path="/profile" element={<Profile />} />
+            </>
+          )}
+
+          {/* Fallback to login if user tries protected route directly */}
+          <Route path="*" element={<Navigate to={user ? "/pvp" : "/login"} />} />
         </Routes>
       </Router>
     </UserContext.Provider>

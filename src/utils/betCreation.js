@@ -11,6 +11,7 @@ export function createStandardBet({
   lineNumber,
   gameType,
   gamePlayed,
+  hiddenFrom = [],
 
   // Score-specific
   gameSize,
@@ -45,6 +46,7 @@ export function createStandardBet({
     lineNumber: parseFloat(lineNumber),
     gameType,
     gamePlayed,
+    hiddenFrom,
   };
 
   if (gameType === "Score") {

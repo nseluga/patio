@@ -92,6 +92,12 @@ export default function PvP({ addOngoingBet }) {
     return () => clearInterval(interval);
   }, []);
 
+  const visibleBets = bets.filter(
+    (bet) =>
+      bet.posterId !== user.playerId && // don't show your own bets
+      !bet.accepterId // only show unaccepted bets
+  );
+
   // Save bets to localStorage whenever they change
 
   // Auto-save
@@ -156,7 +162,7 @@ export default function PvP({ addOngoingBet }) {
 
         {/* Display all current bets */}
         <div className="bet-list">
-          {bets.map((bet, index) => (
+          {visibleBets.map((bet, index) => (
             <div className="bet-card" key={index}>
               <div className="bet-top">
                 <span className="poster-time">
