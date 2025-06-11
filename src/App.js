@@ -1,6 +1,6 @@
 // Import routing tools and page components
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Messages from "./pages/Messages";
 import Leaderboard from "./pages/Leaderboard";
 import PvP from "./pages/PvP";
@@ -15,6 +15,18 @@ import "./App.css"; // Global styles
 // Main app component with route definitions
 function App() {
   const [user, setUser] = useState(null); // global player info
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const savedId = localStorage.getItem("playerId");
+      const savedUsername = localStorage.getItem("username");
+      if (!user && savedId) {
+        setUser({ playerId: savedId, username: savedUsername || "Unknown" });
+      }
+    }, 500);
+  
+    return () => clearInterval(interval);
+  }, [user]);
 
   const [ongoingBets, setOngoingBets] = useState(() => {
     const saved = localStorage.getItem("ongoingBets");

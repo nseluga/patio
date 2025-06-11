@@ -83,6 +83,7 @@ export default function PvP({ addOngoingBet }) {
   const [gameSize, setGameSize] = useState("2v2");
   // eslint-disable-next-line no-unused-vars
   const [_, setNow] = useState(Date.now());
+  const [popupMessage, setPopupMessage] = useState("");
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -91,6 +92,10 @@ export default function PvP({ addOngoingBet }) {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    console.log("PvP.js – Current User ID on mount:", user?.playerId);
+  }, [user?.playerId]);
 
   const visibleBets = bets.filter(
     (bet) =>
@@ -136,6 +141,10 @@ export default function PvP({ addOngoingBet }) {
 
     // Add new bet to top of list
     setBets((prev) => [newBet, ...prev]);
+
+    setPopupMessage("✅ Bet posted!");
+    setTimeout(() => setPopupMessage(""), 3000);
+
     // Reset form and close modal
     setShowModal(false);
     setMatchup("");
@@ -304,6 +313,8 @@ export default function PvP({ addOngoingBet }) {
           </div>
         )}
       </div>
+
+      {popupMessage && <div className="popup-banner">{popupMessage}</div>}
 
       {/* Fixed bottom navigation bar */}
       <BottomNav />

@@ -45,6 +45,8 @@ export default function Login() {
 
     // ✅ Store the token for future auth
     localStorage.setItem('token', res.data.token);
+    localStorage.setItem("playerId", res.data.user.id); 
+    localStorage.setItem("username", res.data.user.username);
 
     // ✅ Set user globally for Profile page
     setUser({
@@ -53,7 +55,7 @@ export default function Login() {
     });
 
     // ✅ Redirect to /profile
-    navigate('/profile');
+    window.location.href = "/pvp";
   } catch (err) {
     setError('Invalid email or password');
   }
