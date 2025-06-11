@@ -11,6 +11,7 @@ import { formatTimeAgo } from "../utils/timeUtils";
 import { useContext } from "react";
 import UserContext from "../UserContext";
 import flic from '../assets/images/flic.png';
+import buttonpng from '../assets/images/button.png';
 import "./PvP.css"; // Shared styles
 
 // Load initial bets from localStorage or use fallback demo data
@@ -149,12 +150,13 @@ export default function PvP({ addOngoingBet }) {
       >
         {/* Header with title and + button */}
         <div className="pvp-header">
-          <h2 className="pvp-title">PvP Bets</h2>
+          <h2 className="pvp-title">PvP BETS</h2>
           <button
             className="create-bet-button"
             onClick={() => setShowModal(true)}
+            style={{ backgroundImage: `url(${buttonpng})` }}
           >
-            ＋
+
           </button>
         </div>
 

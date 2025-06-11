@@ -33,7 +33,7 @@
   margin: 10px auto;
   margin-bottom: 20px;
   padding: 1px 5px;
-  background: linear-gradient(to bottom, rgb(237, 154, 0), rgb(255, 218, 11));
+  background: linear-gradient(to bottom, #eb9800, #e9d14a);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   border: 10px double rgb(255, 255, 255);
   width: 35%;
