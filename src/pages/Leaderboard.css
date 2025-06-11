@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Alatsi:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anybody:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lobster:wght@400&display=swap');
+
+/* Leaderboard Page */
+.leaderboard-page {
+  min-height: 100vh;
+  background: linear-gradient(to bottom, rgb(233, 39, 14), rgb(55, 1, 1));
+  padding: 10px 20px 80px 20px !important;
+  padding-bottom: 80px; /* space for BottomNav */
+  box-sizing: border-box;
+}
+
+/* Trophy stickers */
+.leaderboard-page::before {
+  content: '🏆';
+  position: absolute;
+  font-size: 80px;
+  top: 50px;
+  left: 340px;
+}
+.leaderboard-page::after {
+  content: '🏆';
+  position: absolute;
+  font-size: 80px;
+  top: 50px;
+  right: 340px;
+}
+
+/* Leaderboard Title Wrapper */
+.leaderboard-title-wrapper {
+  text-align: center;
+  margin: 10px auto;
+  margin-bottom: 20px;
+  padding: 1px 5px;
+  background: linear-gradient(to bottom, rgb(237, 154, 0), rgb(255, 218, 11));
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 10px double rgb(255, 255, 255);
+  width: 35%;
+  border-radius: 12px;
+}
+
+/* Leaderboard Title Text */
+.leaderboard-title-wrapper h2 {
+  font-size: 50px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.2);
+  font-family: "Lobster";
+  letter-spacing: 2px;
+}
+
+/* Leaderboard entries */
+.leaderboard-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(to bottom, rgb(255, 255, 255), rgb(179, 178, 178));
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 70%;
+  margin: 10px auto !important;
+}
+
+/* 1st Place Symbol */
+.leaderboard-entry:first-child span:nth-child(1) {
+  font-size: 40px !important;
+}
+/* Player Name */
+.leaderboard-entry span:nth-child(2) {
+  font-size: 23px;
+  font-weight: bold;
+  font-family: "Anybody";
+}
+/* Player Caps */
+.leaderboard-entry span:nth-child(3) {
+  font-size: 15px;
+  font-family: "Anybody";
+}
+/* 2nd and 3rd Symbol */
+.top-rank-symbol {
+  font-size: 40px !important;
+  font-weight: bold;
+}
+/* 4th and Beyond Symbol */
+.below-top3-symbol {
+  font-size: 25px !important;
+  font-weight: bold !important;
+  color: rgb(0, 0, 0);
+  font-family: "Anybody";
+  margin: 15px auto;
+}
