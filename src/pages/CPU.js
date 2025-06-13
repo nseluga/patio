@@ -5,7 +5,7 @@ import { createStandardBet } from "../utils/betCreation";
 import {
   useAutoSaveBets,
   removeBetByIndex,
-  acceptBetWithOngoing,
+  acceptBetForCPU,
 } from "../utils/acceptHandling";
 import { useContext } from "react";
 import UserContext from "../UserContext";
@@ -48,13 +48,17 @@ export default function CPU({ addOngoingBet }) {
     return () => clearInterval(interval);
   }, []);
 
+  const visibleBets = bets.filter(
+    (bet) => !(bet.hiddenFrom || []).includes(user?.playerId)
+  );
+
   // Auto-save
   useAutoSaveBets(bets, "cpuBets");
 
   const removeBet = (index) => removeBetByIndex(index, setBets);
   const acceptBet = (index) =>
-    acceptBetWithOngoing(index, setBets, addOngoingBet, user?.playerId);
-
+    acceptBetForCPU(index, setBets, addOngoingBet, user?.playerId);
+  
   return (
     <>
       <div className="pvp-page">
@@ -84,7 +88,7 @@ export default function CPU({ addOngoingBet }) {
         </div>
 
         <div className="bet-list">
-          {bets.map((bet, index) => (
+          {visibleBets.map((bet, index) => (
             <div className="bet-card" key={index}>
               <div className="bet-top">
                 <span className="poster-time">

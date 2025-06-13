@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import "./Profile.css";
 
 export default function Profile() {
-  const { user } = useContext(UserContext);
+  const { user, setUser } = useContext(UserContext);
 
   // Optional: redirect if no user
   const navigate = useNavigate();
@@ -20,6 +20,8 @@ export default function Profile() {
     // Clear user data from localStorage or context
     localStorage.removeItem("playerId");
     localStorage.removeItem("token"); // if you're storing a JWT
+
+    setUser(null);
 
     // Redirect to login page (or landing page)
     navigate("/login");

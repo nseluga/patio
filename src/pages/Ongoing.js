@@ -1,5 +1,6 @@
 // Import dependencies
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import UserContext from "../UserContext";
 // import { createStandardBet } from "../utils/betCreation"; // Function for creating hardcoded bets
 import BottomNav from "../components/BottomNav";
 import { formatTimeAgo } from "../utils/timeUtils";
@@ -15,6 +16,7 @@ function getNumPlayers(gameSize) {
 
 // Main component for ongoing bets
 export default function Ongoing({ ongoingBets, setOngoingBets }) {
+  const { user } = useContext(UserContext);
   const bets = ongoingBets;
   const setBets = setOngoingBets;
   // eslint-disable-next-line no-unused-vars
@@ -34,6 +36,11 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
   fetchBets();
 }, []);
 
+
+  const visibleBets = bets.filter(
+    (bet) =>
+      bet.posterId === user?.playerId || bet.accepterId === user?.playerId
+  );
 
   // Hardcoded test bets, left in case we ever need
   // createStandardBet({
@@ -323,7 +330,7 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
           className="bet-list"
           style={{ paddingBottom: "100px", overflowY: "auto" }}
         >
-          {bets.map((bet) => (
+          {visibleBets.map((bet) => (
             <div className="bet-card" key={bet.id}>
               <div className="bet-top">
                 <span className="poster-time">
