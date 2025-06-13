@@ -46,18 +46,18 @@ export default function Profile() {
             <p className="profile-username">{user.username}</p>
           </div>
 
-          <div className="profile-stats-inline">
-            <div className="profile-stat-block">
-              <p className="profile-stat-number">{user.caps_balance}</p>
-              <p className="profile-stat">caps</p>
+          <div className="profile-stats-block">
+            <div className="profile-stat">
+            <div className="profile-stat-number">{user.caps_balance ?? 0}</div>
+              <div className="profile-stat-label">caps</div>
             </div>
-            <div className="profile-stat-block">
-              <p className="profile-stat-number">{user.bets_won ?? 0}</p>
-              <p className="profile-stat">bets won</p>
+            <div className="profile-stat">
+              <div className="profile-stat-number">{user.bets_won ?? 0}</div>
+              <div className="profile-stat-label">bets won</div>
             </div>
-            <div className="profile-stat-block">
-              <p className="profile-stat-number">{user.bets_played ?? 0}</p>
-              <p className="profile-stat">bets played</p>
+            <div className="profile-stat">
+              <div className="profile-stat-number">{user.bets_played ?? 0}</div>
+              <div className="profile-stat-label">bets played</div>
             </div>
           </div>
         </div>
