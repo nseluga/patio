@@ -1,5 +1,10 @@
 // Import routing tools and page components
-import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  Navigate,
+} from "react-router-dom";
 import { useState, useEffect } from "react";
 import Messages from "./pages/Messages";
 import Leaderboard from "./pages/Leaderboard";
@@ -24,7 +29,7 @@ function App() {
         setUser({ playerId: savedId, username: savedUsername || "Unknown" });
       }
     }, 500);
-  
+
     return () => clearInterval(interval);
   }, [user]);
 
@@ -37,10 +42,16 @@ function App() {
     const local = localStorage.getItem("ongoingBets");
     const current = local ? JSON.parse(local) : [];
 
-    const alreadyExists = current.some((bet) => bet?.id === newBet?.id);
+    const currentUserId = user?.playerId;
+
+    // Don't add if the same bet is already accepted by this user
+    const alreadyExists = current.some(
+      (bet) => bet?.id === newBet?.id && bet?.accepterId === currentUserId
+    );
     if (alreadyExists) return;
 
-    const updated = [...current, newBet];
+    // Only allow this user’s accepted version into their list
+    const updated = [...current, { ...newBet, accepterId: currentUserId }];
     localStorage.setItem("ongoingBets", JSON.stringify(updated));
     setOngoingBets(updated);
   };
@@ -50,7 +61,10 @@ function App() {
       <Router>
         <Routes>
           {/* Redirect root to login or PvP based on auth */}
-          <Route path="/" element={<Navigate to={user ? "/pvp" : "/login"} />} />
+          <Route
+            path="/"
+            element={<Navigate to={user ? "/pvp" : "/login"} />}
+          />
 
           {/* Auth routes */}
           <Route path="/login" element={<Login />} />
@@ -59,22 +73,34 @@ function App() {
           {/* Protected routes */}
           {user && (
             <>
-              <Route path="/pvp" element={<PvP addOngoingBet={addOngoingBet} />} />
+              <Route
+                path="/pvp"
+                element={<PvP addOngoingBet={addOngoingBet} />}
+              />
               <Route path="/messages" element={<Messages />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/ongoing" element={
-                <Ongoing
-                  ongoingBets={ongoingBets}
-                  setOngoingBets={setOngoingBets}
-                />
-              } />
-              <Route path="/house" element={<CPU addOngoingBet={addOngoingBet} />} />
+              <Route
+                path="/ongoing"
+                element={
+                  <Ongoing
+                    ongoingBets={ongoingBets}
+                    setOngoingBets={setOngoingBets}
+                  />
+                }
+              />
+              <Route
+                path="/house"
+                element={<CPU addOngoingBet={addOngoingBet} />}
+              />
               <Route path="/profile" element={<Profile />} />
             </>
           )}
 
           {/* Fallback to login if user tries protected route directly */}
-          <Route path="*" element={<Navigate to={user ? "/pvp" : "/login"} />} />
+          <Route
+            path="*"
+            element={<Navigate to={user ? "/pvp" : "/login"} />}
+          />
         </Routes>
       </Router>
     </UserContext.Provider>
