@@ -89,6 +89,27 @@
   font-weight: bold;
 }
 
+.profile-stats-block {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.profile-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.profile-stat-label {
+  font-size: 0.85rem;
+  color: #444;
+}
+
+
 /* Stories section (e.g. highlights or icons) */
 .story-section {
   margin: 12px 0;

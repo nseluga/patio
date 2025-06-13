@@ -56,10 +56,10 @@ def public_leaderboard():
     # Connect to the database and fetch leaderboard data
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT name, caps FROM players ORDER BY caps DESC")
+    cur.execute("SELECT username, caps_balance FROM players ORDER BY caps_balance DESC LIMIT 5")
     rows = cur.fetchall()
     cur.close()
     conn.close()
 
     # Return the leaderboard as a JSON list
-    return jsonify([{'name': row[0], 'caps': row[1]} for row in rows])
+    return jsonify([{'username': row[0], 'caps_balance': row[1]} for row in rows])
