@@ -51,7 +51,8 @@ export default function Login() {
     // ✅ Set user globally for Profile page
     setUser({
       ...res.data.user,
-      playerId: res.data.user.id // 👈 explicitly add playerId
+      playerId: res.data.user.id, // 👈 explicitly add playerId
+      token: res.data.token,
     });
 
     // ✅ Redirect to /profile

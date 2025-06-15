@@ -1,19 +1,16 @@
-// Import dependencies
+/// Import dependencies
 import BottomNav from "../components/BottomNav";
-import { createStandardBet } from "../utils/betCreation"; // Utility function for creating bets
-import { useState, useEffect } from "react";
+import { createStandardBet } from "../utils/betCreation";
+import { useState, useEffect, useContext } from "react";
 import { removeBetByIndex } from "../utils/acceptHandling";
 import { formatTimeAgo } from "../utils/timeUtils";
-import { useContext } from "react";
 import UserContext from "../UserContext";
 import flic from '../assets/images/flic.png';
 import buttonpng from '../assets/images/button.png';
-import { supabase } from "../utils/supabaseClient";
-import "./PvP.css"; // Shared styles
+import "./PvP.css";
 
 // PvP component
 export default function PvP({ addOngoingBet }) {
-  // UI and form state
   const [showModal, setShowModal] = useState(false);
   const [gameType, setGameType] = useState("Shots Made");
   const [lineType, setLineType] = useState("Over");
@@ -21,127 +18,119 @@ export default function PvP({ addOngoingBet }) {
   const [matchup, setMatchup] = useState("");
   const [amount, setAmount] = useState("");
   const [lineNumber, setLineNumber] = useState("");
-  const [gamePlayed, setGamePlayed] = useState("Caps"); // default game
-  const { user } = useContext(UserContext);
+  const [gamePlayed, setGamePlayed] = useState("Caps");
   const [gameSize, setGameSize] = useState("2v2");
-  // eslint-disable-next-line no-unused-vars
-  const [_, setNow] = useState(Date.now());
   const [popupMessage, setPopupMessage] = useState("");
+  const { user } = useContext(UserContext);
 
+  // Fetch PvP bets from Flask backend
   useEffect(() => {
-  const fetchBets = async () => {
     if (!user?.playerId) return;
 
-    const { data, error } = await supabase
-      .from("bets")
-      .select("*")
-      .is("accepterId", null)
-      .neq("posterId", user.playerId)
-      .order("timePosted", { ascending: false });
+    const fetchBets = async () => {
+      try {
+        const res = await fetch(`/pvp_bets?playerId=${user.playerId}`);
+        const data = await res.json();
+        setBets(data);
+      } catch (err) {
+        console.error("Error fetching PvP bets:", err);
+      }
+    };
 
-    if (error) {
-      console.error("❌ Error fetching bets:", error);
-    } else {
-      setBets(data);
+    fetchBets();
+  }, [user?.playerId]); // runs only when playerId is set
+
+
+  // Handle accepting a bet
+  const acceptBet = async (betId) => {
+    try {
+      const res = await fetch(`/accept_bet/${betId}`, {
+        method: "POST",
+        headers: {
+          Authorization: user?.token,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (res.ok) {
+        setBets((prev) => prev.filter((b) => b.id !== betId));
+        addOngoingBet(betId);
+      } else {
+        const err = await res.json();
+        console.error("❌ Error accepting bet:", err.message);
+      }
+    } catch (err) {
+      console.error("❌ Request failed:", err);
     }
   };
 
-  fetchBets();
-  }, [user?.playerId]);
-
-
-  // Functions
-  const removeBet = (index) => removeBetByIndex(index, setBets);
-  const acceptBet = async (betId) => {
-  const { error } = await supabase
-    .from("bets")
-    .update({ accepterId: user.playerId })
-    .eq("id", betId);
-
-  if (error) {
-    console.error("❌ Error accepting bet:", error);
-  } else {
-    setBets((prev) => prev.filter((b) => b.id !== betId));
-    addOngoingBet(betId); // You may want to fetch the full bet again here
-  }
-};
-
-
   const handlePost = async () => {
-  if (
-    !matchup.trim() ||
-    !amount.trim() ||
-    !lineType.trim() ||
-    !lineNumber.trim()
-  ) {
-    alert("Please fill out all fields before posting.");
-    return;
-  }
+    if (!matchup.trim() || !amount.trim() || !lineType.trim() || !lineNumber.trim()) {
+      alert("Please fill out all fields before posting.");
+      return;
+    }
 
-  const newBet = createStandardBet({
-    id: crypto.randomUUID(),
-    poster: user?.username,
-    posterId: user?.playerId,
-    timePosted: new Date().toISOString(),
-    matchup,
-    amount: parseInt(amount),
-    lineType,
-    lineNumber: parseFloat(lineNumber),
-    gameType,
-    gamePlayed,
-    gameSize: gameType === "Score" ? gameSize : null,
-  });
+    const newBet = {
+      poster: user?.username,
+      posterId: user?.playerId,
+      matchup,
+      amount: parseInt(amount),
+      lineType,
+      lineNumber: parseFloat(lineNumber),
+      gameType,
+      gamePlayed,
+      gameSize: gameType === "Score" ? gameSize : null,
+    };
 
-  const { error } = await supabase.from("bets").insert([newBet]);
+    try {
+      const response = await fetch("http://localhost:5000/create_bet", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": user?.token, // ✅ include JWT here
+        },
+        body: JSON.stringify(newBet),
+      });
 
-  if (error) {
-    console.error("❌ Error inserting bet:", error);
-    return;
-  }
+      if (!response.ok) {
+        const error = await response.json();
+        console.error("❌ Error posting bet:", error);
+        alert(error.error || "Failed to post bet.");
+        return;
+      }
 
-  setPopupMessage("✅ Bet posted!");
-  setTimeout(() => setPopupMessage(""), 3000);
+      setPopupMessage("✅ Bet posted!");
+      setTimeout(() => setPopupMessage(""), 3000);
 
-  // Close modal and reset form
-  setShowModal(false);
-  setMatchup("");
-  setAmount("");
-  setLineNumber("");
-  setLineType("Over");
-  setGameType("Shots Made");
+      // Clear modal
+      setShowModal(false);
+      setMatchup("");
+      setAmount("");
+      setLineNumber("");
+      setLineType("Over");
+      setGameType("Shots Made");
+    } catch (err) {
+      console.error("❌ Network error:", err);
+    }
+  };
 
-  // Re-fetch visible bets
-  const { data } = await supabase
-    .from("bets")
-    .select("*")
-    .is("accepterId", null)
-    .neq("posterId", user.playerId)
-    .order("timePosted", { ascending: false });
 
-  setBets(data || []);
-};
-
+  const visibleBets = bets.filter(
+    (bet) => bet.posterId !== user?.playerId && !bet.accepterId
+  );
 
   return (
     <>
-      {/* Main PvP page layout */}
-      <div 
-        className="pvp-page"
-        style={{ backgroundImage: `url(${flic})` }}
-      >
-        {/* Header with title and + button */}
+      <div className="pvp-page" style={{ backgroundImage: `url(${flic})` }}>
         <div className="pvp-header">
           <h2 className="pvp-title">PvP BETS</h2>
           <button
             className="create-bet-button"
             onClick={() => setShowModal(true)}
             style={{ backgroundImage: `url(${buttonpng})` }}
-          >
-
-          </button>
+          ></button>
         </div>
 
-        {/* Display all current bets */}
         <div className="bet-list">
           {visibleBets.map((bet, index) => (
             <div className="bet-card" key={index}>
@@ -149,12 +138,7 @@ export default function PvP({ addOngoingBet }) {
                 <span className="poster-time">
                   {bet.poster} · {formatTimeAgo(bet.timePosted)}
                 </span>
-                <button
-                  className="dismiss-button"
-                  onClick={() => removeBet(index)}
-                >
-                  ×
-                </button>
+                <button className="dismiss-button" onClick={() => removeBetByIndex(index, setBets)}>×</button>
               </div>
 
               <div className="subject">{bet.matchup}</div>
@@ -167,10 +151,7 @@ export default function PvP({ addOngoingBet }) {
                 </div>
               </div>
 
-              <button
-                className="accept-button"
-                onClick={() => acceptBet(bet.id)}
-              >
+              <button className="accept-button" onClick={() => acceptBet(bet.id)}>
                 Accept
               </button>
             </div>
@@ -183,7 +164,6 @@ export default function PvP({ addOngoingBet }) {
             <div className="bet-modal">
               <h3>Create a Bet</h3>
 
-              {/* Matchup input */}
               <input
                 type="text"
                 placeholder="Matchup"
@@ -192,7 +172,6 @@ export default function PvP({ addOngoingBet }) {
                 onChange={(e) => setMatchup(e.target.value)}
               />
 
-              {/* Amount input */}
               <input
                 type="number"
                 step="any"
@@ -202,7 +181,6 @@ export default function PvP({ addOngoingBet }) {
                 onChange={(e) => setAmount(e.target.value)}
               />
 
-              {/* Over/Under selection */}
               <div className="line-type-toggle">
                 <label>
                   <input
@@ -224,7 +202,6 @@ export default function PvP({ addOngoingBet }) {
                 </label>
               </div>
 
-              {/* Line value input */}
               <input
                 type="number"
                 step="any"
@@ -234,22 +211,13 @@ export default function PvP({ addOngoingBet }) {
                 onChange={(e) => setLineNumber(e.target.value)}
               />
 
-              {/* Game type dropdown */}
-              <select
-                value={gameType}
-                onChange={(e) => setGameType(e.target.value)}
-                className="modal-input"
-              >
+              <select value={gameType} onChange={(e) => setGameType(e.target.value)} className="modal-input">
                 <option value="Shots Made">Shots Made</option>
                 <option value="Score">Score</option>
                 <option value="Other">Other</option>
               </select>
 
-              <select
-                value={gamePlayed}
-                onChange={(e) => setGamePlayed(e.target.value)}
-                className="modal-input"
-              >
+              <select value={gamePlayed} onChange={(e) => setGamePlayed(e.target.value)} className="modal-input">
                 <option value="Caps">Caps</option>
                 <option value="Pong">Pong</option>
                 <option value="Beerball">Beerball</option>
@@ -269,12 +237,8 @@ export default function PvP({ addOngoingBet }) {
                 </select>
               )}
 
-              {/* Modal actions: Cancel / Post */}
               <div className="modal-actions">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="cancel-button"
-                >
+                <button onClick={() => setShowModal(false)} className="cancel-button">
                   Cancel
                 </button>
                 <button className="confirm-button" onClick={handlePost}>
@@ -287,8 +251,6 @@ export default function PvP({ addOngoingBet }) {
       </div>
 
       {popupMessage && <div className="popup-banner">{popupMessage}</div>}
-
-      {/* Fixed bottom navigation bar */}
       <BottomNav />
     </>
   );
