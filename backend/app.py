@@ -125,17 +125,39 @@ def get_pvp_bets():
 
     conn = get_db()
     cur = conn.cursor()
-    cur.execute('''
-        SELECT * FROM bets
-        WHERE status = 'posted' AND posterId != %s
-        ORDER BY timePosted DESC
-    ''', (player_id,))
-    rows = cur.fetchall()
-    colnames = [desc[0] for desc in cur.description]
-    bets = [dict(zip(colnames, row)) for row in rows]
-    cur.close()
-    conn.close()
-    return jsonify(bets)
+    try:
+        cur.execute('''
+            SELECT *
+            FROM bets
+            WHERE status = 'posted' AND posterid != %s
+            ORDER BY timePosted DESC
+        ''', (player_id,))
+        rows = cur.fetchall()
+        colnames = [desc[0] for desc in cur.description]
+
+        result = []
+        for row in rows:
+            bet = dict(zip(colnames, row))
+            result.append({
+                "id": bet["id"],
+                "poster": bet["poster"],
+                "posterId": bet["posterid"],
+                "timePosted": bet["timeposted"],
+                "matchup": bet["matchup"],
+                "amount": bet["amount"],
+                "lineType": bet["linetype"],
+                "lineNumber": bet["linenumber"],
+                "gameType": bet["gametype"],
+                "gamePlayed": bet["gameplayed"],
+                "gameSize": bet["gamesize"],
+                "status": bet["status"],
+            })
+
+        return jsonify(result)
+
+    finally:
+        cur.close()
+        conn.close()
 
 @app.route("/accept_bet/<bet_id>", methods=["POST"])
 def accept_bet(bet_id):
@@ -171,14 +193,32 @@ def get_ongoing_bets():
     cur = conn.cursor()
     try:
         cur.execute("""
-            SELECT *
-            FROM bets
+            SELECT * FROM bets
             WHERE status = 'accepted' AND (posterid = %s OR accepterid = %s)
         """, (player_id, player_id))
         rows = cur.fetchall()
-        # Build response dictionary depending on your schema
-        ongoing = [dict(zip([desc[0] for desc in cur.description], row)) for row in rows]
-        return jsonify(ongoing)
+        colnames = [desc[0] for desc in cur.description]
+
+        result = []
+        for row in rows:
+            bet = dict(zip(colnames, row))
+            result.append({
+                "id": bet["id"],
+                "poster": bet["poster"],
+                "posterId": bet["posterid"],
+                "accepterId": bet.get("accepterid"),
+                "timePosted": bet["timeposted"],
+                "matchup": bet["matchup"],
+                "amount": bet["amount"],
+                "lineType": bet["linetype"],
+                "lineNumber": bet["linenumber"],
+                "gameType": bet["gametype"],
+                "gamePlayed": bet["gameplayed"],
+                "gameSize": bet["gamesize"],
+                "status": bet["status"],
+            })
+
+        return jsonify(result)
     finally:
         cur.close()
         conn.close()

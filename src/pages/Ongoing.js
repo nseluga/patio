@@ -21,8 +21,6 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
   // eslint-disable-next-line no-unused-vars
   const [_, setNow] = useState(Date.now());
 
-  console.log("🔄 Ongoing.js rendered");
-
   useEffect(() => {
     let didCancel = false;
     const fetchBets = async () => {
