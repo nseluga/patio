@@ -7,7 +7,6 @@ import { formatTimeAgo } from "../utils/timeUtils";
 import "./PvP.css"; // Reuse existing styles
 import api from "../api";
 
-
 function getNumPlayers(gameSize) {
   if (!gameSize) return 2; // fallback default
   const [a] = gameSize.split("v").map(Number);
@@ -22,25 +21,43 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
   // eslint-disable-next-line no-unused-vars
   const [_, setNow] = useState(Date.now());
 
+  console.log("🔄 Ongoing.js rendered");
+
   useEffect(() => {
-  const fetchBets = async () => {
-    try {
-      const res = await api.get("/bets"); // Replace with your actual endpoint if different
-      setBets(res.data); // Update state with fetched bets
-      console.log("✅ Loaded bets from backend:", res.data);
-    } catch (err) {
-      console.error("❌ Failed to fetch bets from DB:", err);
+    let didCancel = false;
+    const fetchBets = async () => {
+      try {
+        const res = await api.get("/ongoing_bets", {
+          headers: { Authorization: `Bearer ${user?.token}` },
+        });
+        if (!didCancel) {
+          setBets(res.data);
+          console.log("✅ Loaded bets from backend:", res.data);
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch bets from DB:", err);
+      }
+    };
+
+    if (user?.token) {
+      fetchBets();
+    } else {
+      console.warn("⚠️ No user token found, skipping fetch");
     }
-  };
 
-  fetchBets();
-}, []);
+    return () => {
+      didCancel = true;
+    };
+  }, [user?.token, setBets]);
 
-
-  const visibleBets = bets.filter(
-    (bet) =>
-      bet.posterId === user?.playerId || bet.accepterId === user?.playerId
-  );
+  const uniqueVisibleBets = [
+    ...new Map(
+      bets
+        .filter((b) => b && b.id) // remove undefined or missing ids
+        .map((bet) => [bet.id, bet])
+    ).values(),
+  ];
+  uniqueVisibleBets.forEach((b) => console.log("✅ Bet key:", b.id));
 
   // Hardcoded test bets, left in case we ever need
   // createStandardBet({
@@ -330,43 +347,49 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
           className="bet-list"
           style={{ paddingBottom: "100px", overflowY: "auto" }}
         >
-          {visibleBets.map((bet) => (
-            <div className="bet-card" key={bet.id}>
-              <div className="bet-top">
-                <span className="poster-time">
-                  {bet.poster} · {formatTimeAgo(bet.timePosted)}
-                </span>
-              </div>
-              <div className="subject">{bet.matchup}</div>
-              <div className="game-played">Game: {bet.gamePlayed}</div>
-              <div className="bet-bottom">
-                <div className="amount">{bet.amount} caps </div>
-                <div className="line">
-                  {bet.lineType} {bet.lineNumber}
+          {uniqueVisibleBets
+            .filter((bet) => bet?.id)
+            .map((bet) => (
+              <div className="bet-card" key={bet.id}>
+                <div className="bet-top">
+                  <span className="poster-time">
+                    {bet.poster} · {formatTimeAgo(bet.timePosted)}
+                  </span>
                 </div>
+                <div className="subject">{bet.matchup}</div>
+                <div className="game-played">Game: {bet.gamePlayed}</div>
+                <div className="bet-bottom">
+                  <div className="amount">{bet.amount} caps </div>
+                  <div className="line">
+                    {bet.lineType} {bet.lineNumber}
+                  </div>
+                </div>
+                <div className="status-text">{getStatusMessage(bet)}</div>
+                <button
+                  className="accept-button"
+                  onClick={() => {
+                    setShowModal(true);
+                    setActiveBetId(bet.id);
+
+                    // Reset all state fields for score
+
+                    const numPlayers = getNumPlayers(bet.gameSize || "2v2");
+                    setYourTeamA(
+                      Array(numPlayers).fill({ name: "", score: "" })
+                    );
+                    setYourTeamB(
+                      Array(numPlayers).fill({ name: "", score: "" })
+                    );
+
+                    // Reset all state fields for shots made
+
+                    // Reset for other
+                  }}
+                >
+                  Enter Stats
+                </button>
               </div>
-              <div className="status-text">{getStatusMessage(bet)}</div>
-              <button
-                className="accept-button"
-                onClick={() => {
-                  setShowModal(true);
-                  setActiveBetId(bet.id);
-
-                  // Reset all state fields for score
-
-                  const numPlayers = getNumPlayers(bet.gameSize || "2v2");
-                  setYourTeamA(Array(numPlayers).fill({ name: "", score: "" }));
-                  setYourTeamB(Array(numPlayers).fill({ name: "", score: "" }));
-
-                  // Reset all state fields for shots made
-
-                  // Reset for other
-                }}
-              >
-                Enter Stats
-              </button>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
 
@@ -439,7 +462,7 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
               <>
                 <h4>Your Team A</h4>
                 {yourTeamA.map((player, i) => (
-                  <div key={`teamA-${i}`}>
+                  <div key={`teamA-${i}-${player.name || "empty"}`}>
                     <div className="team-player-row">
                       <input
                         type="text"
@@ -465,7 +488,7 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
 
                 <h4>Your Team B</h4>
                 {yourTeamB.map((player, i) => (
-                  <div key={`teamB-${i}`}>
+                  <div key={`teamB-${i}-${player.name || "empty"}`}>
                     <div className="team-player-row">
                       <input
                         type="text"

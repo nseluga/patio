@@ -28,13 +28,7 @@ function App() {
   useEffect(() => {
     const savedId = localStorage.getItem("playerId");
     const savedUsername = localStorage.getItem("username");
-    const savedToken = localStorage.getItem("token");
-
-    console.log("🔍 LocalStorage values on load:");
-    console.log("playerId (raw):", savedId);
-    console.log("playerId (parsed):", parseInt(savedId));
-    console.log("username:", savedUsername);
-    console.log("token:", savedToken);
+    const savedToken = localStorage.getItem("token")
   
     if (savedId && savedUsername && savedToken) {
       const parsedId = parseInt(savedId);

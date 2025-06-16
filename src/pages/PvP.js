@@ -27,8 +27,6 @@ export default function PvP({ addOngoingBet }) {
   // Fetch PvP bets from Flask backend
   useEffect(() => {
     if (!user?.playerId) return;
-    console.log("User context:", user);
-    console.log("Fetching PvP bets for playerId:", user.playerId);
 
     const fetchBets = async () => {
       try {

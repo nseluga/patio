@@ -127,7 +127,7 @@ def get_pvp_bets():
     cur = conn.cursor()
     cur.execute('''
         SELECT * FROM bets
-        WHERE accepterId IS NULL AND posterId != %s
+        WHERE status = 'posted' AND posterId != %s
         ORDER BY timePosted DESC
     ''', (player_id,))
     rows = cur.fetchall()
@@ -157,6 +157,28 @@ def accept_bet(bet_id):
     except Exception as e:
         conn.rollback()
         return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+@app.route("/ongoing_bets", methods=["GET"])
+def get_ongoing_bets():
+    player_id = get_player_id()
+    if not player_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT *
+            FROM bets
+            WHERE status = 'accepted' AND (posterid = %s OR accepterid = %s)
+        """, (player_id, player_id))
+        rows = cur.fetchall()
+        # Build response dictionary depending on your schema
+        ongoing = [dict(zip([desc[0] for desc in cur.description], row)) for row in rows]
+        return jsonify(ongoing)
     finally:
         cur.close()
         conn.close()
