@@ -15,7 +15,6 @@ import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import UserContext from "./UserContext"; // import context
-import api from "./api"; // make sure api.js is set up correctly
 import "./App.css"; // Global styles
 
 function App() {
@@ -29,9 +28,14 @@ function App() {
   useEffect(() => {
     const savedId = localStorage.getItem("playerId");
     const savedUsername = localStorage.getItem("username");
-
-    if (savedId && savedUsername) {
-      setUser({ playerId: savedId, username: savedUsername });
+    const savedToken = localStorage.getItem("token");
+  
+    if (savedId && savedUsername && savedToken) {
+      setUser({
+        playerId: savedId,
+        username: savedUsername,
+        token: savedToken,
+      });
     }
   }, []);
 

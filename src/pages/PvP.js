@@ -1,6 +1,5 @@
 /// Import dependencies
 import BottomNav from "../components/BottomNav";
-import { createStandardBet } from "../utils/betCreation";
 import { useState, useEffect, useContext } from "react";
 import { removeBetByIndex } from "../utils/acceptHandling";
 import { formatTimeAgo } from "../utils/timeUtils";
@@ -8,6 +7,8 @@ import UserContext from "../UserContext";
 import flic from '../assets/images/flic.png';
 import buttonpng from '../assets/images/button.png';
 import "./PvP.css";
+import api from "../api";
+import { v4 as uuidv4 } from 'uuid';
 
 // PvP component
 export default function PvP({ addOngoingBet }) {
@@ -26,12 +27,14 @@ export default function PvP({ addOngoingBet }) {
   // Fetch PvP bets from Flask backend
   useEffect(() => {
     if (!user?.playerId) return;
+    console.log("Fetching PvP bets for playerId:", user.playerId);
 
     const fetchBets = async () => {
       try {
-        const res = await fetch(`/pvp_bets?playerId=${user.playerId}`);
-        const data = await res.json();
-        setBets(data);
+        const res = await api.get(`/pvp_bets`, {
+          params: { playerId: user.playerId }
+        });
+        setBets(res.data);
       } catch (err) {
         console.error("Error fetching PvP bets:", err);
       }
@@ -44,20 +47,17 @@ export default function PvP({ addOngoingBet }) {
   // Handle accepting a bet
   const acceptBet = async (betId) => {
     try {
-      const res = await fetch(`/accept_bet/${betId}`, {
-        method: "POST",
+      const res = await api.post(`/accept_bet/${betId}`, null, {
         headers: {
-          Authorization: user?.token,
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${user?.token}`,
         },
       });
-
-      if (res.ok) {
+  
+      if (res.status === 200) {
         setBets((prev) => prev.filter((b) => b.id !== betId));
         addOngoingBet(betId);
       } else {
-        const err = await res.json();
-        console.error("❌ Error accepting bet:", err.message);
+        console.error("❌ Error accepting bet:", res.data?.message || "Unknown error");
       }
     } catch (err) {
       console.error("❌ Request failed:", err);
@@ -71,8 +71,10 @@ export default function PvP({ addOngoingBet }) {
     }
 
     const newBet = {
+      id: uuidv4(), // Generate a unique ID for the bet
       poster: user?.username,
       posterId: user?.playerId,
+      timePosted: new Date().toISOString(),
       matchup,
       amount: parseInt(amount),
       lineType,
@@ -83,19 +85,15 @@ export default function PvP({ addOngoingBet }) {
     };
 
     try {
-      const response = await fetch("http://localhost:5000/create_bet", {
-        method: "POST",
+      const response = await api.post("/create_bet", newBet, {
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": user?.token, // ✅ include JWT here
+          Authorization: `Bearer ${user?.token}`,
         },
-        body: JSON.stringify(newBet),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        console.error("❌ Error posting bet:", error);
-        alert(error.error || "Failed to post bet.");
+      if (response.status !== 201) {
+        console.error("❌ Error posting bet:", response.data);
+        alert(response.data?.error || "Failed to post bet.");
         return;
       }
 

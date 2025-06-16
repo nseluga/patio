@@ -4,6 +4,7 @@ from auth import auth
 from db import get_db
 import jwt
 from config import SECRET_KEY
+from psycopg2.extras import Json
 
 # Initialize the Flask app and enable CORS
 app = Flask(__name__)
@@ -24,9 +25,13 @@ def get_player_id():
     if not token:
         return None
     try:
+        # Strip "Bearer " if present
+        if token.startswith("Bearer "):
+            token = token.split(" ")[1]
         decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         return decoded['id']
-    except:
+    except Exception as e:
+        print("❌ Token decode failed:", e)
         return None
 
 # ---------------- Existing Endpoints ---------------- #
@@ -45,7 +50,7 @@ def me():
     conn.close()
 
     return jsonify({
-        'playerId': player_id,
+        'id': player_id,
         'username': player[0],
         'email': player[1],
         'profile_pic_url': player[2],
@@ -82,10 +87,10 @@ def create_bet():
                 yourTeamA, yourTeamB, oppTeamA, oppTeamB,
                 yourScoreA, yourScoreB, oppScoreA, oppScoreB,
                 yourPlayer, yourShots, oppPlayer, oppShots,
-                yourOutcome, oppOutcome
+                yourOutcome, oppOutcome, status
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                       %s, %s, %s, %s, %s, %s, %s, %s,
-                      %s, %s, %s, %s, %s, %s)
+                      %s, %s, %s, %s, %s, %s, %s)
         ''', (
             bet.get('id'), bet.get('poster'), bet.get('posterId'), bet.get('timePosted'),
             bet.get('matchup'), bet.get('amount'), bet.get('lineType'), bet.get('lineNumber'),
@@ -96,7 +101,8 @@ def create_bet():
             bet.get('oppScoreA'), bet.get('oppScoreB'),
             bet.get('yourPlayer'), bet.get('yourShots'),
             bet.get('oppPlayer'), bet.get('oppShots'),
-            bet.get('yourOutcome'), bet.get('oppOutcome')
+            bet.get('yourOutcome'), bet.get('oppOutcome'),
+            bet.get('status', 'posted')
         ))
 
         conn.commit()
@@ -141,11 +147,32 @@ def accept_bet(bet_id):
     cur = conn.cursor()
 
     try:
-        cur.execute("UPDATE bets SET accepterId = %s WHERE id = %s", (player_id, bet_id))
+        cur.execute("""
+            UPDATE bets
+            SET accepterId = %s, status = 'accepted'
+            WHERE id = %s
+        """, (player_id, bet_id))
         conn.commit()
         return jsonify({"status": "accepted"}), 200
     except Exception as e:
         conn.rollback()
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+@app.route("/bets", methods=["GET"])
+def get_all_bets():
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT * FROM bets")
+        rows = cur.fetchall()
+        colnames = [desc[0] for desc in cur.description]
+        bets = [dict(zip(colnames, row)) for row in rows]
+        return jsonify(bets), 200
+    except Exception as e:
+        print("❌ Failed to fetch bets:", e)
         return jsonify({"error": str(e)}), 500
     finally:
         cur.close()
