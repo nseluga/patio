@@ -29,13 +29,24 @@ function App() {
     const savedId = localStorage.getItem("playerId");
     const savedUsername = localStorage.getItem("username");
     const savedToken = localStorage.getItem("token");
+
+    console.log("🔍 LocalStorage values on load:");
+    console.log("playerId (raw):", savedId);
+    console.log("playerId (parsed):", parseInt(savedId));
+    console.log("username:", savedUsername);
+    console.log("token:", savedToken);
   
     if (savedId && savedUsername && savedToken) {
-      setUser({
-        playerId: savedId,
-        username: savedUsername,
-        token: savedToken,
-      });
+      const parsedId = parseInt(savedId);
+      if (!isNaN(parsedId)) {
+        setUser({
+          playerId: parsedId,
+          username: savedUsername,
+          token: savedToken,
+        });
+      } else {
+        console.warn("⚠️ playerId could not be parsed:", savedId);
+      }
     }
   }, []);
 

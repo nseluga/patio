@@ -54,6 +54,7 @@ def login():
     return jsonify({
         'token': token,
         'user': {
+            'id': user_id,
             'username': username,
             'email': email,
             'caps_balance': caps_balance

@@ -45,7 +45,7 @@ export default function Login() {
 
     // ✅ Store the token for future auth
     localStorage.setItem('token', res.data.token);
-    localStorage.setItem("playerId", res.data.user.id); 
+    localStorage.setItem("playerId", res.data.user.id.toString()); 
     localStorage.setItem("username", res.data.user.username);
 
     // ✅ Set user globally for Profile page
