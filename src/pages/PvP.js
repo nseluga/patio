@@ -111,11 +111,6 @@ export default function PvP({ addOngoingBet }) {
     }
   };
 
-
-  const visibleBets = bets.filter(
-    (bet) => bet.posterId !== user?.playerId && !bet.accepterId
-  );
-
   return (
     <>
       <div className="pvp-page" style={{ backgroundImage: `url(${flic})` }}>
@@ -129,7 +124,7 @@ export default function PvP({ addOngoingBet }) {
         </div>
 
         <div className="bet-list">
-          {visibleBets.map((bet, index) => (
+          {bets.map((bet, index) => (
             <div className="bet-card" key={index}>
               <div className="bet-top">
                 <span className="poster-time">

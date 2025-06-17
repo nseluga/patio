@@ -1,63 +1,65 @@
 // Import dependencies and components
 import BottomNav from "../components/BottomNav";
 import { useState, useEffect } from "react";
-import { createStandardBet } from "../utils/betCreation";
 import {
-  useAutoSaveBets,
   removeBetByIndex,
-  acceptBetForCPU,
 } from "../utils/acceptHandling";
 import { useContext } from "react";
 import UserContext from "../UserContext";
 import { formatTimeAgo } from "../utils/timeUtils";
+import api from "../api";
 import "./PvP.css"; // Reuse PvP styles for layout and cards
-
-// Load bets from localStorage or use a default bet
-const loadInitialCPUBets = () => {
-  const saved = localStorage.getItem("cpuBets");
-  if (saved) return JSON.parse(saved);
-  return [
-    createStandardBet({
-      id: crypto.randomUUID(),
-      poster: "CPU",
-      posterId: "0",
-      timePosted: new Date().toISOString(),
-      matchup: "Skib vs Eddy",
-      amount: 40,
-      lineType: "Over",
-      lineNumber: 12.5,
-      gameType: "Score",
-      gameSize: "1v1",
-      gamePlayed: "Caps",
-    }),
-  ];
-};
 
 // CPU bets page component
 export default function CPU({ addOngoingBet }) {
-  const [bets, setBets] = useState(loadInitialCPUBets);
+  const [bets, setBets] = useState([]);
   const { user } = useContext(UserContext);
   // eslint-disable-next-line no-unused-vars
   const [_, setNow] = useState(Date.now());
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setNow(Date.now()); // just triggers a re-render
-    }, 1000); // every second
+    if (!user?.token) return;
+  
+    const fetchBets = async () => {
+      try {
+        const res = await api.get("/cpu_bets", {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
+        });
+        setBets(res.data);
+        console.log("✅ CPU bets:", res.data);
+      } catch (err) {
+        console.error("❌ Error fetching CPU bets:", err);
+      }
+    };
+  
+    fetchBets();
+  }, [user?.token]);
 
-    return () => clearInterval(interval);
-  }, []);
-
-  const visibleBets = bets.filter(
-    (bet) => !(bet.hiddenFrom || []).includes(user?.playerId)
-  );
-
-  // Auto-save
-  useAutoSaveBets(bets, "cpuBets");
-
-  const removeBet = (index) => removeBetByIndex(index, setBets);
-  const acceptBet = (index) =>
-    acceptBetForCPU(index, setBets, addOngoingBet, user?.playerId);
+  const acceptBet = async (bet, index) => {
+    try {
+      const res = await api.post(`/accept_cpu_bet/${bet.id}`, null, {
+        headers: {
+          Authorization: `Bearer ${user?.token}`,
+        },
+      });
+  
+      if (res.status === 200) {
+        setBets((prev) => {
+          const updated = [...prev];
+          updated.splice(index, 1);
+          return updated;
+        });
+  
+        addOngoingBet(bet); // Add bet to Ongoing tab
+      } else {
+        console.error("❌ CPU bet not accepted:", res.data?.error || "Unknown error");
+      }
+    } catch (err) {
+      console.error("❌ CPU bet accept error:", err);
+    }
+  };
   
   return (
     <>
@@ -88,7 +90,7 @@ export default function CPU({ addOngoingBet }) {
         </div>
 
         <div className="bet-list">
-          {visibleBets.map((bet, index) => (
+          {bets.map((bet, index) => (
             <div className="bet-card" key={index}>
               <div className="bet-top">
                 <span className="poster-time">
@@ -96,7 +98,7 @@ export default function CPU({ addOngoingBet }) {
                 </span>
                 <button
                   className="dismiss-button"
-                  onClick={() => removeBet(index)}
+                  onClick={() => removeBetByIndex(index, setBets)}
                 >
                   ×
                 </button>
@@ -111,7 +113,7 @@ export default function CPU({ addOngoingBet }) {
               </div>
               <button
                 className="accept-button"
-                onClick={() => acceptBet(index)}
+                onClick={() => acceptBet(bet, index)}
               >
                 Accept
               </button>

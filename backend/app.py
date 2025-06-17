@@ -158,6 +158,52 @@ def get_pvp_bets():
     finally:
         cur.close()
         conn.close()
+    
+@app.route("/cpu_bets", methods=["GET"])
+def get_cpu_bets():
+    player_id = get_player_id()
+    if not player_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    try:
+        cur.execute("""
+            SELECT * FROM bets
+            WHERE status = 'CPU'
+            AND id NOT IN (
+                SELECT id FROM cpu_acceptances WHERE accepter_id = %s
+            )
+            ORDER BY timePosted DESC
+        """, (player_id,))
+
+        rows = cur.fetchall()
+        colnames = [desc[0] for desc in cur.description]
+        
+        result = []
+        for row in rows:
+            bet = dict(zip(colnames, row))
+            result.append({
+                "id": bet["id"],
+                "poster": bet["poster"],
+                "posterId": bet["posterid"],
+                "timePosted": bet["timeposted"],
+                "matchup": bet["matchup"],
+                "amount": bet["amount"],
+                "lineType": bet["linetype"],
+                "lineNumber": bet["linenumber"],
+                "gameType": bet["gametype"],
+                "gamePlayed": bet["gameplayed"],
+                "gameSize": bet["gamesize"],
+                "status": bet["status"],
+            })
+
+        return jsonify(result)
+
+    finally:
+        cur.close()
+        conn.close()
 
 @app.route("/accept_bet/<bet_id>", methods=["POST"])
 def accept_bet(bet_id):
@@ -183,6 +229,40 @@ def accept_bet(bet_id):
         cur.close()
         conn.close()
 
+@app.route("/accept_cpu_bet/<bet_id>", methods=["POST"])
+def accept_cpu_bet(bet_id):
+    player_id = get_player_id()
+    if not player_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    try:
+        # Check if this player already accepted this CPU bet
+        cur.execute("""
+            SELECT 1 FROM cpu_acceptances WHERE id = %s AND accepter_id = %s
+        """, (bet_id, player_id))
+        if cur.fetchone():
+            return jsonify({"error": "Bet already accepted"}), 400
+
+        # Record the acceptance
+        cur.execute("""
+            INSERT INTO cpu_acceptances (id, accepter_id)
+            VALUES (%s, %s)
+        """, (bet_id, player_id))
+
+        conn.commit()
+        return jsonify({"status": "accepted"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
 @app.route("/ongoing_bets", methods=["GET"])
 def get_ongoing_bets():
     player_id = get_player_id()
@@ -195,7 +275,11 @@ def get_ongoing_bets():
         cur.execute("""
             SELECT * FROM bets
             WHERE status = 'accepted' AND (posterid = %s OR accepterid = %s)
-        """, (player_id, player_id))
+            UNION
+            SELECT b.* FROM bets b
+            INNER JOIN cpu_acceptances c ON b.id = c.id
+            WHERE c.accepter_id = %s
+        """, (player_id, player_id, player_id))
         rows = cur.fetchall()
         colnames = [desc[0] for desc in cur.description]
 
