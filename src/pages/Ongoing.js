@@ -57,56 +57,6 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
   ];
   uniqueVisibleBets.forEach((b) => console.log("✅ Bet key:", b.id));
 
-  // Hardcoded test bets, left in case we ever need
-  // createStandardBet({
-  //   id: 1,
-  //   poster: "mike",
-  //   timePosted: "1m ago",
-  //   matchup: "Mike vs CPU: Score",
-  //   amount: "100 caps",
-  //   lineType: "Under",
-  //   lineNumber: 10.5,
-  //   gameType: "Score",
-  //   gameSize: "1v1",
-  //   gamePlayed: "Caps",
-  //   yourTeamA: "",
-  //   oppTeamA: "Player1",
-  //   oppStatsB: "7",
-  // }),
-  // createStandardBet({
-  //   id: 2,
-  //   poster: "drake",
-  //   timePosted: "1m ago",
-  //   matchup: "Logan Bedtime",
-  //   amount: "50 caps",
-  //   lineType: "Over",
-  //   lineNumber: 10.5,
-  //   gameType: "Other",
-  //   oppInfo: "9",
-  // }),
-  // createStandardBet({
-  //   id: 3,
-  //   poster: "drake",
-  //   timePosted: "1m ago",
-  //   matchup: "Drake vs Nate: Shots Made",
-  //   amount: "60 caps",
-  //   lineType: "Under",
-  //   lineNumber: 10.5,
-  //   gameType: "Shots Made",
-  //   oppPlayer: "Nate",
-  //   oppStats: "13",
-  // }),
-  // createStandardBet({
-  //   id: 4,
-  //   poster: "skib",
-  //   timePosted: "1m ago",
-  //   matchup: "Skib vs Nate: Score",
-  //   amount: "120 caps",
-  //   lineType: "Over",
-  //   lineNumber: 15.5,
-  //   gameType: "Score",
-  // }),
-
   // UI state for modal and stat input
   const [showModal, setShowModal] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
