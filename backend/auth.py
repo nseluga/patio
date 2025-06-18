@@ -166,3 +166,43 @@ def create_bet():
     # Respond with success and the new bet ID
     return jsonify({'message': 'Bet created', 'bet_id': bet_id})
 
+@bets.route("/submit_stats/<bet_id>", methods=["POST", "OPTIONS"])
+def submit_stats(bet_id):
+
+    if request.method == "OPTIONS":
+        # Preflight request handling
+        response = jsonify({"message": "CORS preflight success"})
+        response.headers.add("Access-Control-Allow-Origin", "http://localhost:3000")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+        response.headers.add("Access-Control-Allow-Methods", "POST,OPTIONS")
+        return response, 200
+
+    data = request.get_json()(force=True)
+
+    update_fields = {
+        "your_team_a": data.get("yourTeamA"),
+        "your_score_a": data.get("yourScoreA"),
+        "your_team_b": data.get("yourTeamB"),
+        "your_score_b": data.get("yourScoreB"),
+        "your_player": data.get("yourPlayer"),
+        "your_shots": data.get("yourShots"),
+        "your_outcome": data.get("yourOutcome"),
+    }
+    update_data = {k: v for k, v in update_fields.items() if v is not None}
+
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+
+        set_clause = ", ".join([f"{k} = %s" for k in update_data])
+        values = list(update_data.values())
+        values.append(bet_id)
+
+        cur.execute(f"UPDATE bets SET {set_clause} WHERE id = %s", values)
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return jsonify({"message": "Stats submitted successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

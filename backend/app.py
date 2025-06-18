@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from auth import auth
+from auth import bets
 from db import get_db
 import jwt
 from config import SECRET_KEY
@@ -18,6 +19,7 @@ CORS(
 
 # Register authentication-related routes
 app.register_blueprint(auth)
+app.register_blueprint(bets)
 
 # Helper function to get player ID from JWT
 def get_player_id():

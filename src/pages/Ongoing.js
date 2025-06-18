@@ -22,31 +22,34 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
   const [_, setNow] = useState(Date.now());
 
   useEffect(() => {
-    let didCancel = false;
-    const fetchBets = async () => {
-      try {
-        const res = await api.get("/ongoing_bets", {
-          headers: { Authorization: `Bearer ${user?.token}` },
-        });
-        if (!didCancel) {
-          setBets(res.data);
-          console.log("✅ Loaded bets from backend:", res.data);
-        }
-      } catch (err) {
-        console.error("❌ Failed to fetch bets from DB:", err);
+  let didCancel = false;
+  const fetchBets = async () => {
+    try {
+      const res = await api.get("/ongoing_bets", {
+        headers: {
+          Authorization: `Bearer ${user?.token}`,
+        },
+      });
+      if (!didCancel) {
+        setBets(res.data);
+        console.log("✅ Loaded bets from backend:", res.data);
       }
-    };
-
-    if (user?.token) {
-      fetchBets();
-    } else {
-      console.warn("⚠️ No user token found, skipping fetch");
+    } catch (err) {
+      console.error("❌ Failed to fetch bets from DB:", err);
     }
+  };
 
-    return () => {
-      didCancel = true;
-    };
-  }, [user?.token, setBets]);
+  if (user?.token) {
+    fetchBets();
+  } else {
+    console.warn("⚠️ No user token found, skipping fetch");
+  }
+
+  return () => {
+    didCancel = true;
+  };
+}, [user?.token, setBets]);
+
 
   const uniqueVisibleBets = [
     ...new Map(
@@ -77,115 +80,49 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
   const [yourOutcome, setYourOutcome] = useState("");
 
   // Submit handler to update bet with user’s input and check for match
-  const handleSubmit = () => {
-    setBets((prev) =>
-      prev.flatMap((bet) => {
-        if (bet.id !== activeBetId) return [bet]; // only update the selected bet
+  const handleSubmit = async () => {
+    const bet = bets.find((b) => b.id === activeBetId);
+    if (!bet) return;
 
-        const updated = { ...bet }; // make a copy to mutate safely
+    const payload = {
+      betId: bet.id,
+      playerId: user.playerId,
+      gameType: bet.gameType,
+    };
 
-        // Handle Score bets
-        if (bet.gameType === "Score") {
-          // Save input to bet object
-          updated.yourTeamA = yourTeamA.map((p) => p.name);
-          updated.yourTeamB = yourTeamB.map((p) => p.name);
-          updated.yourScoreA = Number(yourScoreA);
-          updated.yourScoreB = Number(yourScoreB);
+    if (bet.gameType === "Score") {
+      payload.yourTeamA = yourTeamA.map((p) => p.name);
+      payload.yourTeamB = yourTeamB.map((p) => p.name);
+      payload.yourScoreA = Number(yourScoreA);
+      payload.yourScoreB = Number(yourScoreB);
+    } else if (bet.gameType === "Shots Made") {
+      payload.yourPlayer = yourPlayer;
+      payload.yourShots = Number(yourShots);
+    } else if (bet.gameType === "Other") {
+      payload.yourOutcome = yourOutcome;
+    }
 
-          // Match logic: check players and scores
-          const match =
-            JSON.stringify(updated.yourTeamA) ===
-              JSON.stringify(bet.oppTeamA || []) &&
-            JSON.stringify(updated.yourTeamB) ===
-              JSON.stringify(bet.oppTeamB || []) &&
-            updated.yourScoreA === bet.oppScoreA &&
-            updated.yourScoreB === bet.oppScoreB;
+    try {
+      await api.post(`/submit_stats/${bet.id}`, payload, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user?.token}`,
+        },
+      });
+      console.log("✅ Stats submitted to bet_submissions table");
 
-          console.log(
-            "yourTeamA:",
-            yourTeamA.map((p) => p.name)
-          );
-          console.log(
-            "oppTeamA:",
-            (bet.oppTeamA || []).map((p) => p.name)
-          );
-          console.log(
-            "yourTeamB:",
-            yourTeamB.map((p) => p.name)
-          );
-          console.log(
-            "oppTeamB:",
-            (bet.oppTeamB || []).map((p) => p.name)
-          );
-          console.log(
-            "Scores:",
-            updated.yourScoreA,
-            bet.oppScoreA,
-            updated.yourScoreB,
-            bet.oppScoreB
-          );
-          console.log("Match?", match);
+      setPopupMessage("✅ Stats submitted!");
+      setTimeout(() => setPopupMessage(""), 3000);
 
-          if (match) {
-            setPopupMessage("✅ Match confirmed!");
+      // Optionally hide the confirmed bet or refetch updated status
+      setBets((prev) => prev.filter((b) => b.id !== bet.id));
+    } catch (err) {
+      console.error("❌ Failed to submit stats:", err);
+      setPopupMessage("❌ Failed to submit stats.");
+      setTimeout(() => setPopupMessage(""), 3000);
+    }
 
-            setYourTeamA([]);
-            setYourTeamB([]);
-            setYourScoreA("");
-            setYourScoreB("");
-
-            setTimeout(() => setPopupMessage(""), 3000);
-            return []; // remove bet from list
-          }
-
-          return [updated]; // keep updated bet in the list
-          // Handle Shots Made bets
-        } else if (bet.gameType === "Shots Made") {
-          updated.yourPlayer = yourPlayer;
-          updated.yourShots = Number(yourShots);
-
-          const match =
-            bet.oppPlayer &&
-            bet.oppShots != null &&
-            yourPlayer === bet.oppPlayer &&
-            updated.yourShots === bet.oppShots;
-
-          if (match) {
-            setPopupMessage("✅ Match confirmed!");
-
-            // Reset all input state fields
-            setYourPlayer("");
-            setYourShots("");
-
-            setTimeout(() => setPopupMessage(""), 3000);
-            return [];
-          }
-
-          return [updated];
-        }
-        // Handle Other bets (text/info match)
-        else if (bet.gameType === "Other") {
-          updated.yourOutcome = yourOutcome;
-
-          const match =
-            updated.oppOutcome && updated.yourOutcome === updated.oppOutcome;
-
-          if (match) {
-            setPopupMessage("✅ Match confirmed!");
-
-            // Reset all input state fields
-            setYourOutcome("");
-
-            setTimeout(() => setPopupMessage(""), 3000);
-            return [];
-          }
-        }
-
-        return [updated]; // if no match, keep updated bet
-      })
-    );
-
-    // Reset all form fields and close modal
+    // Reset form and close modal
     setShowModal(false);
     setActiveBetId(null);
     setYourTeamA([]);
@@ -196,6 +133,8 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
     setYourShots("");
     setYourOutcome("");
   };
+
+
 
   // Get game type of active bet
   const getGameType = () => {
