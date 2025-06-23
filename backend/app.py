@@ -4,6 +4,7 @@ from auth import auth
 from db import get_db
 import jwt
 from config import SECRET_KEY
+import psycopg2.extras
 from psycopg2.extras import Json
 
 # Initialize the Flask app and enable CORS
@@ -180,7 +181,7 @@ def get_cpu_bets():
 
         rows = cur.fetchall()
         colnames = [desc[0] for desc in cur.description]
-        
+
         result = []
         for row in rows:
             bet = dict(zip(colnames, row))
@@ -306,6 +307,116 @@ def get_ongoing_bets():
     finally:
         cur.close()
         conn.close()
+
+def check_stats_match(bet):
+    game_type = bet['gametype']
+
+    if game_type == "Score":
+        if not all([
+            bet['yourteama'], bet['oppteama'],
+            bet['yourteamb'], bet['oppteamb'],
+            bet['yourscorea'], bet['oppscorea'],
+            bet['yourscoreb'], bet['oppscoreb']
+        ]):
+            return False
+
+        return (
+            bet['yourteama'] == bet['oppteama'] and
+            bet['yourteamb'] == bet['oppteamb'] and
+            bet['yourscorea'] == bet['oppscorea'] and
+            bet['yourscoreb'] == bet['oppscoreb']
+        )
+
+    elif game_type == "Shots Made":
+        your_player = bet.get('yourplayer', '').strip().lower()
+        opp_player = bet.get('oppplayer', '').strip().lower()
+        your_shots = bet.get('yourshots')
+        opp_shots = bet.get('oppshots')
+
+        return (
+            your_player and opp_player and
+            your_player == opp_player and
+            your_shots is not None and
+            opp_shots is not None and
+            your_shots == opp_shots
+        )
+
+    elif game_type == "Other":
+        return (
+            bet.get('youroutcome') is not None and
+            bet.get('oppoutcome') is not None and
+            bet['youroutcome'] == bet['oppoutcome']
+        )
+
+    else:
+        print("⚠️ Unknown game type:", game_type)
+
+    return False
+
+@app.route('/submit_stats/<bet_id>', methods=['POST'])
+def submit_stats(bet_id):
+    data = request.json
+    player_id = data['playerId']
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Get current bet
+    cur.execute("SELECT * FROM bets WHERE id = %s", (bet_id,))
+    bet = cur.fetchone()
+
+    if not bet:
+        return jsonify({"error": "Bet not found"}), 404
+
+    # Determine if this is poster or accepter
+    is_poster = player_id == bet['posterid']
+    is_accepter = player_id == bet['accepterid']
+
+    if not (is_poster or is_accepter):
+        return jsonify({"error": "Unauthorized"}), 403
+
+    # Update the corresponding side (poster or accepter)
+    update_fields = []
+    update_values = []
+
+    if bet['gametype'] == "Score":
+        if is_poster:
+            update_fields += ["yourTeamA", "yourTeamB", "yourScoreA", "yourScoreB"]
+            update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
+        else:
+            update_fields += ["oppTeamA", "oppTeamB", "oppScoreA", "oppScoreB"]
+            update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
+
+    elif bet['gametype'] == "Shots Made":
+        update_fields += ["yourPlayer" if is_poster else "oppPlayer",
+                          "yourShots" if is_poster else "oppShots"]
+        update_values += [data["yourPlayer"], data["yourShots"]]
+
+    elif bet['gametype'] == "Other":
+        update_fields += ["yourOutcome" if is_poster else "oppOutcome"]
+        update_values += [data["yourOutcome"]]
+
+    # Build query
+    set_clause = ", ".join(f"{field} = %s" for field in update_fields)
+    cur.execute(f"UPDATE bets SET {set_clause} WHERE id = %s", (*update_values, bet_id))
+
+    conn.commit()
+    
+    # Check if stats match → if yes, mark as submitted
+    cur.execute("SELECT * FROM bets WHERE id = %s", (bet_id,))
+    updated_bet = cur.fetchone()
+    
+    match = check_stats_match(updated_bet)
+
+    # Only mark as submitted if BOTH sides entered AND match
+    if match:
+        cur.execute("UPDATE bets SET status = 'submitted' WHERE id = %s", (bet_id,))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return jsonify({"message": "Stats submitted successfully", "match": match})
 
 @app.route("/bets", methods=["GET"])
 def get_all_bets():

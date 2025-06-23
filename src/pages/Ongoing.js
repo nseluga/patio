@@ -185,6 +185,24 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
       })
     );
 
+    api.post(`/submit_stats/${activeBetId}`, {
+      playerId: user.playerId,
+      gameType: getGameType(),
+      yourTeamA: yourTeamA.map(p => p.name),
+      yourTeamB: yourTeamB.map(p => p.name),
+      yourScoreA,
+      yourScoreB,
+      yourPlayer,
+      yourShots,
+      yourOutcome,
+    })
+    .then(res => {
+      console.log("✅ Stats submitted to backend:", res.data);
+    })
+    .catch(err => {
+      console.error("❌ Error submitting stats:", err);
+    });
+
     // Reset all form fields and close modal
     setShowModal(false);
     setActiveBetId(null);
