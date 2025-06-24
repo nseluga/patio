@@ -361,6 +361,13 @@ def submit_stats(bet_id):
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
+    # Helper to insert stat
+    def insert_stat(player_id, game_played, game_type, stat_name, stat_value):
+        cur.execute("""
+            INSERT INTO player_stats (player_id, game_played, game_type, stat_name, stat_value)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (player_id, game_played, game_type, stat_name, stat_value))
+
     # Get current bet
     cur.execute("SELECT * FROM bets WHERE id = %s", (bet_id,))
     bet = cur.fetchone()
@@ -412,11 +419,27 @@ def submit_stats(bet_id):
     if match:
         cur.execute("UPDATE bets SET status = 'submitted' WHERE id = %s", (bet_id,))
 
+        # Insert stats into player_stats table
+        if bet['gametype'] == "Shots Made":
+            insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "shots_made", bet['yourshots'])
+            insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "shots_made", bet['oppshots'])
+
+        elif bet['gametype'] == "Score":
+            insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "score_a", bet['yourscorea'])
+            insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "score_b", bet['yourscoreb'])
+            insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "score_a", bet['oppscorea'])
+            insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "score_b", bet['oppscoreb'])
+
+        elif bet['gametype'] == "Other":
+            insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "outcome", bet['youroutcome'])
+            insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "outcome", bet['oppoutcome'])
+
     conn.commit()
     cur.close()
     conn.close()
 
     return jsonify({"message": "Stats submitted successfully", "match": match})
+
 
 @app.route("/bets", methods=["GET"])
 def get_all_bets():
@@ -431,6 +454,36 @@ def get_all_bets():
     except Exception as e:
         print("❌ Failed to fetch bets:", e)
         return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+@app.route("/stats/averages/<stat_name>", methods=["GET"])
+def get_average_stats(stat_name):
+    conn = get_db()
+    cur = conn.cursor()
+    
+    try:
+        cur.execute("""
+            SELECT player_id, game_played, AVG(stat_value) AS average
+            FROM player_stats
+            WHERE stat_name = %s
+            GROUP BY player_id, game_played
+        """, (stat_name,))
+        rows = cur.fetchall()
+        return jsonify([
+            {
+                "playerId": row[0],
+                "gamePlayed": row[1],
+                "average": float(row[2])
+            }
+            for row in rows
+        ])
+
+    except Exception as e:
+        print("❌ Failed to compute averages:", e)
+        return jsonify({"error": str(e)}), 500
+
     finally:
         cur.close()
         conn.close()
