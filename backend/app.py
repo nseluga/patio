@@ -287,6 +287,7 @@ def get_ongoing_bets():
         result = []
         for row in rows:
             bet = dict(zip(colnames, row))
+            bet["status_message"] = compute_status_message(bet, player_id)
             result.append({
                 "id": bet["id"],
                 "poster": bet["poster"],
@@ -301,6 +302,7 @@ def get_ongoing_bets():
                 "gamePlayed": bet["gameplayed"],
                 "gameSize": bet["gamesize"],
                 "status": bet["status"],
+                "status_message": bet["status_message"],
             })
 
         return jsonify(result)
@@ -352,6 +354,77 @@ def check_stats_match(bet):
         print("⚠️ Unknown game type:", game_type)
 
     return False
+
+def compute_status_message(bet, player_id):
+    game_type = bet["gametype"]
+    is_poster = player_id == bet.get("posterid")
+    is_accepter = player_id == bet.get("accepterid")
+
+    if not (is_poster or is_accepter):
+        return "Unknown user"
+
+    # Score Game
+    if game_type == "Score":
+        your_teamA = bet["yourteama"] if is_poster else bet["oppteama"]
+        your_teamB = bet["yourteamb"] if is_poster else bet["oppteamb"]
+        your_scoreA = bet["yourscorea"] if is_poster else bet["oppscorea"]
+        your_scoreB = bet["yourscoreb"] if is_poster else bet["oppscoreb"]
+
+        opp_teamA = bet["oppteama"] if is_poster else bet["yourteama"]
+        opp_teamB = bet["oppteamb"] if is_poster else bet["yourteamb"]
+        opp_scoreA = bet["oppscorea"] if is_poster else bet["yourscorea"]
+        opp_scoreB = bet["oppscoreb"] if is_poster else bet["yourscoreb"]
+
+        you_submitted = all([your_teamA, your_teamB, your_scoreA is not None, your_scoreB is not None])
+        opp_submitted = all([opp_teamA, opp_teamB, opp_scoreA is not None, opp_scoreB is not None])
+
+        if you_submitted and opp_submitted:
+            if your_teamA == opp_teamA and your_teamB == opp_teamB:
+                if your_scoreA == opp_scoreA and your_scoreB == opp_scoreB:
+                    return "✅ Match confirmed"
+                return "❌ Scores not matching, please communicate"
+            return "❌ Player names do not match"
+        elif you_submitted:
+            return "Waiting for other player to input stats"
+        return "You have not submitted stats yet"
+
+    # Shots Made Game
+    elif game_type == "Shots Made":
+        your_player = bet["yourplayer"] if is_poster else bet["oppplayer"]
+        your_shots = bet["yourshots"] if is_poster else bet["oppshots"]
+        opp_player = bet["oppplayer"] if is_poster else bet["yourplayer"]
+        opp_shots = bet["oppshots"] if is_poster else bet["yourshots"]
+
+        you_submitted = your_player and your_shots is not None
+        opp_submitted = opp_player and opp_shots is not None
+
+        if you_submitted and opp_submitted:
+            if your_player == opp_player:
+                if your_shots == opp_shots:
+                    return "✅ Match confirmed"
+                return "❌ Stats not matching, please communicate"
+            return "❌ Player names do not match"
+        elif you_submitted:
+            return "Waiting for other player to input stats"
+        return "You have not submitted stats yet"
+
+    # Other Game
+    elif game_type == "Other":
+        your_outcome = bet["youroutcome"] if is_poster else bet["oppoutcome"]
+        opp_outcome = bet["oppoutcome"] if is_poster else bet["youroutcome"]
+
+        you_submitted = your_outcome not in [None, ""]
+        opp_submitted = opp_outcome not in [None, ""]
+
+        if you_submitted and opp_submitted:
+            if your_outcome == opp_outcome:
+                return "✅ Match confirmed"
+            return "❌ Outcome not matching, please communicate"
+        elif you_submitted:
+            return "Waiting for other player to input stats"
+        return "You have not submitted stats yet"
+
+    return "Unknown game type"
 
 @app.route('/submit_stats/<bet_id>', methods=['POST'])
 def submit_stats(bet_id):
@@ -415,31 +488,36 @@ def submit_stats(bet_id):
     
     match = check_stats_match(updated_bet)
 
+    status_message = compute_status_message(updated_bet, player_id)
+
     # Only mark as submitted if BOTH sides entered AND match
     if match:
         cur.execute("UPDATE bets SET status = 'submitted' WHERE id = %s", (bet_id,))
 
-        # Insert stats into player_stats table
-        if bet['gametype'] == "Shots Made":
-            insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "shots_made", bet['yourshots'])
-            insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "shots_made", bet['oppshots'])
+        # # Insert stats into player_stats table
+        # if bet['gametype'] == "Shots Made":
+        #     insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "shots_made", bet['yourshots'])
+        #     insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "shots_made", bet['oppshots'])
 
-        elif bet['gametype'] == "Score":
-            insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "score_a", bet['yourscorea'])
-            insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "score_b", bet['yourscoreb'])
-            insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "score_a", bet['oppscorea'])
-            insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "score_b", bet['oppscoreb'])
+        # elif bet['gametype'] == "Score":
+        #     insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "score_a", bet['yourscorea'])
+        #     insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "score_b", bet['yourscoreb'])
+        #     insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "score_a", bet['oppscorea'])
+        #     insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "score_b", bet['oppscoreb'])
 
-        elif bet['gametype'] == "Other":
-            insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "outcome", bet['youroutcome'])
-            insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "outcome", bet['oppoutcome'])
+        # elif bet['gametype'] == "Other":
+        #     insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "outcome", bet['youroutcome'])
+        #     insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "outcome", bet['oppoutcome'])
 
     conn.commit()
     cur.close()
     conn.close()
 
-    return jsonify({"message": "Stats submitted successfully", "match": match})
-
+    return jsonify({
+        "message": "Stats submitted successfully",
+        "match": match,
+        "status_message": status_message
+    })
 
 @app.route("/bets", methods=["GET"])
 def get_all_bets():
@@ -458,32 +536,32 @@ def get_all_bets():
         cur.close()
         conn.close()
 
-@app.route("/stats/averages/<stat_name>", methods=["GET"])
-def get_average_stats(stat_name):
-    conn = get_db()
-    cur = conn.cursor()
+# @app.route("/stats/averages/<stat_name>", methods=["GET"])
+# def get_average_stats(stat_name):
+#     conn = get_db()
+#     cur = conn.cursor()
     
-    try:
-        cur.execute("""
-            SELECT player_id, game_played, AVG(stat_value) AS average
-            FROM player_stats
-            WHERE stat_name = %s
-            GROUP BY player_id, game_played
-        """, (stat_name,))
-        rows = cur.fetchall()
-        return jsonify([
-            {
-                "playerId": row[0],
-                "gamePlayed": row[1],
-                "average": float(row[2])
-            }
-            for row in rows
-        ])
+#     try:
+#         cur.execute("""
+#             SELECT player_id, game_played, AVG(stat_value) AS average
+#             FROM player_stats
+#             WHERE stat_name = %s
+#             GROUP BY player_id, game_played
+#         """, (stat_name,))
+#         rows = cur.fetchall()
+#         return jsonify([
+#             {
+#                 "playerId": row[0],
+#                 "gamePlayed": row[1],
+#                 "average": float(row[2])
+#             }
+#             for row in rows
+#         ])
 
-    except Exception as e:
-        print("❌ Failed to compute averages:", e)
-        return jsonify({"error": str(e)}), 500
+#     except Exception as e:
+#         print("❌ Failed to compute averages:", e)
+#         return jsonify({"error": str(e)}), 500
 
-    finally:
-        cur.close()
-        conn.close()
+#     finally:
+#         cur.close()
+#         conn.close()
