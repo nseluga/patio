@@ -73,7 +73,7 @@ def public_leaderboard():
 @app.route("/create_bet", methods=["POST"])
 def create_bet():
     player_id = get_player_id()
-    if not player_id:
+    if player_id is None:
         return jsonify({"error": "Unauthorized"}), 401
 
     bet = request.json
@@ -121,7 +121,7 @@ def create_bet():
 @app.route("/pvp_bets", methods=["GET"])
 def get_pvp_bets():
     player_id = request.args.get("playerId")
-    if not player_id:
+    if player_id is None:
         return jsonify({"error": "Missing playerId"}), 400
 
     conn = get_db()
@@ -163,7 +163,7 @@ def get_pvp_bets():
 @app.route("/cpu_bets", methods=["GET"])
 def get_cpu_bets():
     player_id = get_player_id()
-    if not player_id:
+    if player_id is None:
         return jsonify({"error": "Unauthorized"}), 401
 
     conn = get_db()
@@ -209,7 +209,7 @@ def get_cpu_bets():
 @app.route("/accept_bet/<bet_id>", methods=["POST"])
 def accept_bet(bet_id):
     player_id = get_player_id()
-    if not player_id:
+    if player_id is None:
         return jsonify({"error": "Unauthorized"}), 401
 
     conn = get_db()
@@ -233,7 +233,7 @@ def accept_bet(bet_id):
 @app.route("/accept_cpu_bet/<bet_id>", methods=["POST"])
 def accept_cpu_bet(bet_id):
     player_id = get_player_id()
-    if not player_id:
+    if player_id is None:
         return jsonify({"error": "Unauthorized"}), 401
 
     conn = get_db()
@@ -267,7 +267,7 @@ def accept_cpu_bet(bet_id):
 @app.route("/ongoing_bets", methods=["GET"])
 def get_ongoing_bets():
     player_id = get_player_id()
-    if not player_id:
+    if player_id is None:
         return jsonify({"error": "Unauthorized"}), 401
 
     conn = get_db()
@@ -279,8 +279,11 @@ def get_ongoing_bets():
             UNION
             SELECT b.* FROM bets b
             INNER JOIN cpu_acceptances c ON b.id = c.id
-            WHERE c.accepter_id = %s
-        """, (player_id, player_id, player_id))
+            WHERE c.accepter_id = %s AND c.match_confirmed = FALSE
+            UNION
+            SELECT * FROM bets
+            WHERE status = 'CPU' AND posterid = 0 AND %s = 0
+        """, (player_id, player_id, player_id, player_id))
         rows = cur.fetchall()
         colnames = [desc[0] for desc in cur.description]
 
@@ -360,11 +363,28 @@ def check_stats_match(bet):
 
 
 def compute_status_message(bet, player_id):
+    if bet["status"] == "CPU" and player_id != 0:
+        cur = get_db().cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute("""
+            SELECT match_confirmed, attempted FROM cpu_acceptances
+            WHERE id = %s AND accepter_id = %s
+        """, (bet["id"], player_id))
+        row = cur.fetchone()
+        cur.close()
+
+        if not row:
+            return "You have not submitted stats yet"
+        if row["match_confirmed"]:
+            return "✅ Match confirmed"
+        if row["attempted"]:
+            return "❌ Stats do not match"
+        return "You have not submitted stats yet"
+    
     game_type = bet["gametype"]
     is_poster = player_id == bet.get("posterid")
     is_accepter = player_id == bet.get("accepterid")
 
-    if not (is_poster or is_accepter):
+    if (is_poster or is_accepter) is None:
         return "Unknown user"
 
     # Score Game
@@ -452,101 +472,115 @@ def submit_stats(bet_id):
 
     is_poster = player_id == bet['posterid']
     is_accepter = player_id == bet['accepterid']
-    if not (is_poster or is_accepter):
-        return jsonify({"error": "Unauthorized"}), 403
+    is_cpu_bet = bet['status'] == 'CPU'
+    is_admin = player_id == 0
 
-    # Prepare stat update fields
-    update_fields = []
-    update_values = []
+    # ✅ If non-admin tries to submit to a CPU bet, do nothing and return success
+    if is_cpu_bet and not is_admin:
+        game_type = bet['gametype']
+        match = False
 
-    if bet['gametype'] == "Score":
-        if is_poster:
-            update_fields += ["yourTeamA", "yourTeamB", "yourScoreA", "yourScoreB"]
-            update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
-        else:
-            update_fields += ["oppTeamA", "oppTeamB", "oppScoreA", "oppScoreB"]
-            update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
+        if game_type == "Score":
+            match = (
+                data["yourTeamA"] == bet["yourteama"] and
+                data["yourTeamB"] == bet["yourteamb"] and
+                int(data["yourScoreA"]) == bet["yourscorea"] and
+                int(data["yourScoreB"]) == bet["yourscoreb"]
+            )
 
-    elif bet['gametype'] == "Shots Made":
-        update_fields += ["yourPlayer" if is_poster else "oppPlayer",
-                          "yourShots" if is_poster else "oppShots"]
-        update_values += [data["yourPlayer"], data["yourShots"]]
+        elif game_type == "Shots Made":
+            match = (
+                data["yourPlayer"].strip().lower() == bet["yourplayer"].strip().lower() and
+                int(data["yourShots"]) == bet["yourshots"]
+            )
 
-    elif bet['gametype'] == "Other":
-        update_fields += ["yourOutcome" if is_poster else "oppOutcome"]
-        update_values += [data["yourOutcome"]]
+        elif game_type == "Other":
+            match = int(data["yourOutcome"]) == bet["youroutcome"]
+        
+        if match:
+            cur.execute("""
+                UPDATE cpu_acceptances
+                SET match_confirmed = TRUE
+                WHERE id = %s AND accepter_id = %s
+            """, (bet_id, player_id))
 
-    # Execute update
-    set_clause = ", ".join(f"{field} = %s" for field in update_fields)
-    cur.execute(f"UPDATE bets SET {set_clause} WHERE id = %s", (*update_values, bet_id))
-    conn.commit()
+        else: 
+            cur.execute("""
+                UPDATE cpu_acceptances
+                SET attempted = TRUE
+                WHERE id = %s AND accepter_id = %s
+            """, (bet_id, player_id))
+        
+        # 🔄 Re-fetch the bet for fresh data (optional, since bet itself didn't change, just cpu_acceptances)
+        updated_bet = bet  # can reuse bet if no need to refetch from `bets`
+        status_message = compute_status_message(updated_bet, player_id)
 
-    # Re-fetch updated bet
-    cur.execute("SELECT * FROM bets WHERE id = %s", (bet_id,))
-    updated_bet = cur.fetchone()
-    match = check_stats_match(updated_bet)
-    status_message = compute_status_message(updated_bet, player_id)
+    else:
+        # Prepare stat update fields
+        update_fields = []
+        update_values = []
 
-    if match:
-        cur.execute("UPDATE bets SET status = 'submitted' WHERE id = %s", (bet_id,))
-
-        if updated_bet['gametype'] == "Shots Made":
-            subject_name = (updated_bet.get('yourplayer') or updated_bet.get('oppplayer')).strip()
-            stat_value = updated_bet['yourshots']  # same as oppshots after match
-
-            # Get player ID by name
-            cur.execute("SELECT id FROM players WHERE LOWER(username) = LOWER(%s)", (subject_name,))
-            result = cur.fetchone()
-
-            if result:
-                subject_id = result['id']
-                insert_stat(subject_id, updated_bet['gameplayed'], updated_bet['gametype'], "shots_made", stat_value)
+        if bet['gametype'] == "Score":
+            if is_poster:
+                update_fields += ["yourTeamA", "yourTeamB", "yourScoreA", "yourScoreB"]
+                update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
             else:
-                print(f"❌ No player found with name: {subject_name}")
+                update_fields += ["oppTeamA", "oppTeamB", "oppScoreA", "oppScoreB"]
+                update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
 
-        elif updated_bet['gametype'] == "Score":
-            insert_stat(updated_bet['posterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_a", updated_bet['yourscorea'])
-            insert_stat(updated_bet['posterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_b", updated_bet['yourscoreb'])
-            insert_stat(updated_bet['accepterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_a", updated_bet['oppscorea'])
-            insert_stat(updated_bet['accepterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_b", updated_bet['oppscoreb'])
+        elif bet['gametype'] == "Shots Made":
+            update_fields += ["yourPlayer" if is_poster else "oppPlayer",
+                            "yourShots" if is_poster else "oppShots"]
+            update_values += [data["yourPlayer"], data["yourShots"]]
 
-        elif updated_bet['gametype'] == "Other":
-            insert_stat(updated_bet['posterid'], updated_bet['gameplayed'], updated_bet['gametype'], "outcome", updated_bet['youroutcome'])
-            insert_stat(updated_bet['accepterid'], updated_bet['gameplayed'], updated_bet['gametype'], "outcome", updated_bet['oppoutcome'])
+        elif bet['gametype'] == "Other":
+            update_fields += ["yourOutcome" if is_poster else "oppOutcome"]
+            update_values += [data["yourOutcome"]]
+
+        # Execute update
+        set_clause = ", ".join(f"{field} = %s" for field in update_fields)
+        cur.execute(f"UPDATE bets SET {set_clause} WHERE id = %s", (*update_values, bet_id))
+        conn.commit()
+
+        # Re-fetch updated bet
+        cur.execute("SELECT * FROM bets WHERE id = %s", (bet_id,))
+        updated_bet = cur.fetchone()
+        match = check_stats_match(updated_bet)
+        status_message = compute_status_message(updated_bet, player_id)
+
+        if match:
+            cur.execute("UPDATE bets SET status = 'submitted' WHERE id = %s", (bet_id,))
+
+            if updated_bet['gametype'] == "Shots Made":
+                subject_name = (updated_bet.get('yourplayer') or updated_bet.get('oppplayer')).strip()
+                stat_value = updated_bet['yourshots']  # same as oppshots after match
+
+                # Get player ID by name
+                cur.execute("SELECT id FROM players WHERE LOWER(username) = LOWER(%s)", (subject_name,))
+                result = cur.fetchone()
+
+                if result:
+                    subject_id = result['id']
+                    insert_stat(subject_id, updated_bet['gameplayed'], updated_bet['gametype'], "shots_made", stat_value)
+                else:
+                    print(f"❌ No player found with name: {subject_name}")
+
+            elif updated_bet['gametype'] == "Score":
+                insert_stat(updated_bet['posterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_a", updated_bet['yourscorea'])
+                insert_stat(updated_bet['posterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_b", updated_bet['yourscoreb'])
+                insert_stat(updated_bet['accepterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_a", updated_bet['oppscorea'])
+                insert_stat(updated_bet['accepterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_b", updated_bet['oppscoreb'])
+
+            elif updated_bet['gametype'] == "Other":
+                insert_stat(updated_bet['posterid'], updated_bet['gameplayed'], updated_bet['gametype'], "outcome", updated_bet['youroutcome'])
+                insert_stat(updated_bet['accepterid'], updated_bet['gameplayed'], updated_bet['gametype'], "outcome", updated_bet['oppoutcome'])
 
     conn.commit()
     cur.close()
     conn.close()
 
     return jsonify({
-        "message": "Stats submitted successfully",
-        "match": match,
-        "status_message": status_message
-    })
-
-
-
-        # # Insert stats into player_stats table
-        # if bet['gametype'] == "Shots Made":
-        #     insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "shots_made", bet['yourshots'])
-        #     insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "shots_made", bet['oppshots'])
-
-        # elif bet['gametype'] == "Score":
-        #     insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "score_a", bet['yourscorea'])
-        #     insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "score_b", bet['yourscoreb'])
-        #     insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "score_a", bet['oppscorea'])
-        #     insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "score_b", bet['oppscoreb'])
-
-        # elif bet['gametype'] == "Other":
-        #     insert_stat(bet['posterid'], bet['gameplayed'], bet['gametype'], "outcome", bet['youroutcome'])
-        #     insert_stat(bet['accepterid'], bet['gameplayed'], bet['gametype'], "outcome", bet['oppoutcome'])
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({
-        "message": "Stats submitted successfully",
+        "message": "Stats processed",
         "match": match,
         "status_message": status_message
     })

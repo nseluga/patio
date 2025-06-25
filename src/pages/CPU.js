@@ -1,9 +1,7 @@
 // Import dependencies and components
 import BottomNav from "../components/BottomNav";
 import { useState, useEffect } from "react";
-import {
-  removeBetByIndex,
-} from "../utils/acceptHandling";
+import { removeBetByIndex } from "../utils/acceptHandling";
 import { useContext } from "react";
 import UserContext from "../UserContext";
 import { formatTimeAgo } from "../utils/timeUtils";
@@ -19,7 +17,7 @@ export default function CPU({ addOngoingBet }) {
 
   useEffect(() => {
     if (!user?.token) return;
-  
+
     const fetchBets = async () => {
       try {
         const res = await api.get("/cpu_bets", {
@@ -33,9 +31,17 @@ export default function CPU({ addOngoingBet }) {
         console.error("❌ Error fetching CPU bets:", err);
       }
     };
-  
+
     fetchBets();
   }, [user?.token]);
+
+  const isCPUAdmin = user?.playerId === 0;
+
+  const visibleBets = bets.filter((bet) => {
+    if (isCPUAdmin) return false; // Hide all bets from admin
+    // Later you may also check if this user has already accepted the CPU bet
+    return true;
+  });
 
   const acceptBet = async (bet, index) => {
     try {
@@ -44,23 +50,26 @@ export default function CPU({ addOngoingBet }) {
           Authorization: `Bearer ${user?.token}`,
         },
       });
-  
+
       if (res.status === 200) {
         setBets((prev) => {
           const updated = [...prev];
           updated.splice(index, 1);
           return updated;
         });
-  
+
         addOngoingBet(bet); // Add bet to Ongoing tab
       } else {
-        console.error("❌ CPU bet not accepted:", res.data?.error || "Unknown error");
+        console.error(
+          "❌ CPU bet not accepted:",
+          res.data?.error || "Unknown error"
+        );
       }
     } catch (err) {
       console.error("❌ CPU bet accept error:", err);
     }
   };
-  
+
   return (
     <>
       <div className="pvp-page">
@@ -90,7 +99,7 @@ export default function CPU({ addOngoingBet }) {
         </div>
 
         <div className="bet-list">
-          {bets.map((bet, index) => (
+          {visibleBets.map((bet, index) => (
             <div className="bet-card" key={index}>
               <div className="bet-top">
                 <span className="poster-time">
