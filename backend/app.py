@@ -311,15 +311,16 @@ def get_ongoing_bets():
         conn.close()
 
 def check_stats_match(bet):
-    game_type = bet['gametype']
+    game_type = bet.get('gametype')
 
     if game_type == "Score":
-        if not all([
-            bet['yourteama'], bet['oppteama'],
-            bet['yourteamb'], bet['oppteamb'],
-            bet['yourscorea'], bet['oppscorea'],
-            bet['yourscoreb'], bet['oppscoreb']
-        ]):
+        required_fields = [
+            bet.get('yourteama'), bet.get('oppteama'),
+            bet.get('yourteamb'), bet.get('oppteamb'),
+            bet.get('yourscorea'), bet.get('oppscorea'),
+            bet.get('yourscoreb'), bet.get('oppscoreb')
+        ]
+        if not all(field is not None for field in required_fields):
             return False
 
         return (
@@ -330,30 +331,33 @@ def check_stats_match(bet):
         )
 
     elif game_type == "Shots Made":
-        your_player = bet.get('yourplayer', '').strip().lower()
-        opp_player = bet.get('oppplayer', '').strip().lower()
+        player_1 = (bet.get('yourplayer') or '').strip().lower()
+        player_2 = (bet.get('oppplayer') or '').strip().lower()
         your_shots = bet.get('yourshots')
         opp_shots = bet.get('oppshots')
 
         return (
-            your_player and opp_player and
-            your_player == opp_player and
-            your_shots is not None and
-            opp_shots is not None and
-            your_shots == opp_shots
+            player_1 and player_2 and
+            player_1 == player_2 and
+            bet.get('yourshots') is not None and
+            bet.get('oppshots') is not None and
+            bet['yourshots'] == bet['oppshots']
         )
+
 
     elif game_type == "Other":
+        your_outcome = bet.get('youroutcome')
+        opp_outcome = bet.get('oppoutcome')
+
         return (
-            bet.get('youroutcome') is not None and
-            bet.get('oppoutcome') is not None and
-            bet['youroutcome'] == bet['oppoutcome']
+            your_outcome is not None and
+            opp_outcome is not None and
+            your_outcome == opp_outcome
         )
 
-    else:
-        print("⚠️ Unknown game type:", game_type)
-
+    print("⚠️ Unknown game type:", game_type)
     return False
+
 
 def compute_status_message(bet, player_id):
     game_type = bet["gametype"]
@@ -434,28 +438,24 @@ def submit_stats(bet_id):
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    # Helper to insert stat
-    def insert_stat(player_id, game_played, game_type, stat_name, stat_value):
+    def insert_stat(subject_id, game_played, game_type, stat_name, stat_value):
         cur.execute("""
             INSERT INTO player_stats (player_id, game_played, game_type, stat_name, stat_value)
             VALUES (%s, %s, %s, %s, %s)
-        """, (player_id, game_played, game_type, stat_name, stat_value))
+        """, (subject_id, game_played, game_type, stat_name, stat_value))
 
-    # Get current bet
+    # Fetch the current bet
     cur.execute("SELECT * FROM bets WHERE id = %s", (bet_id,))
     bet = cur.fetchone()
-
     if not bet:
         return jsonify({"error": "Bet not found"}), 404
 
-    # Determine if this is poster or accepter
     is_poster = player_id == bet['posterid']
     is_accepter = player_id == bet['accepterid']
-
     if not (is_poster or is_accepter):
         return jsonify({"error": "Unauthorized"}), 403
 
-    # Update the corresponding side (poster or accepter)
+    # Prepare stat update fields
     update_fields = []
     update_values = []
 
@@ -476,23 +476,55 @@ def submit_stats(bet_id):
         update_fields += ["yourOutcome" if is_poster else "oppOutcome"]
         update_values += [data["yourOutcome"]]
 
-    # Build query
+    # Execute update
     set_clause = ", ".join(f"{field} = %s" for field in update_fields)
     cur.execute(f"UPDATE bets SET {set_clause} WHERE id = %s", (*update_values, bet_id))
-
     conn.commit()
-    
-    # Check if stats match → if yes, mark as submitted
+
+    # Re-fetch updated bet
     cur.execute("SELECT * FROM bets WHERE id = %s", (bet_id,))
     updated_bet = cur.fetchone()
-    
     match = check_stats_match(updated_bet)
-
     status_message = compute_status_message(updated_bet, player_id)
 
-    # Only mark as submitted if BOTH sides entered AND match
     if match:
         cur.execute("UPDATE bets SET status = 'submitted' WHERE id = %s", (bet_id,))
+
+        if updated_bet['gametype'] == "Shots Made":
+            subject_name = (updated_bet.get('yourplayer') or updated_bet.get('oppplayer')).strip()
+            stat_value = updated_bet['yourshots']  # same as oppshots after match
+
+            # Get player ID by name
+            cur.execute("SELECT id FROM players WHERE LOWER(username) = LOWER(%s)", (subject_name,))
+            result = cur.fetchone()
+
+            if result:
+                subject_id = result['id']
+                insert_stat(subject_id, updated_bet['gameplayed'], updated_bet['gametype'], "shots_made", stat_value)
+            else:
+                print(f"❌ No player found with name: {subject_name}")
+
+        elif updated_bet['gametype'] == "Score":
+            insert_stat(updated_bet['posterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_a", updated_bet['yourscorea'])
+            insert_stat(updated_bet['posterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_b", updated_bet['yourscoreb'])
+            insert_stat(updated_bet['accepterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_a", updated_bet['oppscorea'])
+            insert_stat(updated_bet['accepterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_b", updated_bet['oppscoreb'])
+
+        elif updated_bet['gametype'] == "Other":
+            insert_stat(updated_bet['posterid'], updated_bet['gameplayed'], updated_bet['gametype'], "outcome", updated_bet['youroutcome'])
+            insert_stat(updated_bet['accepterid'], updated_bet['gameplayed'], updated_bet['gametype'], "outcome", updated_bet['oppoutcome'])
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return jsonify({
+        "message": "Stats submitted successfully",
+        "match": match,
+        "status_message": status_message
+    })
+
+
 
         # # Insert stats into player_stats table
         # if bet['gametype'] == "Shots Made":
