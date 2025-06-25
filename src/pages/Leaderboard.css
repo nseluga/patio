@@ -1,11 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Alatsi:wght@400&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Anybody:wght@400&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Lobster:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rye:wght@400&display=swap');
 
 /* Leaderboard Page */
 .leaderboard-page {
   min-height: 100vh;
-  background: linear-gradient(to bottom, rgb(233, 39, 14), rgb(55, 1, 1));
+  background: linear-gradient(to bottom, rgb(69, 9, 74), rgb(0, 0, 0));
   padding: 10px 20px 80px 20px !important;
   padding-bottom: 80px; /* space for BottomNav */
   box-sizing: border-box;
@@ -16,14 +16,14 @@
   content: '🏆';
   position: absolute;
   font-size: 80px;
-  top: 50px;
+  top: 60px;
   left: 340px;
 }
 .leaderboard-page::after {
   content: '🏆';
   position: absolute;
   font-size: 80px;
-  top: 50px;
+  top: 60px;
   right: 340px;
 }
 
@@ -33,7 +33,7 @@
   margin: 10px auto;
   margin-bottom: 20px;
   padding: 1px 5px;
-  background: linear-gradient(to bottom, #eb9800, #e9d14a);
+  background: linear-gradient(to bottom, #000000, #444444);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   border: 10px double rgb(255, 255, 255);
   width: 35%;
@@ -46,7 +46,7 @@
   font-weight: bold;
   color: white;
   text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.2);
-  font-family: "Lobster";
+  font-family: "Rye";
   letter-spacing: 2px;
 }
 
