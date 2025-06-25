@@ -4,7 +4,7 @@ import { useState, useEffect, useContext } from "react";
 import { removeBetByIndex } from "../utils/acceptHandling";
 import { formatTimeAgo } from "../utils/timeUtils";
 import UserContext from "../UserContext";
-import flic from '../assets/images/flic.png';
+import back1 from '../assets/images/back1.png';
 import buttonpng from '../assets/images/button.png';
 import "./PvP.css";
 import api from "../api";
@@ -113,7 +113,7 @@ export default function PvP({ addOngoingBet }) {
 
   return (
     <>
-      <div className="pvp-page" style={{ backgroundImage: `url(${flic})` }}>
+      <div className="pvp-page" style={{ backgroundImage: `url(${back1})` }}>
         <div className="pvp-header">
           <h2 className="pvp-title">PvP BETS</h2>
           <button
