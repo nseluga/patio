@@ -77,10 +77,24 @@ def create_bet():
         return jsonify({"error": "Unauthorized"}), 401
 
     bet = request.json
+    amount = bet.get('amount', 0)
+    if not isinstance(amount, int) or amount <= 0:
+        return jsonify({"error": "Invalid or missing amount"}), 400
+
     conn = get_db()
     cur = conn.cursor()
 
     try:
+        # Check if player has enough caps
+        cur.execute("SELECT caps_balance FROM players WHERE id = %s", (player_id,))
+        caps = cur.fetchone()
+        if not caps or caps[0] < amount:
+            return jsonify({"error": "Insufficient caps"}), 400
+
+        # Deduct caps from poster
+        cur.execute("UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s", (amount, player_id))
+
+        # Insert bet
         cur.execute('''
             INSERT INTO bets (
                 id, poster, posterId, timePosted, matchup, amount,
@@ -216,42 +230,29 @@ def accept_bet(bet_id):
     cur = conn.cursor()
 
     try:
+        # Get amount and poster ID
+        cur.execute("SELECT amount, posterId FROM bets WHERE id = %s AND status = 'posted'", (bet_id,))
+        bet = cur.fetchone()
+        if not bet:
+            return jsonify({"error": "Bet not found or already accepted"}), 404
+
+        amount, poster_id = bet
+
+        # Check caps of accepter
+        cur.execute("SELECT caps_balance FROM players WHERE id = %s", (player_id,))
+        caps = cur.fetchone()
+        if not caps or caps[0] < amount:
+            return jsonify({"error": "Insufficient caps"}), 400
+
+        # Deduct caps from accepter
+        cur.execute("UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s", (amount, player_id))
+
+        # Accept the bet
         cur.execute("""
             UPDATE bets
             SET accepterId = %s, status = 'accepted'
             WHERE id = %s
         """, (player_id, bet_id))
-        conn.commit()
-        return jsonify({"status": "accepted"}), 200
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cur.close()
-        conn.close()
-
-@app.route("/accept_cpu_bet/<bet_id>", methods=["POST"])
-def accept_cpu_bet(bet_id):
-    player_id = get_player_id()
-    if player_id is None:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    conn = get_db()
-    cur = conn.cursor()
-
-    try:
-        # Check if this player already accepted this CPU bet
-        cur.execute("""
-            SELECT 1 FROM cpu_acceptances WHERE id = %s AND accepter_id = %s
-        """, (bet_id, player_id))
-        if cur.fetchone():
-            return jsonify({"error": "Bet already accepted"}), 400
-
-        # Record the acceptance
-        cur.execute("""
-            INSERT INTO cpu_acceptances (id, accepter_id)
-            VALUES (%s, %s)
-        """, (bet_id, player_id))
 
         conn.commit()
         return jsonify({"status": "accepted"}), 200
@@ -263,6 +264,7 @@ def accept_cpu_bet(bet_id):
     finally:
         cur.close()
         conn.close()
+
 
 @app.route("/ongoing_bets", methods=["GET"])
 def get_ongoing_bets():
@@ -549,16 +551,35 @@ def submit_stats(bet_id):
         status_message = compute_status_message(updated_bet, player_id)
 
         if match:
+            # ✅ Update bet status
             cur.execute("UPDATE bets SET status = 'submitted' WHERE id = %s", (bet_id,))
 
+            # ✅ Determine cap payout
+            poster_id = updated_bet['posterid']
+            accepter_id = updated_bet['accepterid']
+            amount = updated_bet['amount']
+
+            if is_poster:
+                winner_id = poster_id
+                loser_id = accepter_id
+            else:
+                winner_id = accepter_id
+                loser_id = poster_id
+
+            # ✅ Award winner with total pot (2x amount)
+            cur.execute("""
+                UPDATE players
+                SET caps_balance = caps_balance + %s
+                WHERE id = %s
+            """, (2 * amount, winner_id))
+
+            # ✅ Record stats as before
             if updated_bet['gametype'] == "Shots Made":
                 subject_name = (updated_bet.get('yourplayer') or updated_bet.get('oppplayer')).strip()
                 stat_value = updated_bet['yourshots']  # same as oppshots after match
 
-                # Get player ID by name
                 cur.execute("SELECT id FROM players WHERE LOWER(username) = LOWER(%s)", (subject_name,))
                 result = cur.fetchone()
-
                 if result:
                     subject_id = result['id']
                     insert_stat(subject_id, updated_bet['gameplayed'], updated_bet['gametype'], "shots_made", stat_value)
@@ -566,14 +587,14 @@ def submit_stats(bet_id):
                     print(f"❌ No player found with name: {subject_name}")
 
             elif updated_bet['gametype'] == "Score":
-                insert_stat(updated_bet['posterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_a", updated_bet['yourscorea'])
-                insert_stat(updated_bet['posterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_b", updated_bet['yourscoreb'])
-                insert_stat(updated_bet['accepterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_a", updated_bet['oppscorea'])
-                insert_stat(updated_bet['accepterid'], updated_bet['gameplayed'], updated_bet['gametype'], "score_b", updated_bet['oppscoreb'])
+                insert_stat(poster_id, updated_bet['gameplayed'], updated_bet['gametype'], "score_a", updated_bet['yourscorea'])
+                insert_stat(poster_id, updated_bet['gameplayed'], updated_bet['gametype'], "score_b", updated_bet['yourscoreb'])
+                insert_stat(accepter_id, updated_bet['gameplayed'], updated_bet['gametype'], "score_a", updated_bet['oppscorea'])
+                insert_stat(accepter_id, updated_bet['gameplayed'], updated_bet['gametype'], "score_b", updated_bet['oppscoreb'])
 
             elif updated_bet['gametype'] == "Other":
-                insert_stat(updated_bet['posterid'], updated_bet['gameplayed'], updated_bet['gametype'], "outcome", updated_bet['youroutcome'])
-                insert_stat(updated_bet['accepterid'], updated_bet['gameplayed'], updated_bet['gametype'], "outcome", updated_bet['oppoutcome'])
+                insert_stat(poster_id, updated_bet['gameplayed'], updated_bet['gametype'], "outcome", updated_bet['youroutcome'])
+                insert_stat(accepter_id, updated_bet['gameplayed'], updated_bet['gametype'], "outcome", updated_bet['oppoutcome'])
 
     conn.commit()
     cur.close()

@@ -8,7 +8,7 @@ export default function Leaderboard() {
   useEffect(() => {
     async function fetchLeaderboard() {
       try {
-        const response = await fetch("http://localhost:5001/leaderboard");
+        const response = await fetch("http://localhost:5000/leaderboard");
         const data = await response.json();
         setPlayers(data.slice(0, 5)); // top 5 only
       } catch (error) {

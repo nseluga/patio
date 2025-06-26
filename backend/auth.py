@@ -132,37 +132,45 @@ bets = Blueprint('bets', __name__)
 
 @bets.route('/bets', methods=['POST'])
 def create_bet():
-    # Extract token from Authorization header
     token = request.headers.get('Authorization', '').replace('Bearer ', '')
-
     try:
-        # Decode JWT token to get the user ID
         payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
         player_id = payload['id']
     except:
-        # Return error if token is invalid
         return jsonify({'error': 'Invalid token'}), 401
 
-    # Get bet data from the request body
     data = request.json
+    amount = data.get('amount')  # amount of caps being wagered
+    if not isinstance(amount, int) or amount <= 0:
+        return jsonify({'error': 'Invalid or missing amount'}), 400
 
-    # Connect to the database
     conn = get_db()
     cur = conn.cursor()
 
-    # Insert the new bet into the database and return its ID
+    # ✅ Check if player has enough caps
+    cur.execute('SELECT caps_balance FROM players WHERE id = %s', (player_id,))
+    result = cur.fetchone()
+    if result is None:
+        return jsonify({'error': 'Player not found'}), 404
+
+    current_caps = result[0]
+    if current_caps < amount:
+        return jsonify({'error': 'Insufficient cap balance'}), 400
+
+    # ✅ Deduct caps temporarily (optional: "lock" them instead of removing)
+    cur.execute('UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s', (amount, player_id))
+
+    # ✅ Insert the new bet
     cur.execute('''
-        INSERT INTO bets (poster_id, game_type, subject, line)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO bets (poster_id, game_type, subject, line, amount)
+        VALUES (%s, %s, %s, %s, %s)
         RETURNING id
-    ''', (player_id, data['game_type'], data['subject'], data['line']))
+    ''', (player_id, data['game_type'], data['subject'], data['line'], amount))
     bet_id = cur.fetchone()[0]
 
-    # Commit the transaction and close the connection
     conn.commit()
     cur.close()
     conn.close()
 
-    # Respond with success and the new bet ID
     return jsonify({'message': 'Bet created', 'bet_id': bet_id})
 
