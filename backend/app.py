@@ -472,11 +472,11 @@ def submit_stats(bet_id):
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    def insert_stat(subject_id, game_played, game_type, stat_name, stat_value):
+    def insert_stat(bet_id, subject_id, game_played, game_type, stat_name, stat_value, team=None, team_size=None):
         cur.execute("""
-            INSERT INTO bettable_player_stats (subject_id, game_played, game_type, stat_name, stat_value)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (subject_id, game_played, game_type, stat_name, stat_value))
+            INSERT INTO bettable_player_stats (bet_id, subject_player, gamePlayed, gameType, stat_name, stat_value, team, team_size)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (bet_id, subject_id, game_played, game_type, stat_name, stat_value, team, team_size))
 
     # Fetch the current bet
     cur.execute("SELECT * FROM bets WHERE id = %s", (bet_id,))
@@ -600,7 +600,16 @@ def submit_stats(bet_id):
                             continue
                         seen.add(cleaned_name)
                         subject_id = get_or_create_bettable_player(cur, name.strip())
-                        insert_stat(subject_id, updated_bet['gameplayed'], updated_bet['gametype'], "shots_made", stat)
+                        insert_stat(
+                            bet_id,
+                            subject_id,
+                            updated_bet['gameplayed'],
+                            updated_bet['gametype'],
+                            "shots_made",
+                            stat,
+                            team=None,            # ← add this now
+                            team_size=None        # ← leave empty for now
+                        )
 
             elif updated_bet['gametype'] == "Score":
                 names_stats = [
@@ -610,15 +619,36 @@ def submit_stats(bet_id):
                     (updated_bet.get('oppplayerb'), updated_bet['oppscoreb']),
                 ]
 
+                team_lookup = {
+                    "yourplayera": "A", "yourplayerb": "A",
+                    "oppplayera": "B", "oppplayerb": "B"
+                }
+
                 seen = set()
-                for name, stat in names_stats:
-                    if name:
+                for key in ["yourplayera", "yourplayerb", "oppplayera", "oppplayerb"]:
+                    name = updated_bet.get(key)
+                    stat_key = "yourscorea" if key.endswith("a") else "yourscoreb"
+                    if "opp" in key:
+                        stat_key = stat_key.replace("your", "opp")
+
+                    stat = updated_bet.get(stat_key)
+
+                    if name and stat is not None:
                         cleaned_name = name.strip().lower()
                         if cleaned_name in seen:
                             continue
                         seen.add(cleaned_name)
                         subject_id = get_or_create_bettable_player(cur, name.strip())
-                        insert_stat(subject_id, updated_bet['gameplayed'], updated_bet['gametype'], "score", stat)
+                        insert_stat(
+                            bet_id,
+                            subject_id,
+                            updated_bet['gameplayed'],
+                            updated_bet['gametype'],
+                            "score",
+                            stat,
+                            team=team_lookup[key],
+                            team_size=updated_bet.get("none") # update once team size is tracked
+                        )
 
             elif updated_bet['gametype'] == "Other":
                 names_stats = [
@@ -634,7 +664,16 @@ def submit_stats(bet_id):
                             continue
                         seen.add(cleaned_name)
                         subject_id = get_or_create_bettable_player(cur, name.strip())
-                        insert_stat(subject_id, updated_bet['gameplayed'], updated_bet['gametype'], "outcome", stat)
+                        insert_stat(
+                        bet_id,
+                        subject_id,
+                        updated_bet['gameplayed'],
+                        updated_bet['gametype'],
+                        "other",
+                        stat,
+                        team=None,            # ← add this now
+                        team_size=None        # ← leave empty for now
+                    )
 
     conn.commit()
     cur.close()
