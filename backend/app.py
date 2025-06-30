@@ -452,6 +452,18 @@ def compute_status_message(bet, player_id):
 
     return "Unknown game type"
 
+def get_or_create_bettable_player(cur, name):
+    cur.execute("SELECT id FROM bettable_players WHERE LOWER(name) = LOWER(%s)", (name,))
+    row = cur.fetchone()
+    if row:
+        return row["id"]
+    
+    cur.execute(
+        "INSERT INTO bettable_players (name) VALUES (%s) RETURNING id",
+        (name,)
+    )
+    return cur.fetchone()["id"]
+
 @app.route('/submit_stats/<bet_id>', methods=['POST'])
 def submit_stats(bet_id):
     data = request.json
@@ -462,7 +474,7 @@ def submit_stats(bet_id):
 
     def insert_stat(subject_id, game_played, game_type, stat_name, stat_value):
         cur.execute("""
-            INSERT INTO player_stats (player_id, game_played, game_type, stat_name, stat_value)
+            INSERT INTO bettable_player_stats (subject_id, game_played, game_type, stat_name, stat_value)
             VALUES (%s, %s, %s, %s, %s)
         """, (subject_id, game_played, game_type, stat_name, stat_value))
 
@@ -573,28 +585,56 @@ def submit_stats(bet_id):
                 WHERE id = %s
             """, (2 * amount, winner_id))
 
-            # ✅ Record stats as before
+            # ✅ Log all players to bettable_player_stats (creating them if needed)
             if updated_bet['gametype'] == "Shots Made":
-                subject_name = (updated_bet.get('yourplayer') or updated_bet.get('oppplayer')).strip()
-                stat_value = updated_bet['yourshots']  # same as oppshots after match
+                names_stats = [
+                    (updated_bet.get('yourplayer'), updated_bet['yourshots']),
+                    (updated_bet.get('oppplayer'), updated_bet['oppshots']),
+                ]
 
-                cur.execute("SELECT id FROM players WHERE LOWER(username) = LOWER(%s)", (subject_name,))
-                result = cur.fetchone()
-                if result:
-                    subject_id = result['id']
-                    insert_stat(subject_id, updated_bet['gameplayed'], updated_bet['gametype'], "shots_made", stat_value)
-                else:
-                    print(f"❌ No player found with name: {subject_name}")
+                seen = set()
+                for name, stat in names_stats:
+                    if name:
+                        cleaned_name = name.strip().lower()
+                        if cleaned_name in seen:
+                            continue
+                        seen.add(cleaned_name)
+                        subject_id = get_or_create_bettable_player(cur, name.strip())
+                        insert_stat(subject_id, updated_bet['gameplayed'], updated_bet['gametype'], "shots_made", stat)
 
             elif updated_bet['gametype'] == "Score":
-                insert_stat(poster_id, updated_bet['gameplayed'], updated_bet['gametype'], "score_a", updated_bet['yourscorea'])
-                insert_stat(poster_id, updated_bet['gameplayed'], updated_bet['gametype'], "score_b", updated_bet['yourscoreb'])
-                insert_stat(accepter_id, updated_bet['gameplayed'], updated_bet['gametype'], "score_a", updated_bet['oppscorea'])
-                insert_stat(accepter_id, updated_bet['gameplayed'], updated_bet['gametype'], "score_b", updated_bet['oppscoreb'])
+                names_stats = [
+                    (updated_bet.get('yourplayera'), updated_bet['yourscorea']),
+                    (updated_bet.get('yourplayerb'), updated_bet['yourscoreb']),
+                    (updated_bet.get('oppplayera'), updated_bet['oppscorea']),
+                    (updated_bet.get('oppplayerb'), updated_bet['oppscoreb']),
+                ]
+
+                seen = set()
+                for name, stat in names_stats:
+                    if name:
+                        cleaned_name = name.strip().lower()
+                        if cleaned_name in seen:
+                            continue
+                        seen.add(cleaned_name)
+                        subject_id = get_or_create_bettable_player(cur, name.strip())
+                        insert_stat(subject_id, updated_bet['gameplayed'], updated_bet['gametype'], "score", stat)
 
             elif updated_bet['gametype'] == "Other":
-                insert_stat(poster_id, updated_bet['gameplayed'], updated_bet['gametype'], "outcome", updated_bet['youroutcome'])
-                insert_stat(accepter_id, updated_bet['gameplayed'], updated_bet['gametype'], "outcome", updated_bet['oppoutcome'])
+                names_stats = [
+                    (updated_bet.get('yourplayer'), updated_bet.get('youroutcome')),
+                    (updated_bet.get('oppplayer'), updated_bet.get('oppoutcome')),
+                ]
+
+                seen = set()
+                for name, stat in names_stats:
+                    if name:
+                        cleaned_name = name.strip().lower()
+                        if cleaned_name in seen:
+                            continue
+                        seen.add(cleaned_name)
+                        subject_id = get_or_create_bettable_player(cur, name.strip())
+                        insert_stat(subject_id, updated_bet['gameplayed'], updated_bet['gametype'], "outcome", stat)
 
     conn.commit()
     cur.close()

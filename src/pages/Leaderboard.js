@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import BottomNav from "../components/BottomNav";
+import { baseURL } from "../api";
 import "./Leaderboard.css";
 
 export default function Leaderboard() {
@@ -8,7 +9,7 @@ export default function Leaderboard() {
   useEffect(() => {
     async function fetchLeaderboard() {
       try {
-        const response = await fetch("http://localhost:5000/leaderboard");
+        const response = await fetch(`${baseURL}/leaderboard`);
         const data = await response.json();
         setPlayers(data.slice(0, 5)); // top 5 only
       } catch (error) {

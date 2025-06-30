@@ -20,6 +20,7 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
   const setBets = setOngoingBets;
   // eslint-disable-next-line no-unused-vars
   const [_, setNow] = useState(Date.now());
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     let didCancel = false;
@@ -88,6 +89,8 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
 
   // Submit handler to update bet with user’s input and check for match
   const handleSubmit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
     setBets((prev) =>
       prev.flatMap((bet) => {
         if (bet.id !== activeBetId) return [bet]; // only update the selected bet
@@ -178,7 +181,8 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
             return [];
           }
         }
-
+        
+        setSubmitting(false);
         return [updated]; // if no match, keep updated bet
       })
     );

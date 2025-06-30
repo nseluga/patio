@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Create a reusable Axios instance with base URL
 const api = axios.create({
-  baseURL: 'http://localhost:5000', // deployed backend URL eventually*******
+  baseURL: 'http://localhost:5001', // deployed backend URL eventually*******
   withCredentials: true,
 });
 
@@ -18,3 +18,4 @@ api.interceptors.request.use((config) => {
 
 // Export the configured Axios instance
 export default api;
+export const baseURL = api.defaults.baseURL;
