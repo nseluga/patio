@@ -607,8 +607,17 @@ def submit_stats(bet_id):
                             updated_bet['gametype'],
                             "shots_made",
                             stat,
-                            team=None,            # ← add this now
-                            team_size=None        # ← leave empty for now
+                            team=None,            
+                            team_size=None        
+                        )
+                        update_player_aggregate(
+                            cur,
+                            player_name=name.strip(),                 
+                            game_played=updated_bet['gameplayed'],
+                            game_type=updated_bet['gametype'],
+                            stat_name="shots_made",                  
+                            stat_value=stat,
+                            team_size=None                   
                         )
 
             elif updated_bet['gametype'] == "Score":
@@ -649,6 +658,15 @@ def submit_stats(bet_id):
                             team=team_lookup[key],
                             team_size=updated_bet.get("none") # update once team size is tracked
                         )
+                        update_player_aggregate(
+                            cur,
+                            player_name=name.strip(),                 
+                            game_played=updated_bet['gameplayed'],
+                            game_type=updated_bet['gametype'],
+                            stat_name="score",                  
+                            stat_value=stat,
+                            team_size=None                    # update once team size is tracked
+                        )
 
             elif updated_bet['gametype'] == "Other":
                 names_stats = [
@@ -665,15 +683,24 @@ def submit_stats(bet_id):
                         seen.add(cleaned_name)
                         subject_id = get_or_create_bettable_player(cur, name.strip())
                         insert_stat(
-                        bet_id,
-                        subject_id,
-                        updated_bet['gameplayed'],
-                        updated_bet['gametype'],
-                        "other",
-                        stat,
-                        team=None,            # ← add this now
-                        team_size=None        # ← leave empty for now
-                    )
+                            bet_id,
+                            subject_id,
+                            updated_bet['gameplayed'],
+                            updated_bet['gametype'],
+                            "other",
+                            stat,
+                            team=None,            # ← add this now
+                            team_size=None        # ← leave empty for now
+                        )
+                        update_player_aggregate(
+                            cur,
+                            player_name=name.strip(),                 
+                            game_played=updated_bet['gameplayed'],
+                            game_type=updated_bet['gametype'],
+                            stat_name="other",                  
+                            stat_value=stat,
+                            team_size=None                   
+                        )
 
     conn.commit()
     cur.close()
@@ -702,32 +729,76 @@ def get_all_bets():
         cur.close()
         conn.close()
 
-# @app.route("/stats/averages/<stat_name>", methods=["GET"])
-# def get_average_stats(stat_name):
-#     conn = get_db()
-#     cur = conn.cursor()
+def update_player_aggregate(cur, player_name, game_played, game_type, stat_name, stat_value, team_size=None):
+    cur.execute("""
+        SELECT * FROM player_stat_aggregates
+        WHERE player_name = %s
+        AND game_played = %s
+        AND game_type = %s
+        AND stat_name = %s
+        AND team_size IS NOT DISTINCT FROM %s
+    """, (player_name, game_played, game_type, stat_name, team_size))
+
+    existing = cur.fetchone()
+
+    if not existing:
+        cur.execute("""
+            INSERT INTO player_stat_aggregates (
+                player_name, game_played, game_type, team_size, stat_name,
+                mean, std, mean_last_5, n_games
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            player_name, game_played, game_type, team_size, stat_name,
+            stat_value, 0.0, stat_value, 1
+        ))
+        return
     
-#     try:
-#         cur.execute("""
-#             SELECT player_id, game_played, AVG(stat_value) AS average
-#             FROM player_stats
-#             WHERE stat_name = %s
-#             GROUP BY player_id, game_played
-#         """, (stat_name,))
-#         rows = cur.fetchall()
-#         return jsonify([
-#             {
-#                 "playerId": row[0],
-#                 "gamePlayed": row[1],
-#                 "average": float(row[2])
-#             }
-#             for row in rows
-#         ])
+    else:
+        old_mean = existing['mean']
+        old_std = existing['std']
+        old_n = existing['n_games']
 
-#     except Exception as e:
-#         print("❌ Failed to compute averages:", e)
-#         return jsonify({"error": str(e)}), 500
+        new_n = old_n + 1
+        delta = stat_value - old_mean
+        new_mean = old_mean + delta / new_n
+        new_var = ((old_std ** 2) * (old_n - 1) + delta * (stat_value - new_mean)) / new_n
+        new_std = new_var ** 0.5 if new_var > 0 else 0.0
 
-#     finally:
-#         cur.close()
-#         conn.close()
+        cur.execute("""
+            SELECT stat_value
+            FROM bettable_player_stats
+            WHERE subject_player = %s
+            AND gamePlayed = %s
+            AND gameType = %s
+            AND stat_name = %s
+            AND team_size IS NOT DISTINCT FROM %s
+            ORDER BY timestamp DESC
+            LIMIT 4
+        """, (player_name, game_played, game_type, stat_name, team_size))
+
+        recent_stats = [row['stat_value'] for row in cur.fetchall()]
+
+        # Add the new value to the front of the list
+        recent_stats.insert(0, stat_value)
+
+        # Trim to 5 max
+        recent_stats = recent_stats[:5]
+
+        # Compute mean of last 5
+        mean_last_5 = sum(recent_stats) / len(recent_stats)
+
+        cur.execute("""
+            UPDATE player_stat_aggregates
+            SET mean = %s,
+                std = %s,
+                mean_last_5 = %s,
+                n_games = %s
+            WHERE player_name = %s
+            AND game_played = %s
+            AND game_type = %s
+            AND stat_name = %s
+            AND team_size IS NOT DISTINCT FROM %s
+        """, (
+            new_mean, new_std, mean_last_5, new_n,
+            player_name, game_played, game_type, stat_name, team_size
+        ))
