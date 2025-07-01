@@ -5,6 +5,7 @@ import { removeBetByIndex } from "../utils/acceptHandling";
 import { useContext } from "react";
 import UserContext from "../UserContext";
 import { formatTimeAgo } from "../utils/timeUtils";
+import buttonpng from "../assets/images/button.png";
 import api from "../api";
 import "./PvP.css"; // Reuse PvP styles for layout and cards
 
@@ -12,6 +13,9 @@ import "./PvP.css"; // Reuse PvP styles for layout and cards
 export default function CPU({ addOngoingBet }) {
   const [bets, setBets] = useState([]);
   const { user } = useContext(UserContext);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedBetType, setSelectedBetType] = useState("");
+  const [popupMessage, setPopupMessage] = useState("");
   // eslint-disable-next-line no-unused-vars
   const [_, setNow] = useState(Date.now());
 
@@ -75,27 +79,13 @@ export default function CPU({ addOngoingBet }) {
       <div className="pvp-page">
         <div className="pvp-header">
           <h2 className="pvp-title">CPU Bets</h2>
-          <button
-            onClick={() => {
-              localStorage.removeItem("pvpBets");
-              localStorage.removeItem("cpuBets");
-              localStorage.removeItem("ongoingBets");
-              window.location.reload();
-            }}
-            style={{
-              position: "fixed",
-              bottom: "80px",
-              right: "20px",
-              backgroundColor: "#ef4444",
-              color: "white",
-              padding: "0.5rem 1rem",
-              borderRadius: "0.5rem",
-              fontSize: "0.9rem",
-              zIndex: 1000,
-            }}
-          >
-            🔄 Reset All
-          </button>
+          {isCPUAdmin && (
+            <button
+              className="create-bet-button"
+              onClick={() => setShowModal(true)}
+              style={{ backgroundImage: `url(${buttonpng})` }}
+            ></button>
+          )}
         </div>
 
         <div className="bet-list">
@@ -129,8 +119,86 @@ export default function CPU({ addOngoingBet }) {
             </div>
           ))}
         </div>
+        {showModal && (
+          <div className="bet-modal-overlay">
+            <div className="bet-modal">
+              <h3>Generate CPU Bet</h3>
+
+              <select
+                className="modal-input"
+                value={selectedBetType}
+                onChange={(e) => setSelectedBetType(e.target.value)}
+              >
+                <option value="">Select Bet Type</option>
+                <option value="Caps - Shots Made">Caps - Shots Made</option>
+                <option value="Beerball - Shots Made">
+                  Beerball - Shots Made
+                </option>
+                <option value="Caps - Score">Caps - Score</option>
+                <option value="Beerball - Score">Beerball - Score</option>
+              </select>
+
+              <div className="modal-actions">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="cancel-button"
+                >
+                  Cancel
+                </button>
+                <button
+                  className="confirm-button"
+                  onClick={async () => {
+                    let endpoint = "";
+                    switch (selectedBetType) {
+                      case "Caps - Shots Made":
+                        endpoint = "/cpu/create_caps_shots_bet";
+                        break;
+                      case "Beerball - Shots Made":
+                        endpoint = "/cpu/create_beerball_shots_bet";
+                        break;
+                      case "Caps - Score":
+                        endpoint = "/cpu/create_caps_score_bet";
+                        break;
+                      case "Beerball - Score":
+                        endpoint = "/cpu/create_beerball_score_bet";
+                        break;
+                      default:
+                        alert("Please select a valid bet type.");
+                        return;
+                    }
+
+                    try {
+                      await api.post(
+                        endpoint,
+                        {},
+                        {
+                          headers: {
+                            Authorization: `Bearer ${user?.token}`,
+                          },
+                        }
+                      );
+                      setPopupMessage("✅ CPU bet created!");
+                      setTimeout(() => setPopupMessage(""), 3000);
+
+                      setShowModal(false);
+                      window.location.reload();
+                    } catch (err) {
+                      console.error("❌ Failed to create CPU bet:", err);
+                      alert(
+                        "❌ " + (err.response?.data?.error || "Unknown error")
+                      );
+                    }
+                  }}
+                >
+                  Generate
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
+      {popupMessage && <div className="popup-banner">{popupMessage}</div>}
       <BottomNav />
     </>
   );
