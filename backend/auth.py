@@ -11,21 +11,24 @@ auth = Blueprint('auth', __name__)
 # Route to register a new player
 @auth.route('/register', methods=['POST'])
 def register():
-    # Get JSON data from the request and hash the password
     data = request.json
     hashed_pw = generate_password_hash(data['password'], method='pbkdf2:sha256')
 
-    # Insert the new player into the database
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("INSERT INTO players (username, email, password_hash) VALUES (%s, %s, %s)",
-                (data['username'], data['email'], hashed_pw))
+
+    # ✅ Insert with caps_balance set to 500
+    cur.execute("""
+        INSERT INTO players (username, email, password_hash, caps_balance)
+        VALUES (%s, %s, %s, %s)
+    """, (data['username'], data['email'], hashed_pw, 500))
+
     conn.commit()
     cur.close()
     conn.close()
 
-    # Return success response
     return jsonify({'message': 'Player registered'}), 201
+
 
 # Route to log in an existing player
 @auth.route('/login', methods=['POST'])
