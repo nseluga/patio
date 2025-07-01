@@ -596,6 +596,7 @@ def submit_stats(bet_id):
                         seen.add(cleaned_name)
                         subject_id = get_or_create_bettable_player(cur, name.strip())
                         insert_stat(
+                            cur,
                             bet_id,
                             subject_id,
                             updated_bet['gameplayed'],
@@ -644,6 +645,7 @@ def submit_stats(bet_id):
                         seen.add(cleaned_name)
                         subject_id = get_or_create_bettable_player(cur, name.strip())
                         insert_stat(
+                            cur,
                             bet_id,
                             subject_id,
                             updated_bet['gameplayed'],
@@ -678,6 +680,7 @@ def submit_stats(bet_id):
                         seen.add(cleaned_name)
                         subject_id = get_or_create_bettable_player(cur, name.strip())
                         insert_stat(
+                            cur,
                             bet_id,
                             subject_id,
                             updated_bet['gameplayed'],
