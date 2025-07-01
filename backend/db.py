@@ -2,7 +2,7 @@
 import psycopg2
 
 # Import the database connection string from config.py
-from config import DATABASE_URL
+from backend.config import DATABASE_URL
 
 # Function to create and return a new database connection
 def get_db():

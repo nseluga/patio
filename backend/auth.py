@@ -1,9 +1,9 @@
 from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-from db import get_db
+from backend.db import get_db
 import jwt
 import datetime
-from config import SECRET_KEY
+from backend.config import SECRET_KEY
 
 # Create a Flask blueprint for authentication routes
 auth = Blueprint('auth', __name__)
@@ -122,11 +122,6 @@ def get_current_user():
             } for r in recent_bets
         ]
     })
-
-from flask import Blueprint, request, jsonify
-from db import get_db
-import jwt
-from config import SECRET_KEY
 
 bets = Blueprint('bets', __name__)
 

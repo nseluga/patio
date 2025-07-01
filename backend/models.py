@@ -1,5 +1,5 @@
 # Import the get_db function to establish a database connection
-from db import get_db
+from backend.db import get_db
 
 
 # Create the players table
