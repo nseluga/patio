@@ -16,8 +16,8 @@ from backend.stats_utils import (
     get_or_create_bettable_player
 )
 from backend.bet_generation import (
-    generate_biased_caps_shots_line,
-    get_caps_shots_players,
+    generate_biased_caps_shots_1s_line,
+    get_caps_shots_1s_players,
 )
 
 # Initialize the Flask app and enable CORS
@@ -738,7 +738,7 @@ def create_cpu_caps_shots_bet():
 
     try:
         # Fetch players with stats
-        players = get_caps_shots_players(cur)
+        players = get_caps_shots_1s_players(cur)
         if len(players) < 2:
             return jsonify({"error": "Not enough players with stats"}), 400
 
@@ -747,7 +747,7 @@ def create_cpu_caps_shots_bet():
         
         # Generate line
         line_type = choice(["Over", "Under"])
-        line = generate_biased_caps_shots_line(player1, player2, line_type)
+        line = generate_biased_caps_shots_1s_line(player1, player2, line_type)
         bet_id = str(uuid4())
         time_posted = datetime.utcnow()
         amount = randint(10, 100)
