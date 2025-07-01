@@ -6,10 +6,18 @@ import jwt
 from backend.config import SECRET_KEY
 import psycopg2.extras
 from psycopg2.extras import Json
+from random import sample, randint
+from uuid import uuid4
+from datetime import datetime
+from random import choice
 from backend.stats_utils import (
     insert_stat,
     update_player_aggregate,
     get_or_create_bettable_player
+)
+from backend.bet_generation import (
+    generate_biased_caps_shots_line,
+    get_caps_shots_players,
 )
 
 # Initialize the Flask app and enable CORS
@@ -712,6 +720,64 @@ def get_all_bets():
     except Exception as e:
         print("❌ Failed to fetch bets:", e)
         return jsonify({"error": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
+
+@app.route("/cpu/create_caps_shots_bet", methods=["POST"])
+def create_cpu_caps_shots_bet():
+    player_id = get_player_id()
+    if player_id != 0:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    try:
+        # Fetch players with stats
+        players = get_caps_shots_players(cur)
+        if len(players) < 2:
+            return jsonify({"error": "Not enough players with stats"}), 400
+
+        # Sample two different players
+        player1, player2 = sample(players, 2)
+        
+        # Generate line
+        line_type = choice(["Over", "Under"])
+        line = generate_biased_caps_shots_line(player1, player2, line_type)
+        bet_id = str(uuid4())
+        time_posted = datetime.utcnow()
+        amount = randint(10, 100)
+
+        cur.execute("""
+            INSERT INTO bets (
+                id, poster, posterId, timePosted, matchup, amount,
+                lineType, lineNumber, gameType, gamePlayed,
+                yourPlayer, oppPlayer, status
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            bet_id,
+            "CPU", 0,
+            time_posted,
+            f"{player1['player_name']} vs {player2['player_name']}",
+            amount,
+            line_type,
+            line,
+            "Shots Made",
+            "Caps",
+            player1['player_name'],
+            player2['player_name'],
+            "CPU"
+        ))
+
+        conn.commit()
+        return jsonify({"message": "CPU bet created"}), 201
+
+    except Exception as e:
+        print("❌ CPU bet creation failed:", e)
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
     finally:
         cur.close()
         conn.close()
