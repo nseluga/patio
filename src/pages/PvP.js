@@ -43,25 +43,42 @@ export default function PvP({ addOngoingBet }) {
   }, [user?.playerId]); // runs only when playerId is set
 
 
-  // Handle accepting a bet
-  const acceptBet = async (betId) => {
-    try {
-      const res = await api.post(`/accept_bet/${betId}`, null, {
+  // Helper to flip line type
+const flipLineType = (type) => {
+  return type === "Over" ? "Under" : "Over";
+};
+
+// Handle accepting a bet
+const acceptBet = async (betId) => {
+  try {
+    const bet = bets.find((b) => b.id === betId);
+    if (!bet) {
+      console.error("❌ Bet not found");
+      return;
+    }
+
+    const accepterLineType = flipLineType(bet.lineType);
+
+    const res = await api.post(
+      `/accept_bet/${betId}`,
+      { accepterLineType }, // send the opposite side
+      {
         headers: {
           Authorization: `Bearer ${user?.token}`,
         },
-      });
-  
-      if (res.status === 200) {
-        setBets((prev) => prev.filter((b) => b.id !== betId));
-        addOngoingBet(betId);
-      } else {
-        console.error("❌ Error accepting bet:", res.data?.message || "Unknown error");
       }
-    } catch (err) {
-      console.error("❌ Request failed:", err);
+    );
+
+    if (res.status === 200) {
+      setBets((prev) => prev.filter((b) => b.id !== betId));
+      addOngoingBet(betId);
+    } else {
+      console.error("❌ Error accepting bet:", res.data?.message || "Unknown error");
     }
-  };
+  } catch (err) {
+    console.error("❌ Request failed:", err);
+  }
+};
 
   const handlePost = async () => {
     if (!matchup.trim() || !amount.trim() || !lineType.trim() || !lineNumber.trim()) {

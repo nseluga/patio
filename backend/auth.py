@@ -1,8 +1,7 @@
 from flask import Blueprint, request, jsonify
-from werkzeug.security import generate_password_hash, check_password_hash
-from backend.db import get_db
+from psycopg2.extras import RealDictCursor
 import jwt
-import datetime
+from backend.db import get_db
 from backend.config import SECRET_KEY
 
 # Create a Flask blueprint for authentication routes
@@ -171,4 +170,3 @@ def create_bet():
     conn.close()
 
     return jsonify({'message': 'Bet created', 'bet_id': bet_id})
-

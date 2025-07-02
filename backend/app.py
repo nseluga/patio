@@ -239,6 +239,9 @@ def accept_bet(bet_id):
     if player_id is None:
         return jsonify({"error": "Unauthorized"}), 401
 
+    data = request.get_json()
+    accepter_line_type = data.get("accepterLineType")  # Get flipped lineType from frontend
+
     conn = get_db()
     cur = conn.cursor()
 
@@ -260,12 +263,14 @@ def accept_bet(bet_id):
         # Deduct caps from accepter
         cur.execute("UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s", (amount, player_id))
 
-        # Accept the bet
+        # Accept the bet and store accepter's line type
         cur.execute("""
             UPDATE bets
-            SET accepterId = %s, status = 'accepted'
+            SET accepterId = %s,
+                accepter_line_type = %s,
+                status = 'accepted'
             WHERE id = %s
-        """, (player_id, bet_id))
+        """, (player_id, accepter_line_type, bet_id))
 
         conn.commit()
         return jsonify({"status": "accepted"}), 200
