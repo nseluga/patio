@@ -101,14 +101,14 @@
 }
 
 
-/* Bet subject (e.g., matchup name) */
 .subject {
   font-weight: 600;
   font-size: 20px;
   color: #333;
-  word-wrap: break-word;
-  line-height: 0.5;
-  font-family: "Anybody";
+  word-wrap: break-word;       
+  overflow-wrap: break-word;    
+  max-width: 90%;          
+  margin-bottom: 4px;       
 }
 
 /* Bottom row: bet amount and line info */
@@ -274,12 +274,14 @@
   text-align: left;
 }
 
-.game-played {
+.game-played,
+.game-type {
   font-size: 14px;
   color: #666;
-  margin: 4px 0;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
 }
-
 .team-player-row {
   display: flex;
   gap: 10px;

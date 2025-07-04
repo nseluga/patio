@@ -105,6 +105,7 @@ export default function CPU({ addOngoingBet }) {
               </div>
               <div className="subject">{bet.matchup}</div>
               <div className="game-played">Game: {bet.gamePlayed}</div>
+              <div className="game-type">Type: {bet.gameType}</div>
               <div className="bet-bottom">
                 <div className="amount">{bet.amount} caps</div>
                 <div className="line">

@@ -4,11 +4,11 @@ import { useState, useEffect, useContext } from "react";
 import { removeBetByIndex } from "../utils/acceptHandling";
 import { formatTimeAgo } from "../utils/timeUtils";
 import UserContext from "../UserContext";
-import back1 from '../assets/images/back1.png';
-import buttonpng from '../assets/images/button.png';
+import back1 from "../assets/images/back1.png";
+import buttonpng from "../assets/images/button.png";
 import "./PvP.css";
 import api from "../api";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 // PvP component
 export default function PvP({ addOngoingBet }) {
@@ -31,7 +31,7 @@ export default function PvP({ addOngoingBet }) {
     const fetchBets = async () => {
       try {
         const res = await api.get(`/pvp_bets`, {
-          params: { playerId: user.playerId }
+          params: { playerId: user.playerId },
         });
         setBets(res.data);
       } catch (err) {
@@ -42,46 +42,53 @@ export default function PvP({ addOngoingBet }) {
     fetchBets();
   }, [user?.playerId]); // runs only when playerId is set
 
-
   // Helper to flip line type
-const flipLineType = (type) => {
-  return type === "Over" ? "Under" : "Over";
-};
+  const flipLineType = (type) => {
+    return type === "Over" ? "Under" : "Over";
+  };
 
-// Handle accepting a bet
-const acceptBet = async (betId) => {
-  try {
-    const bet = bets.find((b) => b.id === betId);
-    if (!bet) {
-      console.error("❌ Bet not found");
-      return;
-    }
-
-    const accepterLineType = flipLineType(bet.lineType);
-
-    const res = await api.post(
-      `/accept_bet/${betId}`,
-      { accepterLineType }, // send the opposite side
-      {
-        headers: {
-          Authorization: `Bearer ${user?.token}`,
-        },
+  // Handle accepting a bet
+  const acceptBet = async (betId) => {
+    try {
+      const bet = bets.find((b) => b.id === betId);
+      if (!bet) {
+        console.error("❌ Bet not found");
+        return;
       }
-    );
 
-    if (res.status === 200) {
-      setBets((prev) => prev.filter((b) => b.id !== betId));
-      addOngoingBet(betId);
-    } else {
-      console.error("❌ Error accepting bet:", res.data?.message || "Unknown error");
+      const accepterLineType = flipLineType(bet.lineType);
+
+      const res = await api.post(
+        `/accept_bet/${betId}`,
+        { accepterLineType }, // send the opposite side
+        {
+          headers: {
+            Authorization: `Bearer ${user?.token}`,
+          },
+        }
+      );
+
+      if (res.status === 200) {
+        setBets((prev) => prev.filter((b) => b.id !== betId));
+        addOngoingBet(betId);
+      } else {
+        console.error(
+          "❌ Error accepting bet:",
+          res.data?.message || "Unknown error"
+        );
+      }
+    } catch (err) {
+      console.error("❌ Request failed:", err);
     }
-  } catch (err) {
-    console.error("❌ Request failed:", err);
-  }
-};
+  };
 
   const handlePost = async () => {
-    if (!matchup.trim() || !amount.trim() || !lineType.trim() || !lineNumber.trim()) {
+    if (
+      !matchup.trim() ||
+      !amount.trim() ||
+      !lineType.trim() ||
+      !lineNumber.trim()
+    ) {
       alert("Please fill out all fields before posting.");
       return;
     }
@@ -97,7 +104,7 @@ const acceptBet = async (betId) => {
       lineNumber: parseFloat(lineNumber),
       gameType,
       gamePlayed,
-      gameSize: gameType === "Score" ? gameSize : null,
+      gameSize: ["Shots Made", "Score"].includes(gameType) ? gameSize : null,
     };
 
     try {
@@ -147,12 +154,17 @@ const acceptBet = async (betId) => {
                 <span className="poster-time">
                   {bet.poster} · {formatTimeAgo(bet.timePosted)}
                 </span>
-                <button className="dismiss-button" onClick={() => removeBetByIndex(index, setBets)}>×</button>
+                <button
+                  className="dismiss-button"
+                  onClick={() => removeBetByIndex(index, setBets)}
+                >
+                  ×
+                </button>
               </div>
 
               <div className="subject">{bet.matchup}</div>
               <div className="game-played">Game: {bet.gamePlayed}</div>
-
+              <div className="game-type">Type: {bet.gameType}</div>
               <div className="bet-bottom">
                 <div className="amount">{bet.amount} caps</div>
                 <div className="line">
@@ -160,7 +172,10 @@ const acceptBet = async (betId) => {
                 </div>
               </div>
 
-              <button className="accept-button" onClick={() => acceptBet(bet.id)}>
+              <button
+                className="accept-button"
+                onClick={() => acceptBet(bet.id)}
+              >
                 Accept
               </button>
             </div>
@@ -220,13 +235,21 @@ const acceptBet = async (betId) => {
                 onChange={(e) => setLineNumber(e.target.value)}
               />
 
-              <select value={gameType} onChange={(e) => setGameType(e.target.value)} className="modal-input">
+              <select
+                value={gameType}
+                onChange={(e) => setGameType(e.target.value)}
+                className="modal-input"
+              >
                 <option value="Shots Made">Shots Made</option>
                 <option value="Score">Score</option>
                 <option value="Other">Other</option>
               </select>
 
-              <select value={gamePlayed} onChange={(e) => setGamePlayed(e.target.value)} className="modal-input">
+              <select
+                value={gamePlayed}
+                onChange={(e) => setGamePlayed(e.target.value)}
+                className="modal-input"
+              >
                 <option value="Caps">Caps</option>
                 <option value="Pong">Pong</option>
                 <option value="Beerball">Beerball</option>
@@ -234,7 +257,7 @@ const acceptBet = async (betId) => {
                 <option value="Other">Other</option>
               </select>
 
-              {gameType === "Score" && (
+              {["Score", "Shots Made"].includes(gameType) && (
                 <select
                   value={gameSize}
                   onChange={(e) => setGameSize(e.target.value)}
@@ -247,7 +270,10 @@ const acceptBet = async (betId) => {
               )}
 
               <div className="modal-actions">
-                <button onClick={() => setShowModal(false)} className="cancel-button">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="cancel-button"
+                >
                   Cancel
                 </button>
                 <button className="confirm-button" onClick={handlePost}>

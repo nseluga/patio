@@ -16,9 +16,10 @@ from backend.stats_utils import (
     get_or_create_bettable_player
 )
 from backend.bet_generation import (
-    generate_biased_caps_shots_1s_line,
+    generate_biased_caps_shots_line,
     get_player_caps_shots_profile,
     get_caps_shots_players,
+    assemble_caps_shots_matchup  # make sure this is in your imports
 )
 
 # Initialize the Flask app and enable CORS
@@ -593,6 +594,8 @@ def submit_stats(bet_id):
                     (updated_bet.get('oppplayer'), updated_bet['oppshots']),
                 ]
 
+                team_size = int(updated_bet['gamesize'][0]) if updated_bet.get('gamesize') else 1
+
                 seen = set()
                 for name, stat in names_stats:
                     if name:
@@ -601,6 +604,7 @@ def submit_stats(bet_id):
                             continue
                         seen.add(cleaned_name)
                         subject_id = get_or_create_bettable_player(cur, name.strip())
+
                         insert_stat(
                             cur,
                             bet_id,
@@ -609,17 +613,19 @@ def submit_stats(bet_id):
                             updated_bet['gametype'],
                             "shots_made",
                             stat,
-                            team=None,            
-                            team_size=None        
+                            team=None,
+                            team_size=team_size,  # ✅ now passed correctly
+                            winning_team=None
                         )
+
                         update_player_aggregate(
                             cur,
-                            player_name=name.strip(),                 
+                            player_name=name.strip(),
                             game_played=updated_bet['gameplayed'],
                             game_type=updated_bet['gametype'],
-                            stat_name="shots_made",                  
+                            stat_name="shots_made",
                             stat_value=stat,
-                            team_size=None                   
+                            team_size=team_size  # ✅ now passed correctly
                         )
 
             elif updated_bet['gametype'] == "Score":
@@ -747,20 +753,34 @@ def create_cpu_caps_shots_bet():
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     try:
-        # Fetch players with stats
+        # Fetch eligible players
         players = get_caps_shots_players(cur, team_size)
-        if len(players) < 2:
+        if len(players) < 2 * team_size:
             return jsonify({"error": "Not enough players with stats"}), 400
 
-        # Sample two different players
-        player1, player2 = sample(players, 2)
-        
-        # Generate line
-        line_type = choice(["Over", "Under"])
-        player1_stats = get_player_caps_shots_profile(cur, player1, team_size)
-        player2_stats = get_player_caps_shots_profile(cur, player2, team_size)
-        line = generate_biased_caps_shots_1s_line(player1_stats, player2_stats, line_type)
+        # Assemble teams and matchup
+        matchup_info = assemble_caps_shots_matchup(players, team_size)
+        your_team = matchup_info["your_team"]
+        opp_team = matchup_info["opp_team"]
+        playerA = matchup_info["line_subject"]
+        matchup = matchup_info["matchup"]
 
+        # Get player stats
+        playerA_stats = get_player_caps_shots_profile(cur, playerA, team_size)
+        teammate_stats = [get_player_caps_shots_profile(cur, p, team_size) for p in your_team if p != playerA]
+        opp_stats = [get_player_caps_shots_profile(cur, p, team_size) for p in opp_team]
+
+        line_type = choice(["Over", "Under"])
+
+        # Generate line based on team size
+        line = generate_biased_caps_shots_line(
+            playerA_stats,
+            teammate_stats,
+            opp_stats,
+            line_type
+        )
+
+        # Insert the bet
         bet_id = str(uuid4())
         time_posted = datetime.utcnow()
         amount = randint(10, 100)
@@ -775,15 +795,15 @@ def create_cpu_caps_shots_bet():
             bet_id,
             "CPU", 0,
             time_posted,
-            f"{player1} vs {player2}",
+            matchup,
             amount,
             line_type,
             line,
             "Shots Made",
             "Caps",
             game_size,
-            player1,
-            player2,
+            playerA,
+            opp_team[0],
             "CPU"
         ))
 
