@@ -81,6 +81,8 @@ def harmonic_mean(values):
     values = [v for v in values if v > 0]
     return len(values) / sum(1/v for v in values) if values else 0
 
+# Generate a biased line for Caps Shots Made bets
+# lines make theoretical sense but may need to be adjusted depending on actual player stats and actual games
 def generate_biased_caps_shots_line(subject_stats, teammates_stats, opp_team_stats, line_type, recency_weight=0.1):
     def adjust(stats):
         return stats["mean"] + (stats["mean_last_5"] - stats["mean"]) * recency_weight
