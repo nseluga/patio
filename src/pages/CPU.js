@@ -18,6 +18,7 @@ export default function CPU({ addOngoingBet }) {
   const [popupMessage, setPopupMessage] = useState("");
   // eslint-disable-next-line no-unused-vars
   const [_, setNow] = useState(Date.now());
+  const [gameSize, setGameSize] = useState("1v1");
 
   useEffect(() => {
     if (!user?.token) return;
@@ -137,6 +138,15 @@ export default function CPU({ addOngoingBet }) {
                 <option value="Caps - Score">Caps - Score</option>
                 <option value="Beerball - Score">Beerball - Score</option>
               </select>
+              <select
+                value={gameSize}
+                onChange={(e) => setGameSize(e.target.value)}
+                className="modal-input"
+              >
+                <option value="1v1">1v1</option>
+                <option value="2v2">2v2</option>
+                <option value="3v3">3v3</option>
+              </select>
 
               <div className="modal-actions">
                 <button
@@ -170,7 +180,7 @@ export default function CPU({ addOngoingBet }) {
                     try {
                       await api.post(
                         endpoint,
-                        {},
+                        { gameSize },
                         {
                           headers: {
                             Authorization: `Bearer ${user?.token}`,

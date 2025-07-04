@@ -17,7 +17,8 @@ from backend.stats_utils import (
 )
 from backend.bet_generation import (
     generate_biased_caps_shots_1s_line,
-    get_caps_shots_1s_players,
+    get_player_caps_shots_profile,
+    get_caps_shots_players,
 )
 
 # Initialize the Flask app and enable CORS
@@ -737,13 +738,17 @@ def create_cpu_caps_shots_bet():
     player_id = get_player_id()
     if player_id != 0:
         return jsonify({"error": "Unauthorized"}), 401
+    
+    data = request.get_json()
+    game_size = data.get("gameSize", "1v1")
+    team_size = int(game_size[0])  # "1v1" -> 1
 
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     try:
         # Fetch players with stats
-        players = get_caps_shots_1s_players(cur)
+        players = get_caps_shots_players(cur, team_size)
         if len(players) < 2:
             return jsonify({"error": "Not enough players with stats"}), 400
 
@@ -752,7 +757,10 @@ def create_cpu_caps_shots_bet():
         
         # Generate line
         line_type = choice(["Over", "Under"])
-        line = generate_biased_caps_shots_1s_line(player1, player2, line_type)
+        player1_stats = get_player_caps_shots_profile(cur, player1, team_size)
+        player2_stats = get_player_caps_shots_profile(cur, player2, team_size)
+        line = generate_biased_caps_shots_1s_line(player1_stats, player2_stats, line_type)
+
         bet_id = str(uuid4())
         time_posted = datetime.utcnow()
         amount = randint(10, 100)
@@ -760,21 +768,22 @@ def create_cpu_caps_shots_bet():
         cur.execute("""
             INSERT INTO bets (
                 id, poster, posterId, timePosted, matchup, amount,
-                lineType, lineNumber, gameType, gamePlayed,
+                lineType, lineNumber, gameType, gamePlayed, gameSize,
                 yourPlayer, oppPlayer, status
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             bet_id,
             "CPU", 0,
             time_posted,
-            f"{player1['player_name']} vs {player2['player_name']}",
+            f"{player1} vs {player2}",
             amount,
             line_type,
             line,
             "Shots Made",
             "Caps",
-            player1['player_name'],
-            player2['player_name'],
+            game_size,
+            player1,
+            player2,
             "CPU"
         ))
 

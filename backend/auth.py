@@ -3,6 +3,8 @@ from psycopg2.extras import RealDictCursor
 import jwt
 from backend.db import get_db
 from backend.config import SECRET_KEY
+from werkzeug.security import check_password_hash, generate_password_hash
+import datetime
 
 # Create a Flask blueprint for authentication routes
 auth = Blueprint('auth', __name__)

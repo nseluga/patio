@@ -1,16 +1,33 @@
 # Functions for generation cpu bets
 from scipy.stats import norm
 
-def get_caps_shots_1s_players(cur):
+def get_caps_shots_players(cur, team_size):
     cur.execute("""
-        SELECT player_name, mean, std, mean_last_5
+        SELECT DISTINCT player_name
         FROM player_stat_aggregates
         WHERE game_played = 'Caps'
           AND game_type = 'Shots Made'
           AND stat_name = 'shots_made'
-          AND team_size IS NULL
-    """)
-    return cur.fetchall()
+          AND team_size = %s
+    """, (team_size,))
+    rows = cur.fetchall()
+    return [row['player_name'] for row in rows]
+
+def get_player_caps_shots_profile(cur, player_name, team_size):
+    cur.execute("""
+        SELECT mean, std, mean_last_5
+        FROM player_stat_aggregates
+        WHERE player_name = %s
+          AND game_played = 'Caps'
+          AND game_type = 'Shots Made'
+          AND stat_name = 'shots_made'
+          AND team_size = %s
+    """, (player_name, team_size))
+    
+    row = cur.fetchone()
+    if row:
+        row["player_name"] = player_name
+    return row
 
 def generate_biased_caps_shots_1s_line(subject_stats, opponent_stats, line_type, recency_weight=0.1):
     subject_mean = subject_stats["mean"]
