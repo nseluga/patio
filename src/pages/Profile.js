@@ -1,15 +1,16 @@
-// import { User } from "lucide-react";       May need to put back when giving users ability to change from default profile pic
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import UserContext from "../UserContext";
 import BottomNav from "../components/BottomNav";
-import { useNavigate } from "react-router-dom";
 import "./Profile.css";
+import back1 from "../assets/images/back1.png";
+import defaultProfile from "../assets/images/defaultProfile.png";
 
 export default function Profile() {
   const { user, setUser } = useContext(UserContext);
-
-  // Optional: redirect if no user
   const navigate = useNavigate();
+  const [selectedImage, setSelectedImage] = useState(null);
+
   useEffect(() => {
     if (!user) {
       navigate("/login");
@@ -17,80 +18,109 @@ export default function Profile() {
   }, [user, navigate]);
 
   const handleLogout = () => {
-    // Clear user data from localStorage or context
     localStorage.removeItem("playerId");
-    localStorage.removeItem("token"); // if you're storing a JWT
-
+    localStorage.removeItem("token");
     setUser(null);
-
-    // Redirect to login page (or landing page)
     navigate("/login");
   };
 
-  if (!user) return null; // avoid rendering empty page before redirect
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImage(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setSelectedImage(null);
+  };
+
+  if (!user) return null;
 
   return (
-    <div className="profile-container">
-      <div className="profile-inner">
-        {/* Profile Header */}
+    <div
+      className="profile-container"
+      style={{ backgroundImage: `url(${back1})` }}
+    >
+      <div className="profile-box">
         <div className="profile-header">
+          <h1 className="profile-title">Profile</h1>
           <button onClick={handleLogout} className="logout-button">
             Log Out
           </button>
-          <div className="profile-pic-wrapper">
-            <div className="profile-pic">
-              <span className="profile-initial">
-                {user.username?.charAt(0).toUpperCase()}
-              </span>
-            </div>
-            <p className="profile-username">{user.username}</p>
-          </div>
+        </div>
 
-          <div className="profile-stats-block">
-            <div className="profile-stat">
-            <div className="profile-stat-number">{user.caps_balance ?? 0}</div>
-              <div className="profile-stat-label">caps</div>
-            </div>
-            <div className="profile-stat">
-              <div className="profile-stat-number">{user.bets_won ?? 0}</div>
-              <div className="profile-stat-label">bets won</div>
-            </div>
-            <div className="profile-stat">
-              <div className="profile-stat-number">{user.bets_played ?? 0}</div>
-              <div className="profile-stat-label">bets played</div>
-            </div>
+        {/* Profile picture */}
+        <div className="profile-pic-wrapper">
+          <div className="profile-pic">
+            {selectedImage ? (
+              <img src={selectedImage} alt="profile" className="profile-pic-img" />
+            ) : (
+              <img src={defaultProfile} alt="default" className="profile-pic-img" />
+            )}
+          </div>
+          <p className="profile-username">{user.username}</p>
+
+          {/* Upload + Remove */}
+          <input
+            type="file"
+            accept="image/*"
+            id="file-upload"
+            onChange={handleImageUpload}
+            className="file-input"
+          />
+          <div className="edit-photo-buttons">
+            <label htmlFor="file-upload" className="edit-button">
+              Edit Photo
+            </label>
+            {selectedImage && (
+              <button className="remove-button" onClick={handleRemovePhoto}>
+                Remove Photo
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Story Buttons
-        <div className="story-buttons">
-          <div className="story-button">?</div>
-          <div className="story-button">?</div>
-          <div className="story-button">?</div>
-        </div> */}
+        {/* Stats section */}
+        <div className="profile-stats-block">
+          <div className="profile-stat">
+            <div className="profile-stat-number">{user.caps_balance ?? 0}</div>
+            <div className="profile-stat-label">caps</div>
+          </div>
+          <div className="profile-stat">
+            <div className="profile-stat-number">{user.bets_won ?? 0}</div>
+            <div className="profile-stat-label">bets won</div>
+          </div>
+          <div className="profile-stat">
+            <div className="profile-stat-number">{user.bets_played ?? 0}</div>
+            <div className="profile-stat-label">bets played</div>
+          </div>
+        </div>
 
         {/* Recent Bets */}
         <div className="recent-bets-section">
           <h2 className="recent-bets-title">Recent Bets</h2>
           {user.recent_bets?.map((bet, index) => (
-            <div className="bet-card" key={index}>
-              <div className="bet-top">
+            <div className="recent-bet-card" key={index}>
+              <div className="bet-header">
                 <span className="poster-time">{bet.poster}</span>
                 <span>{bet.timePosted}</span>
                 <button className="dismiss-button">×</button>
               </div>
-              <div className="subject">{bet.subject}</div>
-              <div className="bet-bottom">
-                <span>{bet.player}</span>
-                <span>{bet.line}</span>
+              <div className="bet-details">
+                <div className="subject">{bet.subject}</div>
+                <div>{bet.player}</div>
+                <div>{bet.line}</div>
               </div>
-              <button className="accept-button">{bet.gameType}</button>
+              <div className="bet-tag">{bet.gameType}</div>
             </div>
           ))}
         </div>
       </div>
-
-      {/* Bottom Nav */}
       <BottomNav />
     </div>
   );

@@ -22,6 +22,7 @@ from backend.bet_generation import (
     assemble_caps_shots_matchup  # make sure this is in your imports
 )
 
+
 # Initialize the Flask app and enable CORS
 app = Flask(__name__)
 CORS(
