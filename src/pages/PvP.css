@@ -62,7 +62,6 @@
 /* Each individual bet card */
 .bet-card {
   background: linear-gradient(to bottom, white, rgb(200, 200, 200));
-  opacity: 90%;
   width: 40%;
   border-radius: 10px;
   padding: 15px;
@@ -108,7 +107,8 @@
   word-wrap: break-word;       
   overflow-wrap: break-word;    
   max-width: 90%;          
-  margin-bottom: 4px;       
+  margin-bottom: 4px;   
+  font-family: "Anybody";    
 }
 
 /* Bottom row: bet amount and line info */
@@ -136,7 +136,7 @@
 .accept-button {
   width: 20%;
   padding: 10px;
-  background: linear-gradient(to bottom, #e9d14a, #eb9800);
+  background: linear-gradient(to bottom, #c9afe1, #6f4ab0);
   color: white;
   border: none;
   border-radius: 6px;
@@ -145,6 +145,7 @@
   font-size: 15px;
   margin: 1px auto;
   align-self: center;
+  font-family: "Anybody";
 }
 
 /* Modal backdrop overlay */

@@ -101,9 +101,13 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Recent Bets */}
-        <div className="recent-bets-section">
-          <h2 className="recent-bets-title">Recent Bets</h2>
+      {/* Recent Bets */}
+      
+      <BottomNav />
+    </div>
+    <div className="recent-bets-section">
+      <div className="recent-bets-wrap-box">
+          <h2 className="recent-bets-title">Recent Bets:</h2> </div>
           {user.recent_bets?.map((bet, index) => (
             <div className="recent-bet-card" key={index}>
               <div className="bet-header">
@@ -121,7 +125,5 @@ export default function Profile() {
           ))}
         </div>
       </div>
-      <BottomNav />
-    </div>
   );
 }

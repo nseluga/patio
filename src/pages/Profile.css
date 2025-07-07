@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Anybody:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rye:wght@400&display=swap');
+
 /* Profile page layout container */
 .profile-container {
   display: flex;
@@ -11,10 +14,10 @@
 /* Box surrounding profile contents */
 .profile-box {
   margin: 2px 10px 30px 10px;
-  background-color: rgb(69, 9, 74, 0.90); /* translucent card */
+  background-color: rgba(57, 26, 59, 0.9); /* translucent card */
   border: 3px solid rgb(255, 255, 255);
   border-radius: 1.5rem;
-  padding: 24px;
+  padding: 1px 24px 1px 24px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
@@ -22,19 +25,22 @@
 .profile-header {
   display: flex;
   align-items: center;
-  gap: 32px;
-  margin-bottom: 1rem;
+  gap: 1105px !important;
+  margin: auto !important;
+  height: 10px;
 }
 
 .profile-title {
   font-size: 1.5rem;
   font-weight: bold;
-  color: red;
+  color: rgb(255, 255, 255);
+  font-family: "Rye";
 }
 
 .profile-settings-icon {
   font-size: 1.25rem;
   cursor: pointer;
+  background-color: yellow;
 }
 
 .profile-header {
@@ -53,14 +59,15 @@
 }
 
 .profile-pic {
-  width: 96px;
-  height: 96px;
-  border: 4px solid black;
+  width: 100px;
+  height: 100px;
+  border: 5px solid rgb(0, 0, 0);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: white;
+  margin-top: 10px;
 }
 
 .profile-initial {
@@ -73,6 +80,7 @@
   font-weight: 600;
   font-size: 1.2rem;
   margin-top: 8px;
+  font-family: "Anybody";
 }
 
 /* Stats section under profile (e.g. wins, caps) */
@@ -80,7 +88,7 @@
   display: flex;
   justify-content: space-around;
   text-align: center;
-  margin: 16px 0;
+  margin-bottom: 50px;
 }
 
 .profile-stat {
@@ -92,13 +100,10 @@
   gap: 24px;
 }
 
-.profile-stat-block {
-  text-align: center;
-}
-
 .profile-stat-number {
   font-size: 1.2rem;
   font-weight: bold;
+  font-family: "Anybody";
 }
 
 .profile-stats-block {
@@ -106,7 +111,7 @@
   justify-content: center;
   gap: 40px;
   margin-top: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 35px;
   text-align: center;
 }
 
@@ -118,13 +123,14 @@
 
 .profile-stat-label {
   font-size: 0.85rem;
-  color: #444;
+  color: #818181;
+  font-family: "Anybody";
 }
 
 
 /* Stories section (e.g. highlights or icons) */
 .story-section {
-  margin: 12px 0;
+  margin: 20px 0;
   text-align: left;
   font-size: 1.25rem;
   font-weight: 500;
@@ -148,10 +154,21 @@
 }
 
 /* Recent bets section */
+.recent-bets-wrap-box {
+  display: flex;
+  background-color: rgb(255, 255, 255);
+  width: 20%;
+  margin: 10px 500px 700px 550px;
+  height: 60px;
+  opacity: 80%;
+  border-radius: 50%;
+}
 .recent-bets-title {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: bold;
-  margin-bottom: 0.5rem;
+  margin: auto;
+  color: rgb(0, 0, 0);
+  font-family: "Rye";
 }
 
 .recent-bet-card {
@@ -161,6 +178,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  background-color: yellow;
 }
 
 /* Inside a bet card: header and details */
@@ -191,17 +209,18 @@
 .logout-button {
   margin-top: 20px;
   padding: 10px 20px;
-  background: rgb(69, 9, 74);
-  color: white;
+  background: rgb(255, 255, 255);
+  color: rgb(0, 0, 0);
   border: none;
   border-radius: 8px;
-  font-weight: bold;
+  font-weight: bold !important;
   cursor: pointer;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  font-family: "Anybody";
 }
 
 .logout-button:hover {
-  background: #c53030;
+  background: #c46767;
 }
 
 .profile-pic-img {
@@ -218,9 +237,10 @@
 .edit-photo-buttons {
   display: flex;
   gap: 10px;
-  margin-top: 10px;
   flex-wrap: wrap;
   justify-content: center;
+  font-family: "Anybody";
+  margin-bottom: 10px;
 }
 
 .edit-button,
@@ -232,14 +252,15 @@
   font-weight: bold;
   cursor: pointer;
   color: white;
+  font-family: "Anybody";
 }
 
 .edit-button {
-  background-color: #6b21a8;
+  background-color: #7e0f91;
 }
 
 .edit-button:hover {
-  background-color: #8b5cf6;
+  background-color: #9d5ba9;
 }
 
 .remove-button {

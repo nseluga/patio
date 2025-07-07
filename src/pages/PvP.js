@@ -6,6 +6,7 @@ import { formatTimeAgo } from "../utils/timeUtils";
 import UserContext from "../UserContext";
 import back1 from "../assets/images/back1.png";
 import buttonpng from "../assets/images/button.png";
+import betcard from "../assets/images/betcard.png"
 import "./PvP.css";
 import api from "../api";
 import { v4 as uuidv4 } from "uuid";
@@ -149,7 +150,7 @@ export default function PvP({ addOngoingBet }) {
 
         <div className="bet-list">
           {bets.map((bet, index) => (
-            <div className="bet-card" key={index}>
+            <div className="bet-card" key={index} style={{ backgroundImage: `url(${betcard})` }}> 
               <div className="bet-top">
                 <span className="poster-time">
                   {bet.poster} · {formatTimeAgo(bet.timePosted)}
@@ -176,7 +177,7 @@ export default function PvP({ addOngoingBet }) {
                 className="accept-button"
                 onClick={() => acceptBet(bet.id)}
               >
-                Accept
+                ACCEPT
               </button>
             </div>
           ))}
