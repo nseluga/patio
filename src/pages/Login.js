@@ -40,27 +40,33 @@ export default function Login() {
 
   // Handle login
   const handleLogin = async () => {
+  console.log("🔐 handleLogin called");
+
   try {
-    const res = await api.post('/login', { email, password });
+    const res = await api.post("/login", { email, password });
 
-    // ✅ Store the token for future auth
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem("playerId", res.data.user.id.toString()); 
-    localStorage.setItem("username", res.data.user.username);
+    console.log("✅ Login response:", res); // Full raw response
 
-    // ✅ Set user globally for Profile page
+    // Comment out navigation to see logs
+    // window.location.href = "/pvp";
+
     setUser({
       ...res.data.user,
-      playerId: res.data.user.id, // 👈 explicitly add playerId
+      playerId: res.data.user.id,
       token: res.data.token,
     });
 
-    // ✅ Redirect to /profile
-    window.location.href = "/pvp";
   } catch (err) {
-    setError('Invalid email or password');
+    console.error("❌ Login error:", err.message);
+    if (err.response) {
+      console.error("🚨 Server responded with:", err.response.status, err.response.data);
+    } else {
+      console.error("🧨 Network error or server unreachable");
+    }
+    setError('Login failed');
   }
 };
+
 
 
   return (
