@@ -15,13 +15,18 @@ from backend.stats_utils import (
     update_player_aggregate,
     get_or_create_bettable_player
 )
-from backend.bet_generation import (
+from backend.caps_bet_generation import (
     generate_biased_caps_shots_line,
     get_player_caps_shots_profile,
     get_caps_shots_players,
     assemble_caps_shots_matchup  # make sure this is in your imports
 )
-
+from backend.pong_bet_generation import (
+    get_player_pong_shots_profile,
+    get_pong_shots_players,
+    assemble_pong_shots_matchup,
+    generate_biased_pong_shots_line
+)
 
 # Initialize the Flask app and enable CORS
 app = Flask(__name__)
@@ -813,6 +818,88 @@ def create_cpu_caps_shots_bet():
 
     except Exception as e:
         print("❌ CPU bet creation failed:", e)
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+@app.route("/cpu/create_pong_shots_bet", methods=["POST"])
+def create_cpu_pong_shots_bet():
+    player_id = get_player_id()
+    if player_id != 0:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json()
+    game_size = data.get("gameSize", "1v1")
+    team_size = int(game_size[0])  # "1v1" -> 1
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    try:
+        # Get players
+        players = get_pong_shots_players(cur, team_size)
+        if len(players) < 2 * team_size:
+            return jsonify({"error": "Not enough players with stats"}), 400
+
+        # Assemble matchup
+        matchup_info = assemble_pong_shots_matchup(players, team_size)
+        your_team = matchup_info["your_team"]
+        opp_team = matchup_info["opp_team"]
+        playerA = matchup_info["line_subject"]
+        matchup = matchup_info["matchup"]
+
+        # Get stat profiles
+        playerA_stats = get_player_pong_shots_profile(cur, playerA, team_size)
+        teammate_stats = [get_player_pong_shots_profile(cur, p, team_size) for p in your_team if p != playerA]
+        opp_stats = [get_player_pong_shots_profile(cur, p, team_size) for p in opp_team]
+
+        line_type = choice(["Over", "Under"])
+
+        # Generate biased line
+        line = generate_biased_pong_shots_line(
+            playerA_stats,
+            teammate_stats,
+            opp_stats,
+            line_type,
+            team_size,
+            cur
+        )
+
+        # Insert bet
+        bet_id = str(uuid4())
+        time_posted = datetime.utcnow()
+        amount = randint(10, 100)
+
+        cur.execute("""
+            INSERT INTO bets (
+                id, poster, posterId, timePosted, matchup, amount,
+                lineType, lineNumber, gameType, gamePlayed, gameSize,
+                yourPlayer, oppPlayer, status
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            bet_id,
+            "CPU", 0,
+            time_posted,
+            matchup,
+            amount,
+            line_type,
+            line,
+            "Shots Made",
+            "Pong",
+            game_size,
+            playerA,
+            opp_team[0],
+            "CPU"
+        ))
+
+        conn.commit()
+        return jsonify({"message": "CPU bet created"}), 201
+
+    except Exception as e:
+        print("❌ CPU Pong bet creation failed:", e)
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 

@@ -139,8 +139,10 @@ export default function CPU({ addOngoingBet }) {
                   <option value="Beerball - Shots Made">
                     Beerball - Shots Made
                   </option>
+                  <option value="Pong - Shots Made">Pong - Shots Made</option>
                   <option value="Caps - Score">Caps - Score</option>
                   <option value="Beerball - Score">Beerball - Score</option>
+                  <option value="Pong - Score">Pong - Score</option>
                 </select>
                 <select
                   value={gameSize}
@@ -170,11 +172,17 @@ export default function CPU({ addOngoingBet }) {
                         case "Beerball - Shots Made":
                           endpoint = "/cpu/create_beerball_shots_bet";
                           break;
+                        case "Pong - Shots Made":
+                          endpoint = "/cpu/create_pong_shots_bet";
+                          break;
                         case "Caps - Score":
                           endpoint = "/cpu/create_caps_score_bet";
                           break;
                         case "Beerball - Score":
                           endpoint = "/cpu/create_beerball_score_bet";
+                          break;
+                        case "Pong - Score":
+                          endpoint = "/cpu/create_pong_score_bet";
                           break;
                         default:
                           alert("Please select a valid bet type.");

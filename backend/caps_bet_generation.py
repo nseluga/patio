@@ -1,4 +1,4 @@
-# Functions for generation cpu bets
+# Functions for caps generation cpu bets
 from scipy.stats import norm
 import random
 
@@ -94,7 +94,6 @@ def generate_biased_caps_shots_line(subject_stats, teammates_stats, opp_team_sta
     # Step 1: Harmonic means
     your_team_vals = [subj_adj] + team_adj
     team_strength = harmonic_mean(your_team_vals)
-
     opp_strength = harmonic_mean(opp_adj)
 
     # Step 2: Balance → opportunity
