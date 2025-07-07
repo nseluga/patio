@@ -282,6 +282,7 @@
   margin: 0;
   padding: 0;
   line-height: 1;
+  font-family: "Anybody";
 }
 .team-player-row {
   display: flex;
@@ -289,5 +290,403 @@
 }
 
 .team-player-row .modal-input {
+  flex: 1;
+}
+
+/*******************/
+/* CPU-only styles */
+
+.cpu-page .pvp-page {
+  background-size: cover;
+  background-position: center;
+  min-height: 100vh;
+}
+
+.cpu-page .pvp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: linear-gradient(to bottom, rgb(69, 9, 74), rgb(0, 0, 0));
+}
+
+.cpu-page .pvp-title {
+  font-size: 50px;
+  font-weight: 700;
+  margin: 10px auto;
+  color: #ffffff;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+  font-family: "Rye";
+}
+
+.cpu-page .bet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.cpu-page .create-bet-button {
+  all: unset;
+  width: 60px !important;
+  height: 60px !important;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 0;
+  color: rgb(0, 0, 0);
+  border: 3px solid white;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: block;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.cpu-page .bet-card {
+  background: linear-gradient(to bottom, white, rgb(200, 200, 200));
+  width: 40%;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  font-size: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  margin: 1px auto;
+}
+
+.cpu-page .bet-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #6a0a0a;
+  font-family: "Anybody";
+  margin: 1px;
+}
+
+.cpu-page .dismiss-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.cpu-page .dismiss-button:hover {
+  color: #ef4444;
+}
+
+.cpu-page .subject {
+  font-weight: 600;
+  font-size: 20px;
+  color: #333;
+  word-wrap: break-word;
+  margin-bottom: 4px;
+  font-family: "Anybody";
+}
+
+.cpu-page .game-played,
+.cpu-page .game-type {
+  font-size: 14px;
+  color: #555;
+  font-family: "Anybody";
+}
+
+.cpu-page .bet-bottom {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 500;
+  color: #444;
+  font-family: "Anybody";
+  line-height: 0.5;
+}
+
+.cpu-page .accept-button {
+  background-color: #8a2be2;
+  color: white;
+  font-weight: bold;
+  border: none;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: "Anybody";
+}
+
+.cpu-page .accept-button:hover {
+  background-color: #6c1ecf;
+}
+
+
+/******************/
+/* Ongoing Styles */
+
+/* Page */
+.ongoing-page .pvp-page {
+  background-size: cover;
+  background-position: center;
+  min-height: 100vh;
+} 
+
+/* Header section at top of PvP page */
+.ongoing-page .pvp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: linear-gradient(to bottom, rgb(69, 9, 74), rgb(0, 0, 0));
+}
+
+/* Main title text */
+.ongoing-page .pvp-title {
+  font-size: 50px;
+  font-weight: 700;
+  margin: 10px auto;
+  margin-left: 525px;
+  color: #ffffff;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+  font-family: "Rye";
+  font-style: bold;
+}
+
+/* Container for all bet cards */
+.ongoing-page .bet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Each individual bet card */
+.ongoing-page .bet-card {
+  background: linear-gradient(to bottom, white, rgb(200, 200, 200));
+  width: 40%;
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  font-size: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  margin: 1px auto;
+}
+
+/* Top row of bet card: poster + time + dismiss */
+.ongoing-page .bet-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #6a0a0a;
+  font-family: "Anybody";
+  margin: 1px;
+}
+
+/* 'X' button to dismiss a bet */
+.ongoing-page .dismiss-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.ongoing-page .dismiss-button:hover {
+  color: #ef4444;
+}
+
+.ongoing-page .subject {
+  font-weight: 600;
+  font-size: 20px;
+  color: #333;
+  word-wrap: break-word;       
+  overflow-wrap: break-word;    
+  max-width: 90%;          
+  margin-bottom: 4px;   
+  font-family: "Anybody";    
+}
+
+/* Bottom row: bet amount and line info */
+.ongoing-page .bet-bottom {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 500;
+  color: #444;
+  font-family: "Anybody";
+  line-height: 0.5;
+}
+
+.ongoing-page .game-played,
+.ongoing-page .game-type {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 500;
+  color: #444;
+  font-family: "Anybody";
+}
+
+/* Button to enter or accept a bet */
+.ongoing-page .accept-button {
+  width: 20%;
+  padding: 10px;
+  background: linear-gradient(to bottom, #c9afe1, #6f4ab0);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 15px;
+  margin: 1px auto;
+  align-self: center;
+  font-family: "Anybody";
+}
+
+/* Modal backdrop overlay */
+.ongoing-page .bet-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 3;
+}
+
+/* Modal box */
+.ongoing-page .bet-modal {
+  background: rgb(116, 108, 208);
+  padding: 24px;
+  border-radius: 16px;
+  width: 95%;
+  max-width: 400px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Input inside the modal */
+.ongoing-page .modal-input {
+  padding: 10px;
+  border: 1px solid #ffffff;
+  border-radius: 6px;
+  font-size: 16px;
+  width: 100%;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+}
+
+/* Container for cancel/confirm modal buttons */
+.ongoing-page .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Cancel button style */
+.ongoing-page .cancel-button {
+  background: #ccc;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Confirm button style */
+.ongoing-page .confirm-button {
+  background: #2c1f5c;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Temporary confirmation popup */
+.ongoing-page .popup-banner {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #10b981;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: bold;
+  z-index: 999;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Help button */
+.ongoing-page .help-button {
+  font-size: 24px;
+  background: #cea0ff;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-left: auto;
+  font-family: "Rye";
+}
+
+/* Help modal overlay */
+.ongoing-page .help-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Help modal content */
+.ongoing-page .help-content {
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  height: 70%;
+  max-width: 400px;
+  text-align: left;
+  font-family: "Anybody";
+  margin: 5px 5px 20px 5px;
+}
+
+/* Help modal close button */
+.ongoing-page .help-close-button {
+  background: rgb(107, 57, 140);
+  color: white;
+  font-family: "Anybody";
+}
+
+/* Team player row layout */
+.ongoing-page .team-player-row {
+  display: flex;
+  gap: 10px;
+}
+
+.ongoing-page .team-player-row .modal-input {
   flex: 1;
 }

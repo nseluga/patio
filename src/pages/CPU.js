@@ -6,6 +6,8 @@ import { useContext } from "react";
 import UserContext from "../UserContext";
 import { formatTimeAgo } from "../utils/timeUtils";
 import buttonpng from "../assets/images/button.png";
+import back1 from "../assets/images/back1.png";
+import betcard2 from "../assets/images/betcard2.png"
 import api from "../api";
 import "./PvP.css"; // Reuse PvP styles for layout and cards
 
@@ -77,138 +79,139 @@ export default function CPU({ addOngoingBet }) {
 
   return (
     <>
-      <div className="pvp-page">
-        <div className="pvp-header">
-          <h2 className="pvp-title">CPU Bets</h2>
-          {isCPUAdmin && (
-            <button
-              className="create-bet-button"
-              onClick={() => setShowModal(true)}
-              style={{ backgroundImage: `url(${buttonpng})` }}
-            ></button>
-          )}
-        </div>
+      <div className="cpu-page" style={{ backgroundImage: `url(${back1})` }}>
+        <div className="pvp-page">
+          <div className="pvp-header">
+            <h2 className="pvp-title">CPU Bets</h2>
+            {isCPUAdmin && (
+              <button
+                className="create-bet-button"
+                onClick={() => setShowModal(true)}
+                style={{ backgroundImage: `url(${buttonpng})` }}
+              ></button>
+            )}
+          </div>
 
-        <div className="bet-list">
-          {visibleBets.map((bet, index) => (
-            <div className="bet-card" key={index}>
-              <div className="bet-top">
-                <span className="poster-time">
-                  CPU · {formatTimeAgo(bet.timePosted)}
-                </span>
+          <div className="bet-list">
+            {visibleBets.map((bet, index) => (
+              <div className="bet-card" key={index} style={{ backgroundImage: `url(${betcard2})` }}>
+                <div className="bet-top">
+                  <span className="poster-time">
+                    CPU · {formatTimeAgo(bet.timePosted)}
+                  </span>
+                  <button
+                    className="dismiss-button"
+                    onClick={() => removeBetByIndex(index, setBets)}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="subject">{bet.matchup}</div>
+                <div className="game-played">Game: {bet.gamePlayed}</div>
+                <div className="game-type">Type: {bet.gameType}</div>
+                <div className="bet-bottom">
+                  <div className="amount">{bet.amount} caps</div>
+                  <div className="line">
+                    {bet.lineType} {bet.lineNumber}
+                  </div>
+                </div>
                 <button
-                  className="dismiss-button"
-                  onClick={() => removeBetByIndex(index, setBets)}
+                  className="accept-button"
+                  onClick={() => acceptBet(bet, index)}
                 >
-                  ×
+                  ACCEPT
                 </button>
               </div>
-              <div className="subject">{bet.matchup}</div>
-              <div className="game-played">Game: {bet.gamePlayed}</div>
-              <div className="game-type">Type: {bet.gameType}</div>
-              <div className="bet-bottom">
-                <div className="amount">{bet.amount} caps</div>
-                <div className="line">
-                  {bet.lineType} {bet.lineNumber}
+            ))}
+          </div>
+          {showModal && (
+            <div className="bet-modal-overlay">
+              <div className="bet-modal">
+                <h3>Generate CPU Bet</h3>
+
+                <select
+                  className="modal-input"
+                  value={selectedBetType}
+                  onChange={(e) => setSelectedBetType(e.target.value)}
+                >
+                  <option value="">Select Bet Type</option>
+                  <option value="Caps - Shots Made">Caps - Shots Made</option>
+                  <option value="Beerball - Shots Made">
+                    Beerball - Shots Made
+                  </option>
+                  <option value="Caps - Score">Caps - Score</option>
+                  <option value="Beerball - Score">Beerball - Score</option>
+                </select>
+                <select
+                  value={gameSize}
+                  onChange={(e) => setGameSize(e.target.value)}
+                  className="modal-input"
+                >
+                  <option value="1v1">1v1</option>
+                  <option value="2v2">2v2</option>
+                  <option value="3v3">3v3</option>
+                </select>
+
+                <div className="modal-actions">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="cancel-button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="confirm-button"
+                    onClick={async () => {
+                      let endpoint = "";
+                      switch (selectedBetType) {
+                        case "Caps - Shots Made":
+                          endpoint = "/cpu/create_caps_shots_bet";
+                          break;
+                        case "Beerball - Shots Made":
+                          endpoint = "/cpu/create_beerball_shots_bet";
+                          break;
+                        case "Caps - Score":
+                          endpoint = "/cpu/create_caps_score_bet";
+                          break;
+                        case "Beerball - Score":
+                          endpoint = "/cpu/create_beerball_score_bet";
+                          break;
+                        default:
+                          alert("Please select a valid bet type.");
+                          return;
+                      }
+
+                      try {
+                        await api.post(
+                          endpoint,
+                          { gameSize },
+                          {
+                            headers: {
+                              Authorization: `Bearer ${user?.token}`,
+                            },
+                          }
+                        );
+                        setPopupMessage("✅ CPU bet created!");
+                        setTimeout(() => setPopupMessage(""), 3000);
+
+                        setShowModal(false);
+                        window.location.reload();
+                      } catch (err) {
+                        console.error("❌ Failed to create CPU bet:", err);
+                        alert(
+                          "❌ " + (err.response?.data?.error || "Unknown error")
+                        );
+                      }
+                    }}
+                  >
+                    Generate
+                  </button>
                 </div>
               </div>
-              <button
-                className="accept-button"
-                onClick={() => acceptBet(bet, index)}
-              >
-                Accept
-              </button>
             </div>
-          ))}
+          )}
         </div>
-        {showModal && (
-          <div className="bet-modal-overlay">
-            <div className="bet-modal">
-              <h3>Generate CPU Bet</h3>
-
-              <select
-                className="modal-input"
-                value={selectedBetType}
-                onChange={(e) => setSelectedBetType(e.target.value)}
-              >
-                <option value="">Select Bet Type</option>
-                <option value="Caps - Shots Made">Caps - Shots Made</option>
-                <option value="Beerball - Shots Made">
-                  Beerball - Shots Made
-                </option>
-                <option value="Caps - Score">Caps - Score</option>
-                <option value="Beerball - Score">Beerball - Score</option>
-              </select>
-              <select
-                value={gameSize}
-                onChange={(e) => setGameSize(e.target.value)}
-                className="modal-input"
-              >
-                <option value="1v1">1v1</option>
-                <option value="2v2">2v2</option>
-                <option value="3v3">3v3</option>
-              </select>
-
-              <div className="modal-actions">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="cancel-button"
-                >
-                  Cancel
-                </button>
-                <button
-                  className="confirm-button"
-                  onClick={async () => {
-                    let endpoint = "";
-                    switch (selectedBetType) {
-                      case "Caps - Shots Made":
-                        endpoint = "/cpu/create_caps_shots_bet";
-                        break;
-                      case "Beerball - Shots Made":
-                        endpoint = "/cpu/create_beerball_shots_bet";
-                        break;
-                      case "Caps - Score":
-                        endpoint = "/cpu/create_caps_score_bet";
-                        break;
-                      case "Beerball - Score":
-                        endpoint = "/cpu/create_beerball_score_bet";
-                        break;
-                      default:
-                        alert("Please select a valid bet type.");
-                        return;
-                    }
-
-                    try {
-                      await api.post(
-                        endpoint,
-                        { gameSize },
-                        {
-                          headers: {
-                            Authorization: `Bearer ${user?.token}`,
-                          },
-                        }
-                      );
-                      setPopupMessage("✅ CPU bet created!");
-                      setTimeout(() => setPopupMessage(""), 3000);
-
-                      setShowModal(false);
-                      window.location.reload();
-                    } catch (err) {
-                      console.error("❌ Failed to create CPU bet:", err);
-                      alert(
-                        "❌ " + (err.response?.data?.error || "Unknown error")
-                      );
-                    }
-                  }}
-                >
-                  Generate
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-
       {popupMessage && <div className="popup-banner">{popupMessage}</div>}
       <BottomNav />
     </>

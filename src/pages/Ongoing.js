@@ -5,6 +5,7 @@ import UserContext from "../UserContext";
 import BottomNav from "../components/BottomNav";
 import { formatTimeAgo } from "../utils/timeUtils";
 import "./PvP.css"; // Reuse existing styles
+import back1 from "../assets/images/back1.png";
 import api from "../api";
 
 function getNumPlayers(gameSize) {
@@ -311,216 +312,218 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
 
   return (
     <>
-      {/* Page container */}
-      <div className="pvp-page">
-        <div className="pvp-header">
-          <h2 className="pvp-title">Ongoing Bets</h2>
-          <button className="help-button" onClick={() => setShowHelp(true)}>
-            ?
-          </button>
-        </div>
+      <div className="ongoing-page" style={{ backgroundImage: `url(${back1})` }}>
+        {/* Page container */}
+        <div className="pvp-page">
+          <div className="pvp-header">
+            <h2 className="pvp-title">Ongoing Bets</h2>
+            <button className="help-button" onClick={() => setShowHelp(true)}>
+              ?
+            </button>
+          </div>
 
-        {/* Bet list display */}
-        <div
-          className="bet-list"
-          style={{ paddingBottom: "100px", overflowY: "auto" }}
-        >
-          {uniqueVisibleBets
-            .filter((bet) => bet?.id)
-            .map((bet) => (
-              <div className="bet-card" key={bet.id}>
-                <div className="bet-top">
-                  <span className="poster-time">
-                    {bet.poster} · {formatTimeAgo(bet.timePosted)}
-                  </span>
-                </div>
-                <div className="subject">{bet.matchup}</div>
-                <div className="game-played">Game: {bet.gamePlayed}</div>
-                <div className="game-type">Type: {bet.gameType}</div>
-                <div className="bet-bottom">
-                  <div className="amount">{bet.amount} caps </div>
-                  <div className="line">
-                    {bet.lineType} {bet.lineNumber}
+          {/* Bet list display */}
+          <div
+            className="bet-list"
+            style={{ paddingBottom: "100px", overflowY: "auto" }}
+          >
+            {uniqueVisibleBets
+              .filter((bet) => bet?.id)
+              .map((bet) => (
+                <div className="bet-card" key={bet.id}>
+                  <div className="bet-top">
+                    <span className="poster-time">
+                      {bet.poster} · {formatTimeAgo(bet.timePosted)}
+                    </span>
                   </div>
+                  <div className="subject">{bet.matchup}</div>
+                  <div className="game-played">Game: {bet.gamePlayed}</div>
+                  <div className="game-type">Type: {bet.gameType}</div>
+                  <div className="bet-bottom">
+                    <div className="amount">{bet.amount} caps </div>
+                    <div className="line">
+                      {bet.lineType} {bet.lineNumber}
+                    </div>
+                  </div>
+                  <div className="status-text">{bet.status_message}</div>
+                  <button
+                    className="accept-button"
+                    onClick={() => {
+                      setShowModal(true);
+                      setActiveBetId(bet.id);
+
+                      // Reset all state fields for score
+
+                      const numPlayers = getNumPlayers(bet.gameSize || "2v2");
+                      setYourTeamA(
+                        Array(numPlayers).fill({ name: "", score: "" })
+                      );
+                      setYourTeamB(
+                        Array(numPlayers).fill({ name: "", score: "" })
+                      );
+
+                      // Reset all state fields for shots made
+
+                      // Reset for other
+                    }}
+                  >
+                    Enter Stats
+                  </button>
                 </div>
-                <div className="status-text">{bet.status_message}</div>
-                <button
-                  className="accept-button"
-                  onClick={() => {
-                    setShowModal(true);
-                    setActiveBetId(bet.id);
-
-                    // Reset all state fields for score
-
-                    const numPlayers = getNumPlayers(bet.gameSize || "2v2");
-                    setYourTeamA(
-                      Array(numPlayers).fill({ name: "", score: "" })
-                    );
-                    setYourTeamB(
-                      Array(numPlayers).fill({ name: "", score: "" })
-                    );
-
-                    // Reset all state fields for shots made
-
-                    // Reset for other
-                  }}
-                >
-                  Enter Stats
-                </button>
-              </div>
-            ))}
-        </div>
-      </div>
-
-      {/* Help modal */}
-      {showHelp && (
-        <div className="help-modal">
-          <div className="help-content">
-            <h3>How to Enter Stats</h3>
-            <p>While entering player stats, please follow these guidelines:</p>
-            <p>
-              Enter each player's real name with the first letter capitalized.
-            </p>
-            <p>ie: "Nate", "Mike", "Stryker"</p>
-            <p>
-              For Score bets, enter each side's total points at end of game.
-            </p>
-            <p>
-              For Shots Made, enter the number of successful shots made by the
-              player.
-            </p>
-            <p>For Other, enter the stat value relevant to the custom line.</p>
-            <p>
-              Entering stats and player names accurately is crucial for
-              confirming matches and tracking stats.
-            </p>
-            <p>
-              In order for a match to be confirmed both players must have
-              matching players and stats.
-            </p>
-            <p>
-              If you have a disagreement on stats, please communicate with the
-              other player.
-            </p>
-            <p>
-              If a disagreement persists feel free to reach out to the
-              developers.
-            </p>
-            <button onClick={() => setShowHelp(false)}>Close</button>
+              ))}
           </div>
         </div>
-      )}
 
-      {/* Modal for entering stats */}
-      {showModal && (
-        <div className="bet-modal-overlay">
-          <div className="bet-modal">
-            <h3>Enter Stats</h3>
-
-            {/* Input shown depends on game type */}
-            {getGameType() === "Shots Made" && (
-              <>
-                <input
-                  type="text"
-                  placeholder="Your Player"
-                  value={yourPlayer}
-                  onChange={(e) => setYourPlayer(e.target.value)}
-                  className="modal-input"
-                />
-                <input
-                  type="number"
-                  placeholder="Shots Made"
-                  value={yourShots}
-                  onChange={(e) => setYourShots(e.target.value)}
-                  className="modal-input"
-                />
-              </>
-            )}
-
-            {getGameType() === "Score" && (
-              <>
-                <h4>Your Team A</h4>
-                {yourTeamA.map((player, i) => (
-                  <div key={`teamA-${i}-${player.name || "empty"}`}>
-                    <div className="team-player-row">
-                      <input
-                        type="text"
-                        placeholder={`Player ${i + 1} Name`}
-                        value={player.name}
-                        onChange={(e) => {
-                          const newTeam = [...yourTeamA];
-                          newTeam[i] = { ...newTeam[i], name: e.target.value };
-                          setYourTeamA(newTeam);
-                        }}
-                        className="modal-input"
-                      />
-                    </div>
-                  </div>
-                ))}
-                <input
-                  type="number"
-                  placeholder="Total Score for Team A"
-                  value={yourScoreA}
-                  onChange={(e) => setYourScoreA(Number(e.target.value))}
-                  className="modal-input"
-                />
-
-                <h4>Your Team B</h4>
-                {yourTeamB.map((player, i) => (
-                  <div key={`teamB-${i}-${player.name || "empty"}`}>
-                    <div className="team-player-row">
-                      <input
-                        type="text"
-                        placeholder={`Player ${i + 2} Name`}
-                        value={player.name}
-                        onChange={(e) => {
-                          const newTeam = [...yourTeamB];
-                          newTeam[i] = { ...newTeam[i], name: e.target.value };
-                          setYourTeamB(newTeam);
-                        }}
-                        className="modal-input"
-                      />
-                    </div>
-                  </div>
-                ))}
-                <input
-                  type="number"
-                  placeholder="Total Score for Team B"
-                  value={yourScoreB}
-                  onChange={(e) => setYourScoreB(Number(e.target.value))}
-                  className="modal-input"
-                />
-              </>
-            )}
-
-            {getGameType() === "Other" && (
-              <input
-                type="number"
-                placeholder="Describe Outcome"
-                value={yourOutcome}
-                onChange={(e) => setYourOutcome(e.target.value)}
-                className="modal-input"
-              />
-            )}
-
-            {/* Modal buttons */}
-            <div className="modal-actions">
-              <button
-                onClick={() => {
-                  setShowModal(false);
-                }}
-                className="cancel-button"
-              >
-                Cancel
-              </button>
-              <button onClick={handleSubmit} className="confirm-button">
-                Submit
-              </button>
+        {/* Help modal */}
+        {showHelp && (
+          <div className="help-modal">
+            <div className="help-content">
+              <h3>How to Enter Stats</h3>
+              <p>While entering player stats, please follow these guidelines:</p>
+              <p>
+                Enter each player's real name with the first letter capitalized.
+              </p>
+              <p>ie: "Nate", "Mike", "Stryker"</p>
+              <p>
+                For Score bets, enter each side's total points at end of game.
+              </p>
+              <p>
+                For Shots Made, enter the number of successful shots made by the
+                player.
+              </p>
+              <p>For Other, enter the stat value relevant to the custom line.</p>
+              <p>
+                Entering stats and player names accurately is crucial for
+                confirming matches and tracking stats.
+              </p>
+              <p>
+                In order for a match to be confirmed both players must have
+                matching players and stats.
+              </p>
+              <p>
+                If you have a disagreement on stats, please communicate with the
+                other player.
+              </p>
+              <p>
+                If a disagreement persists feel free to reach out to the
+                developers.
+              </p>
+              <button onClick={() => setShowHelp(false)}
+              className="help-close-button">Close</button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
+        {/* Modal for entering stats */}
+        {showModal && (
+          <div className="bet-modal-overlay">
+            <div className="bet-modal">
+              <h3>Enter Stats</h3>
+
+              {/* Input shown depends on game type */}
+              {getGameType() === "Shots Made" && (
+                <>
+                  <input
+                    type="text"
+                    placeholder="Your Player"
+                    value={yourPlayer}
+                    onChange={(e) => setYourPlayer(e.target.value)}
+                    className="modal-input"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Shots Made"
+                    value={yourShots}
+                    onChange={(e) => setYourShots(e.target.value)}
+                    className="modal-input"
+                  />
+                </>
+              )}
+
+              {getGameType() === "Score" && (
+                <>
+                  <h4>Your Team A</h4>
+                  {yourTeamA.map((player, i) => (
+                    <div key={`teamA-${i}-${player.name || "empty"}`}>
+                      <div className="team-player-row">
+                        <input
+                          type="text"
+                          placeholder={`Player ${i + 1} Name`}
+                          value={player.name}
+                          onChange={(e) => {
+                            const newTeam = [...yourTeamA];
+                            newTeam[i] = { ...newTeam[i], name: e.target.value };
+                            setYourTeamA(newTeam);
+                          }}
+                          className="modal-input"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <input
+                    type="number"
+                    placeholder="Total Score for Team A"
+                    value={yourScoreA}
+                    onChange={(e) => setYourScoreA(Number(e.target.value))}
+                    className="modal-input"
+                  />
+
+                  <h4>Your Team B</h4>
+                  {yourTeamB.map((player, i) => (
+                    <div key={`teamB-${i}-${player.name || "empty"}`}>
+                      <div className="team-player-row">
+                        <input
+                          type="text"
+                          placeholder={`Player ${i + 2} Name`}
+                          value={player.name}
+                          onChange={(e) => {
+                            const newTeam = [...yourTeamB];
+                            newTeam[i] = { ...newTeam[i], name: e.target.value };
+                            setYourTeamB(newTeam);
+                          }}
+                          className="modal-input"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                  <input
+                    type="number"
+                    placeholder="Total Score for Team B"
+                    value={yourScoreB}
+                    onChange={(e) => setYourScoreB(Number(e.target.value))}
+                    className="modal-input"
+                  />
+                </>
+              )}
+
+              {getGameType() === "Other" && (
+                <input
+                  type="number"
+                  placeholder="Describe Outcome"
+                  value={yourOutcome}
+                  onChange={(e) => setYourOutcome(e.target.value)}
+                  className="modal-input"
+                />
+              )}
+
+              {/* Modal buttons */}
+              <div className="modal-actions">
+                <button
+                  onClick={() => {
+                    setShowModal(false);
+                  }}
+                  className="cancel-button"
+                >
+                  Cancel
+                </button>
+                <button onClick={handleSubmit} className="confirm-button">
+                  Submit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
       {/* Popup message for match confirmation */}
       {popupMessage && <div className="popup-banner">{popupMessage}</div>}
 
