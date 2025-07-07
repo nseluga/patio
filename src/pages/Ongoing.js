@@ -16,6 +16,7 @@ function getNumPlayers(gameSize) {
 
 // Main component for ongoing bets
 export default function Ongoing({ ongoingBets, setOngoingBets }) {
+  console.log("🔄 Ongoing component rendered");
   const { user } = useContext(UserContext);
   const bets = ongoingBets;
   const setBets = setOngoingBets;
@@ -235,81 +236,6 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
     return bet?.gameType || "Shots Made";
   };
 
-  // Get dynamic status message for each bet
-  // const getStatusMessage = (bet) => {
-  //   const { gameType } = bet;
-
-  //   if (gameType === "Score") {
-  //     const hasBothSides =
-  //       bet.yourTeamA?.length &&
-  //       bet.oppTeamA?.length &&
-  //       bet.yourTeamB?.length &&
-  //       bet.oppTeamB?.length &&
-  //       bet.yourScoreA != null &&
-  //       bet.oppScoreA != null &&
-  //       bet.yourScoreB != null &&
-  //       bet.oppScoreB != null;
-
-  //     if (hasBothSides) {
-  //       const teamsMatch =
-  //         JSON.stringify(bet.yourTeamA) === JSON.stringify(bet.oppTeamA) &&
-  //         JSON.stringify(bet.yourTeamB) === JSON.stringify(bet.oppTeamB);
-  //       const scoresMatch =
-  //         bet.yourScoreA === bet.oppScoreA && bet.yourScoreB === bet.oppScoreB;
-
-  //       if (teamsMatch && scoresMatch) return "✅ Match confirmed";
-  //       if (!teamsMatch) return "❌ Player names do not match";
-  //       return "❌ Scores not matching, please communicate";
-  //     }
-
-  //     if (
-  //       bet.yourTeamA?.length ||
-  //       bet.yourScoreA != null ||
-  //       bet.yourScoreB != null
-  //     ) {
-  //       return "Waiting for other player to input stats";
-  //     }
-
-  //     return "No stats submitted";
-  //   }
-
-  //   if (gameType === "Shots Made") {
-  //     const hasBothSides =
-  //       bet.yourPlayer &&
-  //       bet.oppPlayer &&
-  //       bet.yourShots != null &&
-  //       bet.oppShots != null;
-
-  //     if (hasBothSides) {
-  //       const playersMatch = bet.yourPlayer === bet.oppPlayer;
-  //       const statsMatch = bet.yourShots === bet.oppShots;
-
-  //       if (playersMatch && statsMatch) return "✅ Match confirmed";
-  //       if (!playersMatch) return "❌ Player names do not match";
-  //       return "❌ Stats not matching, please communicate";
-  //     }
-
-  //     if (bet.yourPlayer || bet.yourShots != null)
-  //       return "Waiting for other player to input stats";
-
-  //     return "No stats submitted";
-  //   }
-
-  //   if (gameType === "Other") {
-  //     if (bet.yourOutcome && bet.oppOutcome) {
-  //       return bet.yourOutcome === bet.oppOutcome
-  //         ? "✅ Match confirmed"
-  //         : "❌ Outcome not matching, please communicate";
-  //     }
-
-  //     if (bet.yourOutcome) return "Waiting for other player to input stats";
-
-  //     return "No stats submitted";
-  //   }
-
-  //   return "Unknown game type";
-  // };
-
   return (
     <>
       <div className="ongoing-page" style={{ backgroundImage: `url(${back1})` }}>
@@ -349,6 +275,7 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
                   <button
                     className="accept-button"
                     onClick={() => {
+                      console.log("🟢 Opening stats modal for bet", bet.id);
                       setShowModal(true);
                       setActiveBetId(bet.id);
 
@@ -361,7 +288,7 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
                       setYourTeamB(
                         Array(numPlayers).fill({ name: "", score: "" })
                       );
-
+                      
                       // Reset all state fields for shots made
 
                       // Reset for other
@@ -454,6 +381,7 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
                             const newTeam = [...yourTeamA];
                             newTeam[i] = { ...newTeam[i], name: e.target.value };
                             setYourTeamA(newTeam);
+                            console.log("✍️ Updating yourTeamA:", newTeam);
                           }}
                           className="modal-input"
                         />
