@@ -16,7 +16,6 @@ function getNumPlayers(gameSize) {
 
 // Main component for ongoing bets
 export default function Ongoing({ ongoingBets, setOngoingBets }) {
-  console.log("🔄 Ongoing component rendered");
   const { user } = useContext(UserContext);
   const bets = ongoingBets;
   const setBets = setOngoingBets;
@@ -183,8 +182,6 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
             return [];
           }
         }
-        
-        setSubmitting(false);
         return [updated]; // if no match, keep updated bet
       })
     );
@@ -216,6 +213,8 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
       setBets(refreshed.data);
     } catch (err) {
       console.error("❌ Error submitting stats:", err);
+    } finally {
+      setSubmitting(false); // ✅ Always reset submit lock
     }
 
     // Reset all form fields and close modal
@@ -275,7 +274,6 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
                   <button
                     className="accept-button"
                     onClick={() => {
-                      console.log("🟢 Opening stats modal for bet", bet.id);
                       setShowModal(true);
                       setActiveBetId(bet.id);
 
@@ -371,7 +369,7 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
                 <>
                   <h4>Your Team A</h4>
                   {yourTeamA.map((player, i) => (
-                    <div key={`teamA-${i}-${player.name || "empty"}`}>
+                    <div key={`teamA-${i}`}>
                       <div className="team-player-row">
                         <input
                           type="text"
@@ -381,7 +379,6 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
                             const newTeam = [...yourTeamA];
                             newTeam[i] = { ...newTeam[i], name: e.target.value };
                             setYourTeamA(newTeam);
-                            console.log("✍️ Updating yourTeamA:", newTeam);
                           }}
                           className="modal-input"
                         />
@@ -398,7 +395,7 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
 
                   <h4>Your Team B</h4>
                   {yourTeamB.map((player, i) => (
-                    <div key={`teamB-${i}-${player.name || "empty"}`}>
+                    <div key={`teamB-${i}`}>
                       <div className="team-player-row">
                         <input
                           type="text"

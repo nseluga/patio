@@ -10,6 +10,7 @@ from random import sample, randint
 from uuid import uuid4
 from datetime import datetime
 from random import choice
+import json
 from backend.stats_utils import (
     insert_stat,
     update_player_aggregate,
@@ -561,6 +562,11 @@ def submit_stats(bet_id):
 
         # Execute update
         set_clause = ", ".join(f"{field} = %s" for field in update_fields)
+
+        # Cast any list values to JSON strings for jsonb fields
+        update_values = [json.dumps(v) if isinstance(v, list) else v for v in update_values]
+
+        # Now run the update
         cur.execute(f"UPDATE bets SET {set_clause} WHERE id = %s", (*update_values, bet_id))
         conn.commit()
 
@@ -635,53 +641,47 @@ def submit_stats(bet_id):
                         )
 
             elif updated_bet['gametype'] == "Score":
-                names_stats = [
-                    (updated_bet.get('yourplayera'), updated_bet['yourscorea']),
-                    (updated_bet.get('yourplayerb'), updated_bet['yourscoreb']),
-                    (updated_bet.get('oppplayera'), updated_bet['oppscorea']),
-                    (updated_bet.get('oppplayerb'), updated_bet['oppscoreb']),
+                team_size = int(updated_bet['gamesize'][0]) if updated_bet.get('gamesize') else 2
+
+                team_inputs = [
+                    ("yourteama", "yourscorea", "A"),
+                    ("yourteamb", "yourscoreb", "B"),
+                    ("oppteama", "oppscorea", "A"),
+                    ("oppteamb", "oppscoreb", "B"),
                 ]
 
-                team_lookup = {
-                    "yourplayera": "A", "yourplayerb": "A",
-                    "oppplayera": "B", "oppplayerb": "B"
-                }
-
                 seen = set()
-                for key in ["yourplayera", "yourplayerb", "oppplayera", "oppplayerb"]:
-                    name = updated_bet.get(key)
-                    stat_key = "yourscorea" if key.endswith("a") else "yourscoreb"
-                    if "opp" in key:
-                        stat_key = stat_key.replace("your", "opp")
+                for player_field, score_field, team in team_inputs:
+                    players = updated_bet.get(player_field) or []
+                    score = updated_bet.get(score_field)
 
-                    stat = updated_bet.get(stat_key)
-
-                    if name and stat is not None:
-                        cleaned_name = name.strip().lower()
-                        if cleaned_name in seen:
-                            continue
-                        seen.add(cleaned_name)
-                        subject_id = get_or_create_bettable_player(cur, name.strip())
-                        insert_stat(
-                            cur,
-                            bet_id,
-                            subject_id,
-                            updated_bet['gameplayed'],
-                            updated_bet['gametype'],
-                            "score",
-                            stat,
-                            team=team_lookup[key],
-                            team_size=updated_bet.get("none") # update once team size is tracked
-                        )
-                        update_player_aggregate(
-                            cur,
-                            player_name=name.strip(),                 
-                            game_played=updated_bet['gameplayed'],
-                            game_type=updated_bet['gametype'],
-                            stat_name="score",                  
-                            stat_value=stat,
-                            team_size=None                    # update once team size is tracked
-                        )
+                    if players and score is not None:
+                        for player_name in players:
+                            cleaned_name = player_name.strip().lower()
+                            if cleaned_name in seen:
+                                continue
+                            seen.add(cleaned_name)
+                            subject_id = get_or_create_bettable_player(cur, player_name.strip())
+                            insert_stat(
+                                cur,
+                                bet_id,
+                                subject_id,
+                                updated_bet['gameplayed'],
+                                updated_bet['gametype'],
+                                "score",
+                                score,
+                                team=team,
+                                team_size=team_size
+                            )
+                            update_player_aggregate(
+                                cur,
+                                player_name=player_name.strip(),
+                                game_played=updated_bet['gameplayed'],
+                                game_type=updated_bet['gametype'],
+                                stat_name="score",
+                                stat_value=score,
+                                team_size=team_size
+                            )
 
             elif updated_bet['gametype'] == "Other":
                 names_stats = [
