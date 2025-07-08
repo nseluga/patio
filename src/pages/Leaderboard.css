@@ -33,19 +33,20 @@
   margin: 10px auto;
   margin-bottom: 20px;
   padding: 1px 5px;
-  background: linear-gradient(to bottom, #000000, #444444);
+  background: radial-gradient(#c9c9c9, #000000);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border: 10px double rgb(255, 255, 255);
+  border: 10px ridge rgb(123, 50, 50);
   width: 35%;
   border-radius: 12px;
+  box-shadow: 0px 0px 5px white;
 }
 
 /* Leaderboard Title Text */
 .leaderboard-title-wrapper h2 {
   font-size: 50px;
-  font-weight: bold;
+  font-weight: 500 !important;
   color: white;
-  text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.2);
+  text-shadow: 5px 10px 20px rgba(0, 0, 0, 0.2);
   font-family: "Rye";
   letter-spacing: 2px;
 }
@@ -55,12 +56,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(to bottom, rgb(255, 255, 255), rgb(179, 178, 178));
+  background: linear-gradient(to bottom, rgb(192, 104, 77), rgb(34, 14, 9));
   padding: 20px;
   border-radius: 16px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   width: 70%;
   margin: 10px auto !important;
+  border: 1px solid white;
 }
 
 /* 1st Place Symbol */
@@ -72,11 +74,13 @@
   font-size: 23px;
   font-weight: bold;
   font-family: "Anybody";
+  color: white;
 }
 /* Player Caps */
 .leaderboard-entry span:nth-child(3) {
   font-size: 15px;
   font-family: "Anybody";
+  color: white;
 }
 /* 2nd and 3rd Symbol */
 .top-rank-symbol {
@@ -87,7 +91,7 @@
 .below-top3-symbol {
   font-size: 25px !important;
   font-weight: bold !important;
-  color: rgb(0, 0, 0);
+  color: rgb(255, 255, 255);
   font-family: "Anybody";
   margin: 15px auto;
 }
