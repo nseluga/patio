@@ -16,7 +16,7 @@ function getNumPlayers(gameSize) {
 
 // Main component for ongoing bets
 export default function Ongoing({ ongoingBets, setOngoingBets }) {
-  const { user } = useContext(UserContext);
+  const { user, setUser } = useContext(UserContext);
   const bets = ongoingBets;
   const setBets = setOngoingBets;
   // eslint-disable-next-line no-unused-vars
@@ -87,6 +87,8 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
 
   // State for Other bets
   const [yourOutcome, setYourOutcome] = useState("");
+
+  const flipLineType = (type) => (type === "Over" ? "Under" : "Over");
 
   // Submit handler to update bet with user’s input and check for match
   const handleSubmit = async () => {
@@ -201,6 +203,15 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
 
       console.log("✅ Stats submitted to backend:", res.data);
 
+      if (res.data.match && res.data.new_caps != null) {
+      // ✅ Update caps balance in UserContext
+      setUser((prev) => ({
+        ...prev,
+        caps_balance: res.data.new_caps
+      }));
+    }
+
+
       if (res.data.match) {
         setPopupMessage("✅ Match confirmed!");
         setTimeout(() => setPopupMessage(""), 3000);
@@ -267,7 +278,9 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
                   <div className="bet-bottom">
                     <div className="amount">{bet.amount} caps </div>
                     <div className="line">
-                      {bet.lineType} {bet.lineNumber}
+                      {user?.playerId === bet.posterId
+                        ? `${bet.lineType} ${bet.lineNumber}`
+                        : `${flipLineType(bet.lineType)} ${bet.lineNumber}`}
                     </div>
                   </div>
                   <div className="status-text">{bet.status_message}</div>

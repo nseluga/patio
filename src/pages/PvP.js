@@ -169,7 +169,9 @@ export default function PvP({ addOngoingBet }) {
               <div className="bet-bottom">
                 <div className="amount">{bet.amount} caps</div>
                 <div className="line">
-                  {bet.lineType} {bet.lineNumber}
+                  {user?.playerId === bet.posterId
+                    ? `${bet.lineType} ${bet.lineNumber}`
+                    : `${flipLineType(bet.lineType)} ${bet.lineNumber}`}
                 </div>
               </div>
 

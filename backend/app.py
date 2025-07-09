@@ -585,12 +585,44 @@ def submit_stats(bet_id):
             accepter_id = updated_bet['accepterid']
             amount = updated_bet['amount']
 
-            if is_poster:
-                winner_id = poster_id
-                loser_id = accepter_id
-            else:
-                winner_id = accepter_id
-                loser_id = poster_id
+            # Determine the winner based on stat vs line
+            line = float(updated_bet['linenumber'])
+            line_type = updated_bet['linetype']  # what the poster picked
+
+            # Figure out which stat to use for judgment
+            if updated_bet['gametype'] == "Shots Made":
+                # Use the poster's player's stat
+                poster_stat = updated_bet.get('yourshots')
+                accepter_stat = updated_bet.get('oppshots')
+
+                if poster_stat is None or accepter_stat is None:
+                    winner_id = None  # Incomplete
+                else:
+                    outcome = "Over" if poster_stat > line else "Under"
+                    winner_id = poster_id if outcome == line_type else accepter_id
+
+            elif updated_bet['gametype'] == "Other":
+                # Use outcome as int directly
+                poster_stat = updated_bet.get('youroutcome')
+                accepter_stat = updated_bet.get('oppoutcome')
+
+                if poster_stat is None or accepter_stat is None:
+                    winner_id = None
+                else:
+                    outcome = "Over" if poster_stat > line else "Under"
+                    winner_id = poster_id if outcome == line_type else accepter_id
+
+            elif updated_bet['gametype'] == "Score":
+                # Use total score of Team A + B
+                your_score = updated_bet.get('yourscorea') + updated_bet.get('yourscoreb')
+                opp_score = updated_bet.get('oppscorea') + updated_bet.get('oppscoreb')
+
+                if your_score is None or opp_score is None:
+                    winner_id = None
+                else:
+                    outcome = "Over" if your_score > line else "Under"
+                    winner_id = poster_id if outcome == line_type else accepter_id
+
 
             # ✅ Award winner with total pot (2x amount)
             cur.execute("""
