@@ -44,7 +44,7 @@
 /* Leaderboard Title Text */
 .leaderboard-title-wrapper h2 {
   font-size: 50px;
-  font-weight: 500 !important;
+  font-weight: 600 !important;
   color: white;
   text-shadow: 5px 10px 20px rgba(0, 0, 0, 0.2);
   font-family: "Rye";

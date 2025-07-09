@@ -252,7 +252,7 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
         {/* Page container */}
         <div className="pvp-page">
           <div className="pvp-header">
-            <h2 className="pvp-title">Ongoing Bets</h2>
+            <h2 className="pvp-title">ONGOING BETS</h2>
             <button className="help-button" onClick={() => setShowHelp(true)}>
               ?
             </button>

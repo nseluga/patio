@@ -189,7 +189,7 @@ export default function PvP({ addOngoingBet }) {
         {showModal && (
           <div className="bet-modal-overlay">
             <div className="bet-modal">
-              <h3>Create a Bet</h3>
+              <h3>CREATE A BET!</h3>
 
               <input
                 type="text"

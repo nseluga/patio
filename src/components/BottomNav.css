@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Anybody:wght@400&display=swap');
+
 /* Bottom navigation container */
 .bottom-nav {
   position: fixed;
@@ -5,8 +7,8 @@
   left: 0;
   right: 0;
   height: 60px;
-  background-color: white;
-  border-top: 1px solid #ddd;
+  background: linear-gradient(to bottom, rgb(70, 21, 92), rgb(243, 137, 15));
+  border-top: 1px solid #ffffff;
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -17,27 +19,25 @@
 .nav-item {
   flex: 1;
   text-align: center;
-  border-right: 1px solid #ccc;
+  border-right: 1px solid #ffffff;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Last nav item (no right border) */
-.nav-item.no-border {
-  border-right: none;
-}
-
 /* Navigation links */
 .bottom-nav a {
-  font-size: 24px;
-  color: #888;
+  font-size: 20px;
+  color: #ffffff;
   text-decoration: none;
+  font-family: "Anybody";
 }
 
 /* Active link style */
 .bottom-nav a.active {
-  color: #da13c9;
+  color: #ffffff;
   font-weight: bold;
+  font-family: "Anybody";
+  font-size: 23px;
 }

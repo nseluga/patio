@@ -48,7 +48,7 @@ export default function Profile() {
     >
       <div className="profile-box">
         <div className="profile-header">
-          <h1 className="profile-title">Profile</h1>
+          <h1 className="profile-title">PROFILE</h1>
           <button onClick={handleLogout} className="logout-button">
             Log Out
           </button>

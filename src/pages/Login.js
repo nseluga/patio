@@ -71,7 +71,7 @@ export default function Login() {
 
   return (
     <div className={styles.container}>
-      <h2>Login</h2>
+      <h2>LOGIN</h2>
       {error && <p className={styles.error}>{error}</p>}
 
       <input

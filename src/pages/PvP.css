@@ -164,8 +164,8 @@
 
 /* Modal box */
 .bet-modal {
-  background: rgb(116, 108, 208);
-  padding: 24px;
+  background: radial-gradient(rgb(222, 89, 7), rgb(255, 151, 5));
+  padding: 20px;
   border-radius: 16px;
   width: 95%;
   max-width: 400px;
@@ -174,18 +174,25 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  color: white;
+  font-family: "Anybody";
+  text-shadow: 0px 0px 10px rgb(83, 32, 0);
+  align-items: center;
+  font-size: 20px;
+  font-weight: bold;
 }
 
 
 /* Input inside the modal */
 .modal-input {
   padding: 10px;
-  border: 1px solid #ffffff;
+  border: 2px solid #792600;
   border-radius: 6px;
   font-size: 16px;
   width: 100%;
   margin-bottom: 12px;
   box-sizing: border-box;
+  font-family: "Anybody";
 }
 
 /* Container for cancel/confirm modal buttons */
@@ -202,16 +209,24 @@
   padding: 8px 14px;
   border-radius: 6px;
   cursor: pointer;
+  font-family: "Anybody";
+  font-weight: bold;
 }
 
 /* Confirm button style */
 .confirm-button {
-  background: #2c1f5c;
+  background: #790c8c;
   color: white;
   border: none;
   padding: 8px 14px;
   border-radius: 6px;
   cursor: pointer;
+  font-family: "Anybody";
+  font-weight: bold;
+}
+
+.line-type-toggle input[type="radio"] {
+  accent-color: #9e317f;
 }
 
 /* Page layout background ??? */

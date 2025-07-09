@@ -82,7 +82,7 @@ export default function CPU({ addOngoingBet }) {
       <div className="cpu-page" style={{ backgroundImage: `url(${back1})` }}>
         <div className="pvp-page">
           <div className="pvp-header">
-            <h2 className="pvp-title">CPU Bets</h2>
+            <h2 className="pvp-title">HOUSE BETS</h2>
             {isCPUAdmin && (
               <button
                 className="create-bet-button"
