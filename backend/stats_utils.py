@@ -7,6 +7,29 @@ def insert_stat(cur, bet_id, subject_id, game_played, game_type, stat_name, stat
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (bet_id, subject_id, game_played, game_type, stat_name, stat_value, team, team_size, winning_team))
 
+def calculate_defensive_value(cur, subject_id, team_size):
+    try:
+        cur.execute("""
+            SELECT AVG(opponent.stat_value) AS defensive_value
+            FROM bettable_player_stats AS player
+            JOIN bettable_player_stats AS opponent
+              ON player.bet_id = opponent.bet_id
+              AND player.team != opponent.team
+            WHERE player.subject_player = %s
+              AND player.stat_name = 'score'
+              AND player.gameType = 'Score'
+              AND player.gamePlayed = 'Beerball'
+              AND player.team = player.winning_team
+              AND player.team_size IS NOT DISTINCT FROM %s
+        """, (subject_id, team_size))
+
+        row = cur.fetchone()
+        return row["defensive_value"] if row else None
+
+    except Exception as e:
+        print("❌ Error calculating defensive value:", e)
+        return None
+
 def update_player_aggregate(cur, player_name, game_played, game_type, stat_name, stat_value, team_size=None):
     cur.execute("""
         SELECT * FROM player_stat_aggregates
@@ -65,27 +88,34 @@ def update_player_aggregate(cur, player_name, game_played, game_type, stat_name,
         # Compute mean of last 5
         mean_last_5 = sum(recent_stats) / len(recent_stats)
 
-        # Compute win_rate if applicable
+        # Update win rate if applicable
         win_rate = None
-        if game_type == "Score":
+        subject_id = get_or_create_bettable_player(cur, player_name)
+        if stat_name == "score":
             cur.execute("""
-                SELECT COUNT(*) FROM bettable_player_stats
-                WHERE subject_player = %s
+                SELECT COUNT(*) AS total_games
+                FROM bettable_player_stats
+                WHERE subject_player = %s::text
                 AND gamePlayed = %s
                 AND gameType = %s
+                AND stat_name = %s
                 AND team_size IS NOT DISTINCT FROM %s
-            """, (player_name, game_played, game_type, team_size))
-            total_games = cur.fetchone()[0]
+            """, (subject_id, game_played, game_type, stat_name, team_size))
+            row = cur.fetchone()
+            total_games = row["total_games"] if row else 0
 
             cur.execute("""
-                SELECT COUNT(*) FROM bettable_player_stats
-                WHERE subject_player = %s
+                SELECT COUNT(*) AS wins
+                FROM bettable_player_stats
+                WHERE subject_player = %s::text
                 AND gamePlayed = %s
                 AND gameType = %s
+                AND stat_name = %s
                 AND team_size IS NOT DISTINCT FROM %s
                 AND team = winning_team
-            """, (player_name, game_played, game_type, team_size))
-            wins = cur.fetchone()[0]
+            """, (subject_id, game_played, game_type, stat_name, team_size))
+            row = cur.fetchone()
+            wins = row["wins"] if row else 0
 
             win_rate = wins / total_games if total_games > 0 else None
 

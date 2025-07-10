@@ -5,7 +5,6 @@ import api from "../api"; // Axios instance
 import styles from "./Login.module.css"; // Styling
 import UserContext from "../UserContext"; // Global context
 
-
 // Login page component
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -40,34 +39,43 @@ export default function Login() {
 
   // Handle login
   const handleLogin = async () => {
-  console.log("🔐 handleLogin called");
+    console.log("🔐 handleLogin called");
 
-  try {
-    const res = await api.post("/login", { email, password });
+    try {
+      const res = await api.post("/login", { email, password });
 
-    console.log("✅ Login response:", res); // Full raw response
+      console.log("✅ Login response:", res); // Full raw response
 
-    // Comment out navigation to see logs
-    // window.location.href = "/pvp";
+      // Comment out navigation to see logs
+      // window.location.href = "/pvp";
 
-    setUser({
-      ...res.data.user,
-      playerId: res.data.user.id,
-      token: res.data.token,
-    });
+      const userObj = {
+        ...res.data.user,
+        playerId: res.data.user.id,
+        token: res.data.token,
+      };
 
-  } catch (err) {
-    console.error("❌ Login error:", err.message);
-    if (err.response) {
-      console.error("🚨 Server responded with:", err.response.status, err.response.data);
-    } else {
-      console.error("🧨 Network error or server unreachable");
+      setUser(userObj);
+
+      // 🧠 Save user info for persistence
+      localStorage.setItem("playerId", userObj.playerId);
+      localStorage.setItem("username", userObj.username);
+      localStorage.setItem("token", userObj.token);
+
+    } catch (err) {
+      console.error("❌ Login error:", err.message);
+      if (err.response) {
+        console.error(
+          "🚨 Server responded with:",
+          err.response.status,
+          err.response.data
+        );
+      } else {
+        console.error("🧨 Network error or server unreachable");
+      }
+      setError("Login failed");
     }
-    setError('Login failed');
-  }
-};
-
-
+  };
 
   return (
     <div className={styles.container}>

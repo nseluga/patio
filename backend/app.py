@@ -623,6 +623,19 @@ def submit_stats(bet_id):
                     outcome = "Over" if your_score > line else "Under"
                     winner_id = poster_id if outcome == line_type else accepter_id
 
+                # ✅ Use poster’s scores (both players inputted the same)
+                your_score_a = updated_bet.get("yourscorea")
+                your_score_b = updated_bet.get("yourscoreb")
+
+                if your_score_a is not None and your_score_b is not None:
+                    if your_score_a > your_score_b:
+                        winning_team_label = "A"
+                    elif your_score_b > your_score_a:
+                        winning_team_label = "B"
+                    else:
+                        winning_team_label = None  # Tie
+                else:
+                    winning_team_label = None  # Incomplete input    
 
             # ✅ Award winner with total pot (2x amount)
             cur.execute("""
@@ -703,7 +716,8 @@ def submit_stats(bet_id):
                                 "score",
                                 score,
                                 team=team,
-                                team_size=team_size
+                                team_size=team_size,
+                                winning_team=winning_team_label
                             )
                             update_player_aggregate(
                                 cur,
