@@ -11,7 +11,7 @@ export default function BottomNav() {
     <nav className="bottom-nav">
       {/* Leaderboard tab */}
       <div className="nav-item">
-        <Link to="/leaderboard" className={location.pathname === '/leaderboard' ? 'active' : ''}>Leaderboard 🏆</Link>
+        <Link to="/leaderboard" className={location.pathname === '/leaderboard' ? 'active' : ''}>LEADERBOARD 🏆</Link>
       </div>
 
       {/* Home/game tab */}
@@ -21,22 +21,22 @@ export default function BottomNav() {
 
       {/* CPU/house tab */}
       <div className="nav-item">
-        <Link to="/house" className={location.pathname === '/house' ? 'active' : ''}>House 🏠</Link>
+        <Link to="/house" className={location.pathname === '/house' ? 'active' : ''}>HOUSE 🏠</Link>
       </div>
 
       {/* Ongoing bets tab */}
       <div className="nav-item">
-        <Link to="/ongoing" className={location.pathname === '/ongoing' ? 'active' : ''}>Ongoing ⏳</Link>
+        <Link to="/ongoing" className={location.pathname === '/ongoing' ? 'active' : ''}>ONGOING ⏳</Link>
       </div>
 
       {/* Messages tab */}
       <div className="nav-item">
-        <Link to="/messages" className={location.pathname === '/messages' ? 'active' : ''}>Messages 💬</Link>
+        <Link to="/messages" className={location.pathname === '/messages' ? 'active' : ''}>MESSAGES 💬</Link>
       </div>
 
       {/* Profile tab */}
       <div className="nav-item">
-        <Link to="/profile" className={location.pathname === '/profile' ? 'active' : ''}>Profile 👤</Link>
+        <Link to="/profile" className={location.pathname === '/profile' ? 'active' : ''}>PROFILE 👤</Link>
       </div>
     </nav>
   );
