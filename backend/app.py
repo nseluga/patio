@@ -696,6 +696,8 @@ def submit_stats(bet_id):
                 ]
 
                 seen = set()
+                inserted = []
+
                 for player_field, score_field, team in team_inputs:
                     players = updated_bet.get(player_field) or []
                     score = updated_bet.get(score_field)
@@ -706,7 +708,9 @@ def submit_stats(bet_id):
                             if cleaned_name in seen:
                                 continue
                             seen.add(cleaned_name)
+
                             subject_id = get_or_create_bettable_player(cur, player_name.strip())
+
                             insert_stat(
                                 cur,
                                 bet_id,
@@ -719,15 +723,18 @@ def submit_stats(bet_id):
                                 team_size=team_size,
                                 winning_team=winning_team_label
                             )
-                            update_player_aggregate(
-                                cur,
-                                player_name=player_name.strip(),
-                                game_played=updated_bet['gameplayed'],
-                                game_type=updated_bet['gametype'],
-                                stat_name="score",
-                                stat_value=score,
-                                team_size=team_size
-                            )
+
+                            inserted.append((player_name.strip(), score))
+                for player_name, score in inserted:
+                    update_player_aggregate(
+                        cur,
+                        player_name=player_name,
+                        game_played=updated_bet['gameplayed'],
+                        game_type=updated_bet['gametype'],
+                        stat_name="score",
+                        stat_value=score,
+                        team_size=team_size
+    )
 
             elif updated_bet['gametype'] == "Other":
                 names_stats = [

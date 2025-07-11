@@ -1,5 +1,5 @@
 # Stats utility functions for handling player statistics tracking
-import psycopg2
+import math
 
 def insert_stat(cur, bet_id, subject_id, game_played, game_type, stat_name, stat_value, team=None, team_size=None, winning_team=None):
         cur.execute("""
@@ -7,28 +7,51 @@ def insert_stat(cur, bet_id, subject_id, game_played, game_type, stat_name, stat
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (bet_id, subject_id, game_played, game_type, stat_name, stat_value, team, team_size, winning_team))
 
-def calculate_defensive_value(cur, subject_id, team_size):
-    try:
-        cur.execute("""
-            SELECT AVG(opponent.stat_value) AS defensive_value
-            FROM bettable_player_stats AS player
-            JOIN bettable_player_stats AS opponent
-              ON player.bet_id = opponent.bet_id
-              AND player.team != opponent.team
-            WHERE player.subject_player = %s
-              AND player.stat_name = 'score'
-              AND player.gameType = 'Score'
-              AND player.gamePlayed = 'Beerball'
-              AND player.team = player.winning_team
-              AND player.team_size IS NOT DISTINCT FROM %s
-        """, (subject_id, team_size))
+def calculate_defensive_value_for_game(cur, bet_id, team, team_players, opponent_team, opponent_players, opponent_score):
+    placeholders = ",".join(["%s"] * len(opponent_players))
+    cur.execute(f"""
+        SELECT id, name
+        FROM bettable_players
+        WHERE id IN ({placeholders})
+    """, opponent_players)
+    id_to_name = {str(row["id"]): row["name"] for row in cur.fetchall()}
+    opponent_names = [id_to_name.get(pid) for pid in opponent_players]
 
-        row = cur.fetchone()
-        return row["defensive_value"] if row else None
+    print(f"\n🔍 Opponent Player IDs → Names: {opponent_players} → {opponent_names}")
 
-    except Exception as e:
-        print("❌ Error calculating defensive value:", e)
-        return None
+    cur.execute(f"""
+        SELECT player_name, mean
+        FROM player_stat_aggregates
+        WHERE player_name IN ({','.join(['%s'] * len(opponent_names))})
+        AND game_played = 'Beerball'
+        AND game_type = 'Shots Made'
+        AND stat_name = 'shots_made'
+    """, opponent_names)
+    shot_map = {r["player_name"]: r["mean"] for r in cur.fetchall()}
+
+    print(f"📊 Opponent Shots Map: {shot_map}")
+
+    opponent_estimated_shots = sum(shot_map.get(name, 0) for name in opponent_names)
+    print(f"📈 Opponent estimated shots: {opponent_estimated_shots}")
+    print(f"📉 Opponent actual score: {opponent_score}")
+
+    if opponent_estimated_shots == 0:
+        print("⚠️ No shot data found for opponents! DV set to 0.0")
+        dv = 0.0
+    else:
+        MAX_TPP = 15
+
+        if opponent_score == 0:
+            dv = opponent_estimated_shots / MAX_TPP
+        else:
+            throws_per_point = opponent_estimated_shots / opponent_score
+            dv = (throws_per_point - 1) / (MAX_TPP - 1)
+
+        # Clamp and shift
+        dv = max(0.0, min(1.0, dv))
+        print(f"🛡️ Team {team} vs {opponent_team} → DV: {dv:.3f}")
+
+    return {int(player_id): dv for player_id in team_players}
 
 def update_player_aggregate(cur, player_name, game_played, game_type, stat_name, stat_value, team_size=None):
     cur.execute("""
@@ -119,6 +142,62 @@ def update_player_aggregate(cur, player_name, game_played, game_type, stat_name,
 
             win_rate = wins / total_games if total_games > 0 else None
 
+        if stat_name == "score" and game_type == "Score" and game_played == "Beerball":
+            cur.execute("""
+                SELECT team, bet_id
+                FROM bettable_player_stats
+                WHERE subject_player = %s::text
+                AND stat_name = 'score'
+                ORDER BY timestamp DESC
+                LIMIT 1
+            """, (subject_id,))
+            row = cur.fetchone()
+            if not row:
+                print("❌ No team or bet_id found for player — exiting DV")
+                return
+            if row:
+                team = row["team"]
+                bet_id = row["bet_id"]
+                print(f"✅ Using team: {team}, bet_id: {bet_id}")
+                cur.execute("""
+                    SELECT DISTINCT ON (subject_player) subject_player, team, stat_value
+                    FROM bettable_player_stats
+                    WHERE bet_id = %s AND stat_name = 'score'
+                    ORDER BY subject_player, timestamp DESC
+                """, (bet_id,))
+                results = cur.fetchall()
+
+                print(f"📊 Full bet stats: {results}")
+                team_players = [r["subject_player"] for r in results if r["team"] == team]
+                opponent_players = [r["subject_player"] for r in results if r["team"] != team]
+                opponent_team = [r["team"] for r in results if r["team"] != team][0]
+
+                print(f"🧩 Team players: {team_players}")
+                print(f"🛡️ Opponent players: {opponent_players}")
+                print(f"📌 Opponent teams found: {opponent_team}")
+                opponent_score = max([r["stat_value"] for r in results if r["team"] != team])
+
+                print(f"\n🔧 Computing DV for {player_name} (Team {team}) vs Team {opponent_team}")
+                print(f"🧩 Team players: {team_players}, Opponents: {opponent_players}, Opponent Score: {opponent_score}")
+
+                dvs = calculate_defensive_value_for_game(
+                    cur, bet_id, team, team_players, opponent_team, opponent_players, opponent_score
+                )
+
+                print(f"📦 All DVs for this game: {dvs}")
+                print(f"🔍 player_name: {player_name}, subject_id: {subject_id}")
+                print(f"🧬 Looking for subject_id {subject_id} in DV keys: {list(dvs.keys())}")
+                defensive_value = dvs.get(subject_id)
+            else:
+                print(f"⚠️ No matching row for player {player_name} to calculate DV")
+                defensive_value = None
+
+        # Compute new rolling average DV
+        old_dv = existing["defensive_value"] or 0.0
+        delta_dv = (defensive_value or 0.0) - old_dv
+        new_dv = old_dv + delta_dv / new_n
+
+        print(f"🛠️ Final defensive_value to update: {defensive_value} for {player_name}")
         cur.execute("""
             UPDATE player_stat_aggregates
             SET mean = %s,
@@ -133,7 +212,7 @@ def update_player_aggregate(cur, player_name, game_played, game_type, stat_name,
             AND stat_name = %s
             AND team_size IS NOT DISTINCT FROM %s
         """, (
-            new_mean, new_std, mean_last_5, new_n, win_rate, None,
+            new_mean, new_std, mean_last_5, new_n, win_rate, new_dv,
             player_name, game_played, game_type, stat_name, team_size
         ))
 
