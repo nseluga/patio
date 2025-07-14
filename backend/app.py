@@ -11,6 +11,7 @@ from uuid import uuid4
 from datetime import datetime
 from random import choice
 import json
+import numpy as np
 from backend.stats_utils import (
     insert_stat,
     update_player_aggregate,
@@ -27,6 +28,16 @@ from backend.pong_bet_generation import (
     get_pong_shots_players,
     assemble_pong_shots_matchup,
     generate_biased_pong_shots_line
+)
+from backend.beerball_bet_generation import (
+    get_player_beerball_shots_profile,
+    get_beerball_shots_players,
+    assemble_beerball_matchup,
+    generate_biased_beerball_shots_line,
+    get_player_beerball_score_profile,
+    get_beerball_score_players,
+    generate_biased_beerball_score_line,
+    get_global_beerball_score_strength_average
 )
 
 # Initialize the Flask app and enable CORS
@@ -292,6 +303,39 @@ def accept_bet(bet_id):
         cur.close()
         conn.close()
 
+@app.route("/accept_cpu_bet/<bet_id>", methods=["POST"])
+def accept_cpu_bet(bet_id):
+    player_id = get_player_id()
+    if not player_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    try:
+        # Check if this player already accepted this CPU bet
+        cur.execute("""
+            SELECT 1 FROM cpu_acceptances WHERE id = %s AND accepter_id = %s
+        """, (bet_id, player_id))
+        if cur.fetchone():
+            return jsonify({"error": "Bet already accepted"}), 400
+
+        # Record the acceptance
+        cur.execute("""
+            INSERT INTO cpu_acceptances (id, accepter_id)
+            VALUES (%s, %s)
+        """, (bet_id, player_id))
+
+        conn.commit()
+        return jsonify({"status": "accepted"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
 
 @app.route("/ongoing_bets", methods=["GET"])
 def get_ongoing_bets():
@@ -953,6 +997,195 @@ def create_cpu_pong_shots_bet():
 
     except Exception as e:
         print("❌ CPU Pong bet creation failed:", e)
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+@app.route("/cpu/create_beerball_shots_bet", methods=["POST"])
+def create_cpu_beerball_shots_bet():
+    player_id = get_player_id()
+    if player_id != 0:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json()
+    game_size = data.get("gameSize", "1v1")
+    team_size = int(game_size[0])  # "1v1" → 1
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    try:
+        # Fetch players with Beerball shots made data
+        players = get_beerball_shots_players(cur, team_size)
+        if len(players) < 2 * team_size:
+            return jsonify({"error": "Not enough players with stats"}), 400
+
+        # Build teams and matchup string
+        matchup_info = assemble_beerball_matchup(players, team_size)
+        your_team = matchup_info["your_team"]
+        opp_team = matchup_info["opp_team"]
+        playerA = matchup_info["line_subject"]
+        matchup = matchup_info["matchup"]
+
+        # Get subject player stats
+        playerA_stats = get_player_beerball_shots_profile(cur, playerA, team_size)
+        if not playerA_stats:
+            return jsonify({"error": "Missing stats for line subject"}), 400
+
+        print("📊 Line subject stats (Shots Made):", playerA_stats)
+
+        # Get win_rate + DV from score profile for both teams
+        teammate_profiles = [get_player_beerball_score_profile(cur, p, team_size) for p in your_team]
+        opp_profiles = [get_player_beerball_score_profile(cur, p, team_size) for p in opp_team]
+
+        if not all(teammate_profiles) or not all(opp_profiles):
+            return jsonify({"error": "Missing win_rate or DV for one or more players"}), 400
+
+        print("🧠 Teammate score profiles:")
+        for p in teammate_profiles:
+            print(" ", p)
+
+        print("🛡️ Opponent score profiles:")
+        for p in opp_profiles:
+            print(" ", p)
+
+        # Calculate win_rate and defensive_value aggregates
+        your_win_rate = np.mean([p["win_rate"] for p in teammate_profiles])
+        opp_win_rate = np.mean([p["win_rate"] for p in opp_profiles])
+        avg_opp_dv = np.mean([p["defensive_value"] for p in opp_profiles])
+
+        line_type = choice(["Over", "Under"])
+
+        # Generate opportunity-adjusted line
+        line = generate_biased_beerball_shots_line(
+            cur,
+            team_size,
+            playerA_stats,
+            your_win_rate,
+            opp_win_rate,
+            avg_opp_dv,
+            line_type
+        )
+
+        print("📈 Aggregates:")
+        print("  Your win rate:", your_win_rate)
+        print("  Opponent win rate:", opp_win_rate)
+        print("  Opponent DV avg:", avg_opp_dv)
+
+        # Insert the bet
+        bet_id = str(uuid4())
+        time_posted = datetime.utcnow()
+        amount = randint(10, 100)
+
+        cur.execute("""
+            INSERT INTO bets (
+                id, poster, posterId, timePosted, matchup, amount,
+                lineType, lineNumber, gameType, gamePlayed, gameSize,
+                yourPlayer, oppPlayer, status
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            bet_id,
+            "CPU", 0,
+            time_posted,
+            matchup,
+            amount,
+            line_type,
+            line,
+            "Shots Made",
+            "Beerball",
+            game_size,
+            playerA,
+            opp_team[0],
+            "CPU"
+        ))
+
+        conn.commit()
+        return jsonify({"message": "Beerball CPU bet created"}), 201
+
+    except Exception as e:
+        print("❌ CPU Beerball bet creation failed:", e)
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+@app.route("/cpu/create_beerball_score_bet", methods=["POST"])
+def create_cpu_beerball_score_bet():
+    player_id = get_player_id()
+    if player_id != 0:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json()
+    game_size = data.get("gameSize", "2v2")
+    team_size = int(game_size[0])
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    try:
+        players = get_beerball_score_players(cur, team_size)
+        if len(players) < 2 * team_size:
+            return jsonify({"error": "Not enough players with stats"}), 400
+
+        matchup_info = assemble_beerball_matchup(players, team_size)
+        your_team = matchup_info["your_team"]
+        opp_team = matchup_info["opp_team"]
+        matchup = matchup_info["matchup"]
+
+        # Get stats for score profile
+        your_profiles = [get_player_beerball_score_profile(cur, p, team_size) for p in your_team]
+        opp_profiles  = [get_player_beerball_score_profile(cur, p, team_size) for p in opp_team]
+
+        # Get shots made profile (default 0 if missing)
+        def safe_shots(p):
+            row = get_player_beerball_shots_profile(cur, p, team_size)
+            return row["mean"] if row else 0.0
+
+        your_shots = [safe_shots(p) for p in your_team]
+        opp_shots  = [safe_shots(p) for p in opp_team]
+
+        # Get global strength average
+        global_avg_strength = get_global_beerball_score_strength_average(cur, team_size)
+
+        line_type = choice(["Over", "Under"])
+
+        line, line_type = generate_biased_beerball_score_line(
+            your_profiles,
+            opp_profiles,
+            your_shots,
+            opp_shots,
+            global_avg_strength,
+            line_type
+        )
+
+        # Insert bet
+        bet_id = str(uuid4())
+        time_posted = datetime.utcnow()
+        amount = randint(10, 100)
+
+        cur.execute("""
+            INSERT INTO bets (
+                id, poster, posterId, timePosted, matchup, amount,
+                lineType, lineNumber, gameType, gamePlayed, gameSize,
+                yourTeamA, yourTeamB, oppTeamA, oppTeamB, status
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s)
+        """, (
+            bet_id, "CPU", 0, time_posted, matchup, amount,
+            line_type, line, "Score", "Beerball", game_size,
+            Json(your_team), Json([]), Json(opp_team), Json([]), "CPU"
+        ))
+
+        conn.commit()
+        return jsonify({"message": "Beerball Score CPU bet created"}), 201
+
+    except Exception as e:
+        print("❌ CPU Beerball Score bet creation failed:", e)
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
