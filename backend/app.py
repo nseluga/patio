@@ -78,7 +78,11 @@ def me():
 
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT username, email, profile_pic_url, caps_balance FROM players WHERE id = %s", (player_id,))
+    cur.execute("""
+        SELECT username, email, profile_pic_url, caps_balance,
+               pvp_bets_played, pvp_bets_won
+        FROM players WHERE id = %s
+    """, (player_id,))
     player = cur.fetchone()
     cur.close()
     conn.close()
@@ -88,8 +92,11 @@ def me():
         'username': player[0],
         'email': player[1],
         'profile_pic_url': player[2],
-        'caps_balance': player[3]
+        'caps_balance': player[3],
+        'pvp_bets_played': player[4],
+        'pvp_bets_won': player[5]
     })
+
 
 @app.route('/leaderboard', methods=['GET'])
 def public_leaderboard():
@@ -291,6 +298,14 @@ def accept_bet(bet_id):
                 status = 'accepted'
             WHERE id = %s
         """, (player_id, accepter_line_type, bet_id))
+
+        # Increment pvp_bets_placed for both poster and accepter
+        cur.execute("""
+            UPDATE players
+            SET pvp_bets_placed = pvp_bets_placed + 1
+            WHERE id IN (%s, %s)
+        """, (poster_id, player_id))
+
 
         conn.commit()
         return jsonify({"status": "accepted"}), 200
@@ -687,6 +702,14 @@ def submit_stats(bet_id):
                 SET caps_balance = caps_balance + %s
                 WHERE id = %s
             """, (2 * amount, winner_id))
+
+            # ✅ Increment pvp_bets_won for the winner
+            cur.execute("""
+                UPDATE players
+                SET pvp_bets_won = pvp_bets_won + 1
+                WHERE id = %s
+            """, (winner_id,))
+
 
             # ✅ Log all players to bettable_player_stats (creating them if needed)
             if updated_bet['gametype'] == "Shots Made":

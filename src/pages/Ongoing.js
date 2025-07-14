@@ -8,6 +8,7 @@ import "./PvP.css"; // Reuse existing styles
 import back1 from "../assets/images/back1.png";
 import api from "../api";
 
+
 function getNumPlayers(gameSize) {
   if (!gameSize) return 2; // fallback default
   const [a] = gameSize.split("v").map(Number);
@@ -22,6 +23,17 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
   // eslint-disable-next-line no-unused-vars
   const [_, setNow] = useState(Date.now());
   const [submitting, setSubmitting] = useState(false);
+
+  const refreshUser = async () => {
+    try {
+      const res = await api.get("/me", {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      setUser(res.data);
+    } catch (err) {
+      console.error("Failed to refresh user in Ongoing:", err);
+    }
+  };
 
   useEffect(() => {
     let didCancel = false;
@@ -203,17 +215,9 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
 
       console.log("✅ Stats submitted to backend:", res.data);
 
-      if (res.data.match && res.data.new_caps != null) {
-      // ✅ Update caps balance in UserContext
-      setUser((prev) => ({
-        ...prev,
-        caps_balance: res.data.new_caps
-      }));
-    }
-
-
       if (res.data.match) {
         setPopupMessage("✅ Match confirmed!");
+        await refreshUser();
         setTimeout(() => setPopupMessage(""), 3000);
       }
 

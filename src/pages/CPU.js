@@ -93,37 +93,42 @@ export default function CPU({ addOngoingBet }) {
           </div>
 
           <div className="bet-list">
-            {visibleBets.map((bet, index) => (
-              <div className="bet-card" key={index} style={{ backgroundImage: `url(${betcard2})` }}>
-                <div className="bet-top">
-                  <span className="poster-time">
-                    CPU · {formatTimeAgo(bet.timePosted)}
-                  </span>
+            {visibleBets.map((bet, index) => {
+              const flippedLineType = bet.lineType === "Over" ? "Under" : "Over";
+
+              return (
+                <div className="bet-card" key={index} style={{ backgroundImage: `url(${betcard2})` }}>
+                  <div className="bet-top">
+                    <span className="poster-time">
+                      CPU · {formatTimeAgo(bet.timePosted)}
+                    </span>
+                    <button
+                      className="dismiss-button"
+                      onClick={() => removeBetByIndex(index, setBets)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="subject">{bet.matchup}</div>
+                  <div className="game-played">Game: {bet.gamePlayed}</div>
+                  <div className="game-type">Type: {bet.gameType}</div>
+                  <div className="bet-bottom">
+                    <div className="amount">{bet.amount} caps</div>
+                    <div className="line">
+                      {flippedLineType} {bet.lineNumber}
+                    </div>
+                  </div>
                   <button
-                    className="dismiss-button"
-                    onClick={() => removeBetByIndex(index, setBets)}
+                    className="accept-button"
+                    onClick={() => acceptBet(bet, index)}
                   >
-                    ×
+                    ACCEPT
                   </button>
                 </div>
-                <div className="subject">{bet.matchup}</div>
-                <div className="game-played">Game: {bet.gamePlayed}</div>
-                <div className="game-type">Type: {bet.gameType}</div>
-                <div className="bet-bottom">
-                  <div className="amount">{bet.amount} caps</div>
-                  <div className="line">
-                    {bet.lineType} {bet.lineNumber}
-                  </div>
-                </div>
-                <button
-                  className="accept-button"
-                  onClick={() => acceptBet(bet, index)}
-                >
-                  ACCEPT
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
+
           {showModal && (
             <div className="bet-modal-overlay">
               <div className="bet-modal">
