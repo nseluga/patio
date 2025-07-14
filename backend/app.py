@@ -21,13 +21,21 @@ from backend.caps_bet_generation import (
     generate_biased_caps_shots_line,
     get_player_caps_shots_profile,
     get_caps_shots_players,
-    assemble_caps_shots_matchup  # make sure this is in your imports
+    assemble_caps_matchup,
+    get_player_caps_score_profile,
+    get_caps_score_players,
+    generate_biased_caps_score_line,
+    get_global_caps_score_strength_average
 )
 from backend.pong_bet_generation import (
     get_player_pong_shots_profile,
     get_pong_shots_players,
     assemble_pong_shots_matchup,
-    generate_biased_pong_shots_line
+    generate_biased_pong_shots_line,
+    get_player_pong_score_profile,
+    get_pong_score_players,
+    generate_biased_pong_score_line,
+    get_global_pong_score_strength_average
 )
 from backend.beerball_bet_generation import (
     get_player_beerball_shots_profile,
@@ -885,7 +893,7 @@ def create_cpu_caps_shots_bet():
             return jsonify({"error": "Not enough players with stats"}), 400
 
         # Assemble teams and matchup
-        matchup_info = assemble_caps_shots_matchup(players, team_size)
+        matchup_info = assemble_caps_matchup(players, team_size)
         your_team = matchup_info["your_team"]
         opp_team = matchup_info["opp_team"]
         playerA = matchup_info["line_subject"]
@@ -1209,6 +1217,173 @@ def create_cpu_beerball_score_bet():
 
     except Exception as e:
         print("❌ CPU Beerball Score bet creation failed:", e)
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+@app.route("/cpu/create_caps_score_bet", methods=["POST"])
+def create_cpu_caps_score_bet():
+    player_id = get_player_id()
+    if player_id != 0:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json()
+    game_size = data.get("gameSize", "2v2")
+    team_size = int(game_size[0])
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    try:
+        # Get eligible players
+        players = get_caps_score_players(cur, team_size)
+        if len(players) < 2 * team_size:
+            return jsonify({"error": "Not enough players with stats"}), 400
+
+        matchup_info = assemble_caps_matchup(players, team_size)
+        your_team = matchup_info["your_team"]
+        opp_team = matchup_info["opp_team"]
+        matchup = matchup_info["matchup"]
+
+        # Get score profiles
+        your_profiles = [get_player_caps_score_profile(cur, p, team_size) for p in your_team]
+        opp_profiles  = [get_player_caps_score_profile(cur, p, team_size) for p in opp_team]
+
+        if any(p is None for p in your_profiles + opp_profiles):
+            return jsonify({"error": "Missing score profile"}), 400
+
+        # Get shots made profiles (default to 0 if missing)
+        def safe_shots(p):
+            cur.execute("""
+                SELECT mean FROM player_stat_aggregates
+                WHERE player_name = %s AND game_played = 'Caps'
+                  AND game_type = 'Shots Made' AND stat_name = 'shots_made'
+                  AND team_size = %s
+            """, (p, team_size))
+            row = cur.fetchone()
+            return row["mean"] if row else 0.0
+
+        your_shots = [safe_shots(p) for p in your_team]
+        opp_shots  = [safe_shots(p) for p in opp_team]
+
+        # Global strength average
+        global_avg_strength = get_global_caps_score_strength_average(cur, team_size)
+
+        line_type = choice(["Over", "Under"])
+
+        line, line_type = generate_biased_caps_score_line(
+            your_profiles, opp_profiles,
+            your_shots, opp_shots,
+            global_avg_strength,
+            line_type
+        )
+
+        # Insert bet
+        bet_id = str(uuid4())
+        time_posted = datetime.utcnow()
+        amount = randint(10, 100)
+
+        cur.execute("""
+            INSERT INTO bets (
+                id, poster, posterId, timePosted, matchup, amount,
+                lineType, lineNumber, gameType, gamePlayed, gameSize,
+                yourTeamA, yourTeamB, oppTeamA, oppTeamB, status
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                      %s, %s, %s, %s, %s)
+        """, (
+            bet_id, "CPU", 0, time_posted, matchup, amount,
+            line_type, line, "Score", "Caps", game_size,
+            Json(your_team), Json([]), Json(opp_team), Json([]), "CPU"
+        ))
+
+        conn.commit()
+        return jsonify({"message": "Caps Score CPU bet created"}), 201
+
+    except Exception as e:
+        print("❌ CPU Caps Score bet creation failed:", e)
+        conn.rollback()
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
+
+@app.route("/cpu/create_pong_score_bet", methods=["POST"])
+def create_cpu_pong_score_bet():
+    player_id = get_player_id()
+    if player_id != 0:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json()
+    game_size = data.get("gameSize", "2v2")
+    team_size = int(game_size[0])
+
+    conn = get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    try:
+        # 1. Get players
+        players = get_pong_score_players(cur, team_size)
+        if len(players) < 2 * team_size:
+            return jsonify({"error": "Not enough players with stats"}), 400
+
+        matchup_info = assemble_pong_shots_matchup(players, team_size)
+        your_team = matchup_info["your_team"]
+        opp_team = matchup_info["opp_team"]
+        matchup = matchup_info["matchup"]
+
+        # 2. Score profiles
+        your_profiles = [get_player_pong_score_profile(cur, p, team_size) for p in your_team]
+        opp_profiles  = [get_player_pong_score_profile(cur, p, team_size) for p in opp_team]
+        if any(p is None for p in your_profiles + opp_profiles):
+            return jsonify({"error": "Missing score profiles"}), 400
+
+        # 3. Shots made profiles (default 0 if missing)
+        def safe_shots(p):
+            row = get_player_pong_shots_profile(cur, p, team_size)
+            return row["mean"] if row else 0.0
+
+        your_shots = [safe_shots(p) for p in your_team]
+        opp_shots  = [safe_shots(p) for p in opp_team]
+
+        # 4. Global avg strength
+        global_avg = get_global_pong_score_strength_average(cur, team_size)
+
+        # 5. Line generation
+        line_type = choice(["Over", "Under"])
+        line, line_type = generate_biased_pong_score_line(
+            your_profiles, opp_profiles,
+            your_shots, opp_shots,
+            global_avg,
+            line_type
+        )
+
+        # 6. Insert bet
+        bet_id = str(uuid4())
+        time_posted = datetime.utcnow()
+        amount = randint(10, 100)
+
+        cur.execute("""
+            INSERT INTO bets (
+                id, poster, posterId, timePosted, matchup, amount,
+                lineType, lineNumber, gameType, gamePlayed, gameSize,
+                yourTeamA, yourTeamB, oppTeamA, oppTeamB, status
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                      %s, %s, %s, %s, %s)
+        """, (
+            bet_id, "CPU", 0, time_posted, matchup, amount,
+            line_type, line, "Score", "Pong", game_size,
+            Json(your_team), Json([]), Json(opp_team), Json([]), "CPU"
+        ))
+
+        conn.commit()
+        return jsonify({"message": "Pong Score CPU bet created"}), 201
+
+    except Exception as e:
+        print("❌ CPU Pong Score bet creation failed:", e)
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 

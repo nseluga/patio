@@ -202,12 +202,15 @@ def generate_biased_beerball_score_line(
     w1, w2, w3, w4 = 0.25, 0.25, 0.25, 0.25
 
     def player_strength(profile, shots_made):
-        score_adj = adjust(profile, recency_weight)
+        adj_score = adjust(profile, recency_weight)
         win_rate = profile.get("win_rate", 0.5)
         dv = profile.get("defensive_value", 0.5)
+        # Manual normalization
+        norm_score = adj_score / 3
+        norm_shots = shots_made / 10
         return (
-            w1 * score_adj +
-            w2 * shots_made +
+            w1 * norm_score +
+            w2 * norm_shots +
             w3 * win_rate +
             w4 * dv
         )
