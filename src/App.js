@@ -26,23 +26,55 @@ function App() {
   });
 
   useEffect(() => {
+    const fetchUserFromBackend = async (token) => {
+      try {
+        const res = await fetch("http://localhost:5000/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch profile");
+
+        const data = await res.json();
+
+        const savedId = localStorage.getItem("playerId");
+        const savedUsername = localStorage.getItem("username");
+
+        setUser({
+          playerId: parseInt(savedId),
+          username: savedUsername,
+          token,
+          ...data, // ✅ Merge in caps_balance, bets_won, bets_played, etc.
+        });
+      } catch (err) {
+        console.error("Error fetching full profile:", err);
+        setUser(null);
+      }
+    };
+
     const savedId = localStorage.getItem("playerId");
     const savedUsername = localStorage.getItem("username");
-    const savedToken = localStorage.getItem("token")
-  
+    const savedToken = localStorage.getItem("token");
+
     if (savedId && savedUsername && savedToken) {
       const parsedId = parseInt(savedId);
       if (!isNaN(parsedId)) {
+        // Initially set basic info
         setUser({
           playerId: parsedId,
           username: savedUsername,
           token: savedToken,
         });
+
+        // 🔁 Then fetch full stats from backend
+        fetchUserFromBackend(savedToken);
       } else {
         console.warn("⚠️ playerId could not be parsed:", savedId);
       }
     }
   }, []);
+
 
   const addOngoingBet = (newBet) => {
     const local = localStorage.getItem("ongoingBets");

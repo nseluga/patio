@@ -12,10 +12,10 @@ export default function Profile() {
   const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
-    if (!user) {
-      navigate("/login");
-    }
-  }, [user, navigate]);
+      if (!user) {
+        navigate("/login");
+      }
+    }, [user, navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("playerId");
@@ -92,11 +92,11 @@ export default function Profile() {
             <div className="profile-stat-label">caps</div>
           </div>
           <div className="profile-stat">
-            <div className="profile-stat-number">{user.bets_won ?? 0}</div>
+            <div className="profile-stat-number">{user.pvp_bets_won ?? 0}</div>
             <div className="profile-stat-label">bets won</div>
           </div>
           <div className="profile-stat">
-            <div className="profile-stat-number">{user.bets_played ?? 0}</div>
+            <div className="profile-stat-number">{user.pvp_bets_played ?? 0}</div>
             <div className="profile-stat-label">bets played</div>
           </div>
         </div>

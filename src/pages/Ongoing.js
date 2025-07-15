@@ -17,23 +17,12 @@ function getNumPlayers(gameSize) {
 
 // Main component for ongoing bets
 export default function Ongoing({ ongoingBets, setOngoingBets }) {
-  const { user, setUser } = useContext(UserContext);
+  const { user } = useContext(UserContext);
   const bets = ongoingBets;
   const setBets = setOngoingBets;
   // eslint-disable-next-line no-unused-vars
   const [_, setNow] = useState(Date.now());
   const [submitting, setSubmitting] = useState(false);
-
-  const refreshUser = async () => {
-    try {
-      const res = await api.get("/me", {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
-      setUser(res.data);
-    } catch (err) {
-      console.error("Failed to refresh user in Ongoing:", err);
-    }
-  };
 
   useEffect(() => {
     let didCancel = false;
@@ -217,7 +206,6 @@ export default function Ongoing({ ongoingBets, setOngoingBets }) {
 
       if (res.data.match) {
         setPopupMessage("✅ Match confirmed!");
-        await refreshUser();
         setTimeout(() => setPopupMessage(""), 3000);
       }
 

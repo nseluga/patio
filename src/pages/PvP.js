@@ -23,18 +23,7 @@ export default function PvP({ addOngoingBet }) {
   const [gamePlayed, setGamePlayed] = useState("Caps");
   const [gameSize, setGameSize] = useState("2v2");
   const [popupMessage, setPopupMessage] = useState("");
-  const { user, setUser } = useContext(UserContext);
-
-  const refreshUser = async () => {
-    try {
-      const res = await api.get("/me", {
-        headers: { Authorization: `Bearer ${user.token}` },
-      });
-      setUser(res.data);
-    } catch (err) {
-      console.error("❌ Failed to refresh user:", err);
-    }
-  };
+  const { user } = useContext(UserContext);
 
   // Fetch PvP bets from Flask backend
   useEffect(() => {
@@ -83,7 +72,6 @@ export default function PvP({ addOngoingBet }) {
       if (res.status === 200) {
         setBets((prev) => prev.filter((b) => b.id !== betId));
         addOngoingBet(betId);
-        await refreshUser(); // this will update caps and pvp_bets_placed in Profile
       } else {
         console.error(
           "❌ Error accepting bet:",
