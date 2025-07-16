@@ -383,6 +383,27 @@ def accept_cpu_bet(bet_id):
         if cur.fetchone():
             return jsonify({"error": "Bet already accepted"}), 400
 
+        # Get amount
+        cur.execute("""
+            SELECT amount FROM bets WHERE id = %s AND status = 'CPU'
+        """, (bet_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"error": "CPU bet not found"}), 404
+
+        amount = row[0]
+
+        # Check user has enough caps
+        cur.execute("SELECT caps_balance FROM players WHERE id = %s", (player_id,))
+        caps = cur.fetchone()
+        if not caps or caps[0] < amount:
+            return jsonify({"error": "Insufficient caps"}), 400
+
+        # Deduct caps
+        cur.execute("""
+            UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s
+        """, (amount, player_id))
+
         # Record the acceptance
         cur.execute("""
             INSERT INTO cpu_acceptances (id, accepter_id)
@@ -633,6 +654,32 @@ def submit_stats(bet_id):
                 SET match_confirmed = TRUE
                 WHERE id = %s AND accepter_id = %s
             """, (bet_id, player_id))
+
+            # ✅ CPU match confirmed: award or deduct caps
+            line = float(bet['linenumber'])
+            line_type = bet['linetype']
+            game_type = bet['gametype']
+
+            if game_type == "Shots Made":
+                user_stat = int(data["yourShots"])
+            elif game_type == "Score":
+                user_stat = int(data["yourScoreA"]) + int(data["yourScoreB"])
+            elif game_type == "Other":
+                user_stat = int(data["yourOutcome"])
+            else:
+                user_stat = None
+
+            if user_stat is not None:
+                outcome = "Over" if user_stat > line else "Under"
+                amount = bet["amount"]
+
+                if outcome == line_type:
+                    # ✅ Player won against CPU
+                    cur.execute("""
+                        UPDATE players
+                        SET caps_balance = caps_balance + %s
+                        WHERE id = %s
+                    """, (amount * 2, player_id))
 
         else: 
             cur.execute("""
