@@ -5,6 +5,7 @@ import BottomNav from "../components/BottomNav";
 import "./Profile.css";
 import back1 from "../assets/images/back1.png";
 import defaultProfile from "../assets/images/defaultProfile.png";
+import api from "../api";
 
 export default function Profile() {
   const { user, setUser } = useContext(UserContext);
@@ -39,6 +40,19 @@ export default function Profile() {
     setSelectedImage(null);
   };
 
+  const handleCleanupBets = async () => {
+    try {
+      const res = await api.post("/cleanup_bets", null, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      alert("✅ Cleanup successful!");
+      console.log("🧼 Cleanup response:", res.data);
+    } catch (err) {
+      console.error("❌ Cleanup failed:", err);
+      alert("❌ Cleanup failed — see console.");
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -53,14 +67,36 @@ export default function Profile() {
             Log Out
           </button>
         </div>
+        <button
+          onClick={handleCleanupBets}
+          style={{
+            marginTop: "1rem",
+            padding: "10px 20px",
+            backgroundColor: "#cc0000",
+            color: "white",
+            borderRadius: "6px",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          🧹 Clean Up Expired Bets
+        </button>
 
         {/* Profile picture */}
         <div className="profile-pic-wrapper">
           <div className="profile-pic">
             {selectedImage ? (
-              <img src={selectedImage} alt="profile" className="profile-pic-img" />
+              <img
+                src={selectedImage}
+                alt="profile"
+                className="profile-pic-img"
+              />
             ) : (
-              <img src={defaultProfile} alt="default" className="profile-pic-img" />
+              <img
+                src={defaultProfile}
+                alt="default"
+                className="profile-pic-img"
+              />
             )}
           </div>
           <p className="profile-username">{user.username}</p>
@@ -101,29 +137,30 @@ export default function Profile() {
           </div>
         </div>
 
-      {/* Recent Bets */}
-      
-      <BottomNav />
-    </div>
-    <div className="recent-bets-section">
-      <div className="recent-bets-wrap-box">
-          <h2 className="recent-bets-title">Recent Bets:</h2> </div>
-          {user.recent_bets?.map((bet, index) => (
-            <div className="recent-bet-card" key={index}>
-              <div className="bet-header">
-                <span className="poster-time">{bet.poster}</span>
-                <span>{bet.timePosted}</span>
-                <button className="dismiss-button">×</button>
-              </div>
-              <div className="bet-details">
-                <div className="subject">{bet.subject}</div>
-                <div>{bet.player}</div>
-                <div>{bet.line}</div>
-              </div>
-              <div className="bet-tag">{bet.gameType}</div>
-            </div>
-          ))}
-        </div>
+        {/* Recent Bets */}
+
+        <BottomNav />
       </div>
+      <div className="recent-bets-section">
+        <div className="recent-bets-wrap-box">
+          <h2 className="recent-bets-title">Recent Bets:</h2>{" "}
+        </div>
+        {user.recent_bets?.map((bet, index) => (
+          <div className="recent-bet-card" key={index}>
+            <div className="bet-header">
+              <span className="poster-time">{bet.poster}</span>
+              <span>{bet.timePosted}</span>
+              <button className="dismiss-button">×</button>
+            </div>
+            <div className="bet-details">
+              <div className="subject">{bet.subject}</div>
+              <div>{bet.player}</div>
+              <div>{bet.line}</div>
+            </div>
+            <div className="bet-tag">{bet.gameType}</div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

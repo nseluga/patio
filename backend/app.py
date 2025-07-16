@@ -8,7 +8,7 @@ import psycopg2.extras
 from psycopg2.extras import Json
 from random import sample, randint
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from random import choice
 import json
 import numpy as np
@@ -139,6 +139,46 @@ def public_leaderboard():
     cur.close()
     conn.close()
     return jsonify([{'username': row[0], 'caps_balance': row[1]} for row in rows])
+
+@app.route("/cleanup_bets", methods=["POST"])
+def cleanup_bets():
+    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+    conn = get_db()
+    cur = conn.cursor()
+
+    try:
+        # 🧼 Delete PvP bets that were never accepted
+        cur.execute("""
+            DELETE FROM bets
+            WHERE status = 'posted' AND accepterId IS NULL AND timePosted < %s
+        """, (cutoff,))
+        print("🗑️ Deleted unaccepted PvP bets older than 1 week")
+
+        # 🧼 Delete resolved bets (already submitted by both players)
+        cur.execute("""
+            DELETE FROM bets
+            WHERE status = 'submitted' AND timePosted < %s
+        """, (cutoff,))
+        print("🗑️ Deleted submitted bets older than 1 week")
+
+        # 🧼 Delete CPU bets after 30s no matter what
+        cur.execute("""
+            DELETE FROM bets
+            WHERE status = 'CPU' AND timePosted < %s
+        """, (cutoff,))
+        print("🗑️ Deleted expired CPU bets older than 1 week")
+
+        conn.commit()
+        return jsonify({"message": "Cleanup completed"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        print("❌ Cleanup failed:", e)
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
 
 # ---------------- New Bets Endpoints ---------------- #
 
@@ -366,6 +406,27 @@ def accept_cpu_bet(bet_id):
         """, (bet_id, player_id))
         if cur.fetchone():
             return jsonify({"error": "Bet already accepted"}), 400
+
+        # Get amount
+        cur.execute("""
+            SELECT amount FROM bets WHERE id = %s AND status = 'CPU'
+        """, (bet_id,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({"error": "CPU bet not found"}), 404
+
+        amount = row[0]
+
+        # Check user has enough caps
+        cur.execute("SELECT caps_balance FROM players WHERE id = %s", (player_id,))
+        caps = cur.fetchone()
+        if not caps or caps[0] < amount:
+            return jsonify({"error": "Insufficient caps"}), 400
+
+        # Deduct caps
+        cur.execute("""
+            UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s
+        """, (amount, player_id))
 
         # Record the acceptance
         cur.execute("""
@@ -617,6 +678,32 @@ def submit_stats(bet_id):
                 SET match_confirmed = TRUE
                 WHERE id = %s AND accepter_id = %s
             """, (bet_id, player_id))
+
+            # ✅ CPU match confirmed: award or deduct caps
+            line = float(bet['linenumber'])
+            line_type = bet['linetype']
+            game_type = bet['gametype']
+
+            if game_type == "Shots Made":
+                user_stat = int(data["yourShots"])
+            elif game_type == "Score":
+                user_stat = int(data["yourScoreA"]) + int(data["yourScoreB"])
+            elif game_type == "Other":
+                user_stat = int(data["yourOutcome"])
+            else:
+                user_stat = None
+
+            if user_stat is not None:
+                outcome = "Over" if user_stat > line else "Under"
+                amount = bet["amount"]
+
+                if outcome == line_type:
+                    # ✅ Player won against CPU
+                    cur.execute("""
+                        UPDATE players
+                        SET caps_balance = caps_balance + %s
+                        WHERE id = %s
+                    """, (amount * 2, player_id))
 
         else: 
             cur.execute("""

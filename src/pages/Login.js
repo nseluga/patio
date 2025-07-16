@@ -44,7 +44,9 @@ export default function Login() {
     try {
       const res = await api.post("/login", { email, password });
 
-      console.log("✅ Login response:", res); // Full raw response
+      console.log("✅ Login response full:", res);
+      console.log("📬 Response data:", res.data);
+      console.log("🎯 caps_refreshed field:", res.data.caps_refreshed); // Full raw response
 
       // Comment out navigation to see logs
       // window.location.href = "/pvp";
@@ -57,11 +59,14 @@ export default function Login() {
 
       setUser(userObj);
 
+      if (res.data.caps_refreshed) {
+        localStorage.setItem("capsRefreshed", "true");
+      }
+
       // 🧠 Save user info for persistence
       localStorage.setItem("playerId", userObj.playerId);
       localStorage.setItem("username", userObj.username);
       localStorage.setItem("token", userObj.token);
-
     } catch (err) {
       console.error("❌ Login error:", err.message);
       if (err.response) {
@@ -78,31 +83,30 @@ export default function Login() {
   };
 
   return (
-    <div className={styles.container}>
-      <h2>LOGIN</h2>
-      {error && <p className={styles.error}>{error}</p>}
+      <div className={styles.container}>
+        <h2>LOGIN</h2>
+        {error && <p className={styles.error}>{error}</p>}
+        <input
+          className={styles.input}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+        />
+        <input
+          className={styles.input}
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+        />
+        <button className={styles.button} onClick={handleLogin}>
+          Log In
+        </button>
 
-      <input
-        className={styles.input}
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="Email"
-      />
-      <input
-        className={styles.input}
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Password"
-      />
-      <button className={styles.button} onClick={handleLogin}>
-        Log In
-      </button>
-
-      <p>
-        Don't have an account? <Link to="/register">Register here</Link>
-      </p>
-    </div>
+        <p>
+          Don't have an account? <Link to="/register">Register here</Link>
+        </p>
+      </div>
   );
 }
