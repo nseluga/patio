@@ -36,4 +36,11 @@
   font-family: "Anybody";
 }
 
-  
+.popup-banner {
+  background-color: #4caf50;
+  color: white;
+  padding: 12px 20px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  text-align: center;
+}

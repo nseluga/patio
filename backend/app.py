@@ -8,7 +8,7 @@ import psycopg2.extras
 from psycopg2.extras import Json
 from random import sample, randint
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from random import choice
 import json
 import numpy as np
@@ -115,6 +115,46 @@ def public_leaderboard():
     cur.close()
     conn.close()
     return jsonify([{'username': row[0], 'caps_balance': row[1]} for row in rows])
+
+@app.route("/cleanup_bets", methods=["POST"])
+def cleanup_bets():
+    cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+    conn = get_db()
+    cur = conn.cursor()
+
+    try:
+        # 🧼 Delete PvP bets that were never accepted
+        cur.execute("""
+            DELETE FROM bets
+            WHERE status = 'posted' AND accepterId IS NULL AND timePosted < %s
+        """, (cutoff,))
+        print("🗑️ Deleted unaccepted PvP bets older than 1 week")
+
+        # 🧼 Delete resolved bets (already submitted by both players)
+        cur.execute("""
+            DELETE FROM bets
+            WHERE status = 'submitted' AND timePosted < %s
+        """, (cutoff,))
+        print("🗑️ Deleted submitted bets older than 1 week")
+
+        # 🧼 Delete CPU bets after 30s no matter what
+        cur.execute("""
+            DELETE FROM bets
+            WHERE status = 'CPU' AND timePosted < %s
+        """, (cutoff,))
+        print("🗑️ Deleted expired CPU bets older than 1 week")
+
+        conn.commit()
+        return jsonify({"message": "Cleanup completed"}), 200
+
+    except Exception as e:
+        conn.rollback()
+        print("❌ Cleanup failed:", e)
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cur.close()
+        conn.close()
 
 # ---------------- New Bets Endpoints ---------------- #
 

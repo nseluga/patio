@@ -36,6 +36,16 @@ export default function PvP({ addOngoingBet }) {
     }
   };
 
+  // Show the caps refreshed message once
+  useEffect(() => {
+    const wasRefreshed = localStorage.getItem("capsRefreshed") === "true";
+    if (wasRefreshed) {
+      setPopupMessage("✅ +100 caps added for the week!");
+      setTimeout(() => setPopupMessage(""), 3000);
+      localStorage.removeItem("capsRefreshed");
+    }
+  }, []);
+
   // Fetch PvP bets from Flask backend
   useEffect(() => {
     if (!user?.playerId) return;
@@ -150,6 +160,7 @@ export default function PvP({ addOngoingBet }) {
 
   return (
     <>
+      {popupMessage && <div className="popup-banner">{popupMessage}</div>}
       <div className="pvp-page" style={{ backgroundImage: `url(${back1})` }}>
         <div className="pvp-header">
           <h2 className="pvp-title">PvP BETS</h2>
@@ -162,7 +173,11 @@ export default function PvP({ addOngoingBet }) {
 
         <div className="bet-list">
           {bets.map((bet, index) => (
-            <div className="bet-card" key={index} style={{ backgroundImage: `url(${betcard})` }}> 
+            <div
+              className="bet-card"
+              key={index}
+              style={{ backgroundImage: `url(${betcard})` }}
+            >
               <div className="bet-top">
                 <span className="poster-time">
                   {bet.poster} · {formatTimeAgo(bet.timePosted)}
