@@ -88,30 +88,6 @@ def me():
     cur = conn.cursor()
     cur.execute("""
         SELECT username, email, profile_pic_url, caps_balance,
-               pvp_bets_won, pvp_bets_played
-        FROM players WHERE id = %s
-    """, (player_id,))
-    player = cur.fetchone()
-    cur.close()
-    conn.close()
-
-    return jsonify({
-        'id': player_id,
-        'username': player[0],
-        'email': player[1],
-        'profile_pic_url': player[2],
-        'caps_balance': player[3],
-        'pvp_bets_won': player[4],
-        @app.route('/me', methods=['GET'])
-def me():
-    player_id = get_player_id()
-    if not player_id:
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT username, email, profile_pic_url, caps_balance,
                pvp_bets_played, pvp_bets_won
         FROM players WHERE id = %s
     """, (player_id,))
@@ -127,7 +103,6 @@ def me():
         'caps_balance': player[3],
         'pvp_bets_played': player[4],
         'pvp_bets_won': player[5]
-        })
     })
 
 @app.route('/leaderboard', methods=['GET'])
