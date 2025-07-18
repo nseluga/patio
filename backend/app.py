@@ -63,47 +63,54 @@ app.register_blueprint(auth)
 
 # Helper function to get player ID from JWT
 def get_player_id():
-    token = request.headers.get('Authorization')
-    if not token:
+    auth_header = request.headers.get('Authorization')
+    print("🔑 Raw auth header:", auth_header)
+
+    if not auth_header or not auth_header.startswith("Bearer "):
+        print("⚠️ Missing or invalid header format")
         return None
+
+    token = auth_header.split(" ")[1]
     try:
-        # Strip "Bearer " if present
-        if token.startswith("Bearer "):
-            token = token.split(" ")[1]
-        decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        return decoded['id']
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        print("✅ JWT payload:", payload)
+        return payload["id"]
     except Exception as e:
-        print("❌ Token decode failed:", e)
+        print("❌ JWT decode failed:", e)
         return None
+
 
 # ---------------- Existing Endpoints ---------------- #
 
-@app.route('/me', methods=['GET'])
-def me():
-    player_id = get_player_id()
-    if not player_id:
-        return jsonify({'error': 'Unauthorized'}), 401
+# @app.route('/me', methods=['GET'])
+# def me():
+#     player_id = get_player_id()
+#     if not player_id:
+#         return jsonify({'error': 'Unauthorized'}), 401
 
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT username, email, profile_pic_url, caps_balance,
-               pvp_bets_played, pvp_bets_won
-        FROM players WHERE id = %s
-    """, (player_id,))
-    player = cur.fetchone()
-    cur.close()
-    conn.close()
+#     conn = get_db()
+#     cur = conn.cursor()
+#     cur.execute("""
+#         SELECT username, email, profile_pic_url, caps_balance,
+#                pvp_bets_played, pvp_bets_won
+#         FROM players WHERE id = %s
+#     """, (player_id,))
+#     player = cur.fetchone()
+#     cur.close()
+#     conn.close()
 
-    return jsonify({
-        'id': player_id,
-        'username': player[0],
-        'email': player[1],
-        'profile_pic_url': player[2],
-        'caps_balance': player[3],
-        'pvp_bets_played': player[4],
-        'pvp_bets_won': player[5]
-    })
+#     print("🧠 /me player row:", player)
+
+
+#     return jsonify({
+#         'id': player_id,
+#         'username': player[0],
+#         'email': player[1],
+#         'profile_pic_url': player[2],
+#         'caps_balance': player[3],
+#         'pvp_bets_played': player[4],
+#         'pvp_bets_won': player[5]
+#     })
 
 @app.route('/leaderboard', methods=['GET'])
 def public_leaderboard():

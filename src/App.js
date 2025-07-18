@@ -47,6 +47,7 @@ function App() {
           token,
           ...data, // ✅ Merge in caps_balance, bets_won, bets_played, etc.
         });
+        
       } catch (err) {
         console.error("Error fetching full profile:", err);
         setUser(null);

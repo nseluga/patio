@@ -36,29 +36,42 @@ def register():
 def login():
     data = request.json
 
-    # Fetch the user's full info using their email
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT id, username, email, password_hash, caps_balance, last_caps_refresh FROM players WHERE email = %s", (data['email'],))
+
+    # Fetch player record including pvp stats
+    cur.execute("""
+        SELECT id, username, email, password_hash, caps_balance, last_caps_refresh,
+               pvp_bets_played, pvp_bets_won
+        FROM players
+        WHERE email = %s
+    """, (data['email'],))
     result = cur.fetchone()
 
-    if not result or not check_password_hash(result[3], data['password']):
+    if not result:
+        cur.close()
+        conn.close()
         return jsonify({'error': 'Invalid credentials'}), 401
 
-    user_id, username, email, _, caps_balance, last_refresh = result
+    # Unpack result
+    (user_id, username, email, password_hash,
+     caps_balance, last_refresh,
+     pvp_bets_played, pvp_bets_won) = result
 
-     # 🧠 Check if it's time to refresh caps (use seconds=30 for dev, days=7 in prod)
+    if not check_password_hash(password_hash, data['password']):
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'Invalid credentials'}), 401
+
+    # Cap refresh logic
     now = datetime.now(timezone.utc)
-
-    # Make last_refresh timezone-aware if needed
     if last_refresh and last_refresh.tzinfo is None:
         last_refresh = last_refresh.replace(tzinfo=timezone.utc)
-
     if not last_refresh:
         last_refresh = now - timedelta(days=999)
 
     caps_refreshed = False
-    if user_id != 0 and now - last_refresh > timedelta(days=7):  # change to days=7 for prod
+    if user_id != 0 and now - last_refresh > timedelta(days=7):
         caps_balance += 100
         cur.execute("""
             UPDATE players
@@ -72,7 +85,7 @@ def login():
     cur.close()
     conn.close()
 
-    # Create JWT token
+    # Create JWT
     token = jwt.encode(
         {'id': user_id, 'exp': datetime.now(timezone.utc) + timedelta(hours=24)},
         SECRET_KEY, algorithm='HS256'
@@ -84,14 +97,20 @@ def login():
             'id': user_id,
             'username': username,
             'email': email,
-            'caps_balance': caps_balance
+            'caps_balance': caps_balance,
+            'pvp_bets_won': pvp_bets_won,
+            'pvp_bets_played': pvp_bets_played
         },
         'caps_refreshed': caps_refreshed
     })
 
+
+
 @auth.route('/me', methods=['GET'])
 def get_current_user():
+    print("📌 /me route in auth.py triggered")
     token = request.headers.get('Authorization')
+    print("🔐 Authorization header:", token)
     if not token:
         return jsonify({'error': 'Missing token'}), 401
 
@@ -138,8 +157,8 @@ def get_current_user():
         'username': player[0],
         'email': player[1],
         'caps_balance': player[2],
-        'bets_won': bets_won,
-        'bets_played': bets_played,
+        'pvp_bets_won': bets_won,
+        'pvp_bets_played': bets_played,
         'recent_bets': [
             {
                 'subject': r[0],

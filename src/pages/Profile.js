@@ -11,6 +11,8 @@ export default function Profile() {
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(null);
+  console.log("👤 User from context:", user);
+
 
   useEffect(() => {
       if (!user) {

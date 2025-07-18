@@ -1,86 +1,93 @@
-// Import dependencies
 import { useState, useEffect, useContext } from "react";
-import { useNavigate, Navigate, Link } from "react-router-dom";
-import api from "../api"; // Axios instance
-import styles from "./Login.module.css"; // Styling
-import UserContext from "../UserContext"; // Global context
+import { useNavigate, Navigate } from "react-router-dom";
+import api from "../api";
+import UserContext from "../UserContext";
+import styles from "./Login.module.css"; // or "./Login.css"
+import { Link } from "react-router-dom"; // ✅ Fixes 'Link is not defined'
 
 // Login page component
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { user, setUser } = useContext(UserContext); // Global user setter
+  const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
 
-  // If token exists, try to auto-login
+  // Try auto-login if token exists but no user in context
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token && !user) {
-      api
-        .get("/me")
-        .then((res) => {
-          setUser(res.data);
-          // Only navigate if still on login page
-          if (window.location.pathname === "/login") {
-            navigate("/pvp");
-          }
-        })
-        .catch(() => {
-          localStorage.removeItem("token");
+
+    if (!token || user) return;
+
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get("/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
-    }
-  }, [navigate, user, setUser]);
 
-  // Redirect only if you're on login and already logged in
-  if (user && window.location.pathname === "/login") {
-    return <Navigate to="/pvp" />;
-  }
+        const fullUser = {
+          ...res.data,
+          playerId: res.data.id, // standardize key for frontend
+          token,
+        };
 
-  // Handle login
+        setUser(fullUser);
+        navigate("/pvp");
+      } catch (err) {
+        console.error("❌ Failed to fetch /me during auto-login:", err);
+        localStorage.removeItem("token");
+        setUser(null);
+      }
+    };
+
+    fetchProfile();
+  }, [user, setUser, navigate]);
+
+  // Handle login form submission
   const handleLogin = async () => {
-    console.log("🔐 handleLogin called");
-
     try {
       const res = await api.post("/login", { email, password });
 
-      console.log("✅ Login response full:", res);
-      console.log("📬 Response data:", res.data);
-      console.log("🎯 caps_refreshed field:", res.data.caps_refreshed); // Full raw response
-
-      // Comment out navigation to see logs
-      // window.location.href = "/pvp";
+      const token = res.data.token;
+      const userFromBackend = res.data.user;
 
       const userObj = {
-        ...res.data.user,
-        playerId: res.data.user.id,
-        token: res.data.token,
+        ...userFromBackend,
+        playerId: userFromBackend.id,
+        token,
       };
 
+      // Save to context first
       setUser(userObj);
+
+      // Save to localStorage after (for persistence on refresh)
+      localStorage.setItem("token", token);
+      localStorage.setItem("playerId", userObj.playerId);
+      localStorage.setItem("username", userObj.username);
 
       if (res.data.caps_refreshed) {
         localStorage.setItem("capsRefreshed", "true");
       }
 
-      // 🧠 Save user info for persistence
-      localStorage.setItem("playerId", userObj.playerId);
-      localStorage.setItem("username", userObj.username);
-      localStorage.setItem("token", userObj.token);
+      navigate("/pvp"); // ✅ redirect after login
+
     } catch (err) {
-      console.error("❌ Login error:", err.message);
+      console.error("❌ Login error:", err);
       if (err.response) {
-        console.error(
-          "🚨 Server responded with:",
-          err.response.status,
-          err.response.data
-        );
+        console.error("🚨 Server responded with:", err.response.status, err.response.data);
       } else {
         console.error("🧨 Network error or server unreachable");
       }
       setError("Login failed");
     }
   };
+
+  // If already logged in, redirect
+  if (user && window.location.pathname === "/login") {
+    return <Navigate to="/pvp" />;
+  }
 
   return (
       <div className={styles.container}>
