@@ -69,20 +69,7 @@ export default function Profile() {
             Log Out
           </button>
         </div>
-        <button
-          onClick={handleCleanupBets}
-          style={{
-            marginTop: "1rem",
-            padding: "10px 20px",
-            backgroundColor: "#cc0000",
-            color: "white",
-            borderRadius: "6px",
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          🧹 Clean Up Expired Bets
-        </button>
+        
 
         {/* Profile picture */}
         <div className="profile-pic-wrapper">
@@ -163,6 +150,9 @@ export default function Profile() {
           </div>
         ))}
       </div>
+      <button onClick={handleCleanupBets} className="cleanup-button">🧹
+          <span className="tooltip-text">CLEAN UP EXPIRED BETS</span>
+      </button>
     </div>
   );
 }

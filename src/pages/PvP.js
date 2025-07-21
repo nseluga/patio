@@ -164,7 +164,7 @@ export default function PvP({ addOngoingBet }) {
             <div
               className="bet-card"
               key={index}
-              style={{ backgroundImage: `url(${betcard})` }}
+              
             >
               <div className="bet-top">
                 <span className="poster-time">

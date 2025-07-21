@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Anybody:wght@400&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Fruktur:wght@400&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Grenze:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rye:wght@400&display=swap');
 
 /* Bottom navigation container */
 .bottom-nav {
@@ -30,16 +30,16 @@
 
 /* Navigation links */
 .bottom-nav a {
-  font-size: 25px;
+  font-size: 19px;
   color: #ffffff;
   text-decoration: none;
-  font-family: "Grenze";
+  font-family: "Rye";
 }
 
 /* Active link style */
 .bottom-nav a.active {
   color: #ffffff;
   font-weight: bold;
-  font-family: "Grenze";
-  font-size: 28px;
+  font-family: "Rye";
+  font-size: 23px;
 }

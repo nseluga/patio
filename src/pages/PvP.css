@@ -64,7 +64,7 @@
 
 /* Each individual bet card */
 .bet-card {
-  background: linear-gradient(to bottom, white, rgb(200, 200, 200));
+  background: linear-gradient(to bottom, white, rgb(138, 117, 141));
   width: 40%;
   border-radius: 10px;
   padding: 15px;
@@ -368,7 +368,7 @@
 }
 
 .cpu-page .bet-card {
-  background: linear-gradient(to bottom, white, rgb(200, 200, 200));
+  background: linear-gradient(to bottom, white, rgb(138, 117, 141));
   width: 40%;
   border-radius: 10px;
   padding: 15px;
@@ -489,7 +489,7 @@
 
 /* Each individual bet card */
 .ongoing-page .bet-card {
-  background: linear-gradient(to bottom, white, rgb(200, 200, 200));
+  background: linear-gradient(to bottom, white, rgb(138, 117, 141));
   width: 40%;
   border-radius: 10px;
   padding: 15px;

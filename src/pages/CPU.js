@@ -101,7 +101,7 @@ export default function CPU({ addOngoingBet }) {
                 <div
                   className="bet-card"
                   key={index}
-                  style={{ backgroundImage: `url(${betcard2})` }}
+                  
                 >
                   <div className="bet-top">
                     <span className="poster-time">
