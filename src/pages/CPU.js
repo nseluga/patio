@@ -7,7 +7,7 @@ import UserContext from "../UserContext";
 import { formatTimeAgo } from "../utils/timeUtils";
 import buttonpng from "../assets/images/button.png";
 import back1 from "../assets/images/back1.png";
-import betcard2 from "../assets/images/betcard2.png"
+import betcard2 from "../assets/images/betcard2.png";
 import api from "../api";
 import "./PvP.css"; // Reuse PvP styles for layout and cards
 
@@ -94,10 +94,15 @@ export default function CPU({ addOngoingBet }) {
 
           <div className="bet-list">
             {visibleBets.map((bet, index) => {
-              const flippedLineType = bet.lineType === "Over" ? "Under" : "Over";
+              const flippedLineType =
+                bet.lineType === "Over" ? "Under" : "Over";
 
               return (
-                <div className="bet-card" key={index} style={{ backgroundImage: `url(${betcard2})` }}>
+                <div
+                  className="bet-card"
+                  key={index}
+                  style={{ backgroundImage: `url(${betcard2})` }}
+                >
                   <div className="bet-top">
                     <span className="poster-time">
                       CPU · {formatTimeAgo(bet.timePosted)}
@@ -208,7 +213,13 @@ export default function CPU({ addOngoingBet }) {
                         setTimeout(() => setPopupMessage(""), 3000);
 
                         setShowModal(false);
-                        window.location.reload();
+                        // Re-fetch bets
+                        const res = await api.get("/cpu_bets", {
+                          headers: {
+                            Authorization: `Bearer ${user.token}`,
+                          },
+                        });
+                        setBets(res.data);
                       } catch (err) {
                         console.error("❌ Failed to create CPU bet:", err);
                         alert(

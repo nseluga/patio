@@ -317,6 +317,7 @@ def get_cpu_bets():
 @app.route("/accept_bet/<bet_id>", methods=["POST"])
 def accept_bet(bet_id):
     player_id = get_player_id()
+    print("👤 PvP accept_bet triggered by player_id:", player_id)
     if player_id is None:
         return jsonify({"error": "Unauthorized"}), 401
 
@@ -353,10 +354,10 @@ def accept_bet(bet_id):
             WHERE id = %s
         """, (player_id, accepter_line_type, bet_id))
 
-        # Increment pvp_bets_placed for both poster and accepter
+        # Increment pvp_bets_played for both poster and accepter
         cur.execute("""
             UPDATE players
-            SET pvp_bets_placed = pvp_bets_placed + 1
+            SET pvp_bets_played = pvp_bets_played + 1
             WHERE id IN (%s, %s)
         """, (poster_id, player_id))
 
@@ -366,6 +367,7 @@ def accept_bet(bet_id):
 
     except Exception as e:
         conn.rollback()
+        print("❌ Accept bet error:", e)
         return jsonify({"error": str(e)}), 500
 
     finally:
@@ -415,6 +417,14 @@ def accept_cpu_bet(bet_id):
             INSERT INTO cpu_acceptances (id, accepter_id)
             VALUES (%s, %s)
         """, (bet_id, player_id))
+
+        # ✅ Increment CPU bet count (reuses PvP field for now)
+        if player_id != 0:
+            cur.execute("""
+                UPDATE players
+                SET pvp_bets_played = pvp_bets_played + 1
+                WHERE id = %s
+            """, (player_id,))
 
         conn.commit()
         return jsonify({"status": "accepted"}), 200
@@ -1030,7 +1040,7 @@ def create_cpu_caps_shots_bet():
             "Caps",
             game_size,
             playerA,
-            opp_team[0],
+            None,
             "CPU"
         ))
 
@@ -1112,7 +1122,7 @@ def create_cpu_pong_shots_bet():
             "Pong",
             game_size,
             playerA,
-            opp_team[0],
+            None,
             "CPU"
         ))
 
@@ -1222,7 +1232,7 @@ def create_cpu_beerball_shots_bet():
             "Beerball",
             game_size,
             playerA,
-            opp_team[0],
+            None,
             "CPU"
         ))
 
@@ -1302,7 +1312,7 @@ def create_cpu_beerball_score_bet():
         """, (
             bet_id, "CPU", 0, time_posted, matchup, amount,
             line_type, line, "Score", "Beerball", game_size,
-            Json(your_team), Json([]), Json(opp_team), Json([]), "CPU"
+            Json(your_team), Json([]), None, None, "CPU"
         ))
 
         conn.commit()
@@ -1389,7 +1399,7 @@ def create_cpu_caps_score_bet():
         """, (
             bet_id, "CPU", 0, time_posted, matchup, amount,
             line_type, line, "Score", "Caps", game_size,
-            Json(your_team), Json([]), Json(opp_team), Json([]), "CPU"
+            Json(your_team), Json([]), None, None, "CPU"
         ))
 
         conn.commit()
@@ -1469,7 +1479,7 @@ def create_cpu_pong_score_bet():
         """, (
             bet_id, "CPU", 0, time_posted, matchup, amount,
             line_type, line, "Score", "Pong", game_size,
-            Json(your_team), Json([]), Json(opp_team), Json([]), "CPU"
+            Json(your_team), Json([]), None, None, "CPU"
         ))
 
         conn.commit()

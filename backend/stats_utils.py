@@ -64,6 +64,8 @@ def update_player_aggregate(cur, player_name, game_played, game_type, stat_name,
     """, (player_name, game_played, game_type, stat_name, team_size))
 
     existing = cur.fetchone()
+    defensive_value = None
+    new_dv = None
 
     if not existing:
         cur.execute("""
@@ -188,16 +190,16 @@ def update_player_aggregate(cur, player_name, game_played, game_type, stat_name,
                 print(f"🔍 player_name: {player_name}, subject_id: {subject_id}")
                 print(f"🧬 Looking for subject_id {subject_id} in DV keys: {list(dvs.keys())}")
                 defensive_value = dvs.get(subject_id)
+
+                # Compute new rolling average DV
+                old_dv = existing["defensive_value"] or 0.0
+                delta_dv = (defensive_value or 0.0) - old_dv
+                new_dv = old_dv + delta_dv / new_n
+
+                print(f"🛠️ Final defensive_value to update: {defensive_value} for {player_name}")
             else:
                 print(f"⚠️ No matching row for player {player_name} to calculate DV")
-                defensive_value = None
 
-        # Compute new rolling average DV
-        old_dv = existing["defensive_value"] or 0.0
-        delta_dv = (defensive_value or 0.0) - old_dv
-        new_dv = old_dv + delta_dv / new_n
-
-        print(f"🛠️ Final defensive_value to update: {defensive_value} for {player_name}")
         cur.execute("""
             UPDATE player_stat_aggregates
             SET mean = %s,

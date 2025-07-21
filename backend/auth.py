@@ -117,6 +117,7 @@ def get_current_user():
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
         user_id = payload['id']
+        print("✅ Token decoded. user_id =", user_id)
     except jwt.ExpiredSignatureError:
         return jsonify({'error': 'Token expired'}), 401
     except jwt.InvalidTokenError:
