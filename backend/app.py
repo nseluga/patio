@@ -82,35 +82,6 @@ def get_player_id():
 
 # ---------------- Existing Endpoints ---------------- #
 
-# @app.route('/me', methods=['GET'])
-# def me():
-#     player_id = get_player_id()
-#     if not player_id:
-#         return jsonify({'error': 'Unauthorized'}), 401
-
-#     conn = get_db()
-#     cur = conn.cursor()
-#     cur.execute("""
-#         SELECT username, email, profile_pic_url, caps_balance,
-#                pvp_bets_played, pvp_bets_won
-#         FROM players WHERE id = %s
-#     """, (player_id,))
-#     player = cur.fetchone()
-#     cur.close()
-#     conn.close()
-
-#     print("🧠 /me player row:", player)
-
-
-#     return jsonify({
-#         'id': player_id,
-#         'username': player[0],
-#         'email': player[1],
-#         'profile_pic_url': player[2],
-#         'caps_balance': player[3],
-#         'pvp_bets_played': player[4],
-#         'pvp_bets_won': player[5]
-#     })
 
 @app.route('/leaderboard', methods=['GET'])
 def public_leaderboard():
@@ -550,7 +521,7 @@ def compute_status_message(bet, player_id):
         if row["match_confirmed"]:
             return "✅ Match confirmed"
         if row["attempted"]:
-            return "❌ Stats do not match"
+            return "❌ Information does not match"
         return "You have not submitted stats yet"
     
     game_type = bet["gametype"]

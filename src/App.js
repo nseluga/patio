@@ -76,7 +76,6 @@ function App() {
     }
   }, []);
 
-
   const addOngoingBet = (newBet) => {
     const local = localStorage.getItem("ongoingBets");
     const current = local ? JSON.parse(local) : [];
