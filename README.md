@@ -1,4 +1,4 @@
-# Patio Sports Betting: Social Sports Betting Platform
+# Patio Sports Betting: Social Sports Entertainment Platform
 
 Patio Sports Betting (PSB) is a full-stack web application that simulates a peer-vs-peer and player-vs-CPU sportsbook for casual games with friends like Caps and Pong. Players can post bets, accept "caps" wagers from others, track outcomes, and see who reigns supreme — all while building gameplay data for future analysis.
 
