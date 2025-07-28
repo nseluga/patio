@@ -1,70 +1,57 @@
-# Getting Started with Create React App
+# Patio Sports Betting: Social Sports Betting Platform
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Patio Sports Betting (PSB) is a full-stack web application that simulates a peer-vs-peer and player-vs-CPU sportsbook for casual games with friends like Caps and Pong. Players can post bets, accept "caps" wagers from others, track outcomes, and see who reigns supreme — all while building gameplay data for future analysis.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## Features
 
-### `npm start`
+- **Multi-Game Support:** Bet on various playground-style games (Caps, Pong, Campus Golf, and more).
+- **PvP Bets:** Create and accept bets against other users with customizable lines, amounts, and game types.
+- **CPU Bets:** Generated automatically using backend player stats with a built-in house edge (~4%). Each user can accept once.
+- **Ongoing Bets Tab:** Track accepted bets, enter post-game stats, and confirm results with peer verification.
+- **Stat-Driven Match Logic:** Bet resolutions rely on exact player names, stats, and outcomes to confirm match integrity.
+- **Player Analytics:** CPU logic leverages historical gameplay data with game-type and team-size filters to build fair matchups.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+---
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Tech Stack
 
-### `npm test`
+**Frontend:**  
+- React (Hooks, Context API)  
+- CSS for animations + responsive UI  
+- Axios-based API calls with auth headers
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+**Backend:**  
+- Flask (Python)  
+- PostgreSQL via Supabase  
+- JWT-based auth system  
+- Modular CPU bet logic for each game
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Sports Analytics Emphasis
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+This project is built with analytics in mind:
+- Each bet submission logs gameplay data (e.g., shots made, scores) for named players.
+- A growing database of stats supports advanced CPU matchup logic.
+- Designed for future expansion into predictive modeling and win probability estimation.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+---
 
-### `npm run eject`
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Auth and User Flow
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- Users register and receive 500 starter "caps".
+- Login returns a JWT token stored in localStorage.
+- Routes and actions are protected with auth headers.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+---
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Dev Notes
 
-## Learn More
+- CPU admin is hardcoded as `playerId = 0` and has special access to bet generation tools.
+- All bets use a standardized schema via `createStandardBet()` for frontend consistency.
+- Match confirmation uses both backend and frontend validations to ensure fairness.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+---
