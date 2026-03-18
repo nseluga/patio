@@ -1,39 +1,128 @@
 @import url('https://fonts.googleapis.com/css2?family=Rye:wght@400&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Anybody:wght@400&display=swap');
 
-/* Main container layout */
 .container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* optional: centers content vertically too */
+  justify-content: center;
   height: 100vh;
   width: 100vw;
-  background: linear-gradient(to bottom, rgb(69, 9, 74), rgb(0, 0, 0));
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(180, 20, 190, 0.35) 0%, transparent 60%),
+    linear-gradient(170deg, rgb(55, 5, 62) 0%, rgb(12, 0, 20) 60%, rgb(30, 8, 5) 100%);
   font-family: "Rye";
   color: white;
   font-size: 30px;
+  position: relative;
+  overflow: hidden;
 }
 
-/* Input field styling */
-.input {
-  padding: 10px;
-  margin: 10px;
-  width: 250px;
-  border-radius: 20px;
-  border: 5px solid #ccc;
+.container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 150px;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.appTitle {
+  font-size: 52px;
+  letter-spacing: 6px;
+  margin-bottom: 4px;
+  text-shadow:
+    0 0 30px rgba(220, 80, 240, 0.8),
+    0 0 60px rgba(220, 80, 240, 0.4),
+    2px 2px 0px rgba(0,0,0,0.6);
+  position: relative;
+}
+
+.appSubtitle {
   font-family: "Anybody";
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 32px;
+  text-transform: uppercase;
 }
 
-/* Button styling */
+.input {
+  padding: 12px 18px;
+  margin: 8px;
+  width: 280px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(200, 100, 220, 0.4);
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(8px);
+  font-family: "Anybody";
+  font-size: 15px;
+  color: white;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input::placeholder {
+  color: rgba(255,255,255,0.35);
+}
+
+.input:focus {
+  border-color: rgba(220, 80, 240, 0.8);
+  box-shadow: 0 0 0 3px rgba(220, 80, 240, 0.15), 0 0 20px rgba(220, 80, 240, 0.1);
+}
+
 .button {
-  padding: 10px 20px;
-  background: #333;
+  padding: 12px 36px;
+  margin-top: 12px;
+  background: linear-gradient(135deg, rgb(140, 20, 160), rgb(200, 80, 30));
   color: white;
   border: none;
-  border-radius: 20px;
+  border-radius: 12px;
   cursor: pointer;
   font-family: "Anybody";
+  font-size: 16px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 20px rgba(180, 40, 200, 0.4);
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 28px rgba(180, 40, 200, 0.6);
+}
+
+.button:active {
+  transform: translateY(0);
+}
+
+.error {
+  color: #ff6b6b;
+  font-family: "Anybody";
+  font-size: 14px;
+  background: rgba(255, 50, 50, 0.1);
+  border: 1px solid rgba(255, 50, 50, 0.3);
+  padding: 8px 16px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.registerLink {
+  font-family: "Anybody";
+  font-size: 13px;
+  color: rgba(255,255,255,0.4);
+  margin-top: 16px;
+}
+
+.registerLink a {
+  color: rgba(220, 130, 255, 0.85);
+  text-decoration: none;
+}
+
+.registerLink a:hover {
+  text-decoration: underline;
 }
 
 .popup-banner {

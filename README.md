@@ -1,52 +1,78 @@
-# Patio Sports Betting App
+# 🍺 Patio — Sports Betting App
 
-A full-stack sports betting application where users can place bets against other players (PvP) or the CPU, track ongoing bets, and resolve results in real time. Built with **React (frontend)** and **Flask + Supabase/Postgres (backend)**.
+A full-stack social sports betting app for backyard games (Caps, Beerball, Pong, Campus Golf, and more). Place bets against friends (PvP) or the House (CPU), track live bets, and climb the leaderboard.
 
 ---
 
 ## 🚀 Features
 
-- **Authentication**
-  - JWT-based user authentication (`auth.py`).
-  - User context in React to manage login state.
-
-- **Betting System**
-  - **PvP Bets** (`PvP.js`): Players create and accept bets against each other.
-  - **CPU Bets** (`CPU.js`): CPU-generated bets with automated odds (~4% house edge).
-  - **Ongoing Bets** (`Ongoing.js`): Tracks accepted bets, allows stat entry, and confirms matches.
-
-- **Bet Types**
-  - **Shots Made**
-  - **Score**
-  - **Other (custom lines/stat conditions)**
-  - Supports multiple games (Caps, Beerball, Pong, Campus Golf, etc.) and game sizes (1v1, 2v2, 3v3).
-
-- **Database Integration**
-  - Flask backend (`app.py`) with Supabase/Postgres models (`models.py`).
-  - Stores bets, submissions, and user/player stats.
-
-- **UI/UX**
-  - Styled bet cards, modal inputs, and confirmation popups.
-  - Bottom navigation shared across pages (`BottomNav`).
-  - Background images and betcard textures for immersive UI.
+- **Authentication** — JWT-based login & registration
+- **PvP Bets** — Create and accept bets against other players
+- **CPU/House Bets** — Automated odds with ~4% house edge
+- **Ongoing Bets** — Track accepted bets, enter stats, confirm results
+- **Leaderboard** — See who's up and who owes
+- **Profile** — Stats, bet history, profile photo
 
 ---
 
 ## 🛠️ Tech Stack
 
-**Frontend**
-- React + Hooks (`useState`, `useEffect`, `useContext`)
-- Context API for user auth
-- Axios API wrapper (`api.js`)
-- CSS modules for styling (reuses `PvP.css`)
-
-**Backend**
-- Python Flask (`app.py`)
-- JWT Authentication (`auth.py`)
-- SQLAlchemy ORM models (`models.py`)
-- Supabase/Postgres database
+| Layer | Tech |
+|---|---|
+| Frontend | React 19, React Router, Axios, Lucide React |
+| Backend | Python Flask, JWT, SQLAlchemy |
+| Database | Supabase (Postgres) |
+| Deployment | Vercel (frontend) + Render (backend) |
 
 ---
 
-## 📂 Project Structure
+## ⚙️ Environment Variables
+
+Copy `.env.example` and fill in your values.
+
+**Backend** (set in Render dashboard):
+```
+DATABASE_URL=postgresql://your-supabase-connection-string
+SECRET_KEY=your-secure-random-secret-key
+FRONTEND_URL=https://your-app.vercel.app
+```
+
+**Frontend** (set in Vercel dashboard):
+```
+REACT_APP_API_URL=https://your-backend.onrender.com
+```
+
+---
+
+## 🖥️ Local Development
+
+**Backend:**
+```bash
+cd backend
+pip install -r requirements.txt
+flask --app app run --port 5001
+```
+
+**Frontend:**
+```bash
+npm install
+npm start
+```
+
+---
+
+## 🌐 Deployment
+
+**Backend → [Render.com](https://render.com)**
+1. Push this repo to GitHub
+2. New Web Service → connect repo
+3. Build command: `pip install -r backend/requirements.txt`
+4. Start command: `flask --app backend/app run --host=0.0.0.0 --port=$PORT`
+5. Add environment variables in Render dashboard
+
+**Frontend → [Vercel.com](https://vercel.com)**
+1. New Project → import from GitHub
+2. Framework: Create React App (auto-detected)
+3. Add `REACT_APP_API_URL` environment variable pointing to your Render URL
+4. Deploy
 

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Anybody:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anybody:wght@400;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Rye:wght@400&display=swap');
 
 /* Profile page layout container */
@@ -9,25 +9,30 @@
   justify-content: space-between;
   padding: 24px;
   color: rgb(255, 255, 255);
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(160, 20, 180, 0.35) 0%, transparent 55%),
+    linear-gradient(170deg, rgb(50, 5, 60) 0%, rgb(10, 0, 18) 55%, rgb(25, 6, 4) 100%);
 }
 
 /* Box surrounding profile contents */
 .profile-box {
   margin: 2px 10px 30px 10px;
-  background-color: rgba(57, 26, 59, 0.9); /* translucent card */
-  border: 3px solid rgb(255, 255, 255);
+  background: linear-gradient(135deg, rgba(60, 20, 70, 0.85), rgba(40, 10, 8, 0.85));
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: 1.5rem;
-  padding: 1px 24px 1px 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  padding: 16px 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07);
+  backdrop-filter: blur(12px);
 }
 
 /* Header section with title and settings icon */
 .profile-header {
   display: flex;
   align-items: center;
-  gap: 1080px !important;
-  margin: auto !important;
-  height: 10px;
+  gap: 32px;
+  padding: 16px;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .profile-title {
@@ -43,15 +48,6 @@
   background-color: yellow;
 }
 
-.profile-header {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  padding: 16px;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-
 .profile-pic-wrapper {
   display: flex;
   flex-direction: column;
@@ -61,19 +57,20 @@
 .profile-pic {
   width: 100px;
   height: 100px;
-  border: 5px solid rgb(0, 0, 0);
+  border: 3px solid rgba(200, 80, 240, 0.6);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: white;
+  background: rgba(255,255,255,0.08);
   margin-top: 10px;
+  box-shadow: 0 0 20px rgba(180, 40, 200, 0.3);
 }
 
 .profile-initial {
   font-size: 2rem;
   font-weight: bold;
-  color: black;
+  color: white;
 }
 
 .profile-username {
@@ -83,7 +80,7 @@
   font-family: "Anybody";
 }
 
-/* Stats section under profile (e.g. wins, caps) */
+/* Stats section under profile */
 .profile-stats {
   display: flex;
   justify-content: space-around;
@@ -109,7 +106,7 @@
 .profile-stats-block {
   display: flex;
   justify-content: center;
-  gap: 40px;
+  gap: 32px;
   margin-top: 10px;
   margin-bottom: 35px;
   text-align: center;
@@ -119,16 +116,21 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  background: rgba(255,255,255,0.06);
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.07);
 }
 
 .profile-stat-label {
-  font-size: 0.85rem;
-  color: #818181;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.45);
   font-family: "Anybody";
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-
-/* Stories section (e.g. highlights or icons) */
+/* Stories section */
 .story-section {
   margin: 20px 0;
   text-align: left;
@@ -145,47 +147,48 @@
 .story-button {
   width: 48px;
   height: 48px;
-  border: 2px solid black;
-  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.2rem;
+  background: rgba(255,255,255,0.06);
 }
 
 /* Recent bets section */
 .recent-bets-section {
-  margin-bottom: 23rem; /* Pushes the button upward */
+  margin-bottom: 23rem;
 }
 
 .recent-bets-wrap-box {
   display: flex;
-  background-color: rgb(255, 255, 255);
+  background-color: rgba(255, 255, 255, 0.1);
   width: 20%;
   margin: 1px 500px 10px 550px;
   height: 60px;
-  opacity: 80%;
   border-radius: 50%;
+  backdrop-filter: blur(8px);
 }
+
 .recent-bets-title {
   font-size: 1.5rem;
   font-weight: bold;
   margin: auto;
-  color: rgb(0, 0, 0);
+  color: rgb(255, 255, 255);
   font-family: "Rye";
 }
 
 .recent-bet-card {
-  border: 2px solid black;
+  border: 1px solid rgba(255,200,80,0.3);
   border-radius: 1rem;
   padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  background-color: yellow;
+  background: rgba(180, 120, 0, 0.2);
 }
 
-/* Inside a bet card: header and details */
 .bet-header {
   display: flex;
   justify-content: space-between;
@@ -197,13 +200,12 @@
   line-height: 1.2;
 }
 
-/* Tag label for the bet (e.g. result, category) */
 .bet-tag {
   margin-top: 0.5rem;
   padding: 4px 12px;
   font-size: 0.75rem;
   color: white;
-  background: black;
+  background: rgba(255,255,255,0.15);
   border-radius: 9999px;
   text-align: center;
   width: fit-content;
@@ -212,19 +214,23 @@
 
 .logout-button {
   margin-top: 20px;
-  padding: 10px 20px;
-  background: rgb(255, 255, 255);
-  color: rgb(0, 0, 0);
-  border: none;
-  border-radius: 8px;
-  font-weight: bold !important;
+  padding: 10px 28px;
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.8);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  font-weight: bold;
   cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   font-family: "Anybody";
+  letter-spacing: 1px;
+  transition: background 0.2s, color 0.2s;
 }
 
 .logout-button:hover {
-  background: #c46767;
+  background: rgba(180, 40, 40, 0.5);
+  color: white;
+  border-color: rgba(255,80,80,0.4);
 }
 
 .profile-pic-img {
@@ -251,24 +257,25 @@
 .remove-button {
   padding: 6px 12px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 0.85rem;
   font-weight: bold;
   cursor: pointer;
   color: white;
   font-family: "Anybody";
+  transition: opacity 0.2s;
 }
 
 .edit-button {
-  background-color: #7e0f91;
+  background: linear-gradient(135deg, rgb(120, 15, 140), rgb(160, 50, 20));
 }
 
 .edit-button:hover {
-  background-color: #9d5ba9;
+  opacity: 0.85;
 }
 
 .remove-button {
-  background-color: #b91c1c;
+  background-color: rgba(180, 28, 28, 0.8);
 }
 
 .remove-button:hover {
@@ -277,15 +284,15 @@
 
 .cleanup-button {
   position: fixed;
-  bottom: 75px;             
-  left: 25px;         
+  bottom: 75px;
+  left: 25px;
   background: none;
   border: none;
   padding: 0;
   margin: 0;
   cursor: pointer;
   font-size: 3.5rem;
-  transition: background-color 0.2s ease;
+  transition: text-shadow 0.2s ease;
 }
 
 .cleanup-button:hover {
@@ -307,7 +314,6 @@
   transition: opacity 0.2s ease;
   z-index: 1001;
   font-family: "Anybody";
-  font-style: bold !important;
 }
 
 .cleanup-button:hover .tooltip-text {

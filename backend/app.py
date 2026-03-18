@@ -3,6 +3,7 @@ from flask_cors import CORS
 from backend.auth import auth
 from backend.db import get_db
 import jwt
+import os
 from backend.config import SECRET_KEY
 import psycopg2.extras
 from psycopg2.extras import Json
@@ -52,7 +53,10 @@ from backend.beerball_bet_generation import (
 app = Flask(__name__)
 CORS(
     app,
-    resources={r"/*": {"origins": "http://localhost:3000"}},
+    resources={r"/*": {"origins": [
+        "http://localhost:3000",
+        os.getenv("FRONTEND_URL", "https://your-app.vercel.app")
+    ]}},
     supports_credentials=True,
     methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"]

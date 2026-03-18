@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Create a reusable Axios instance with base URL
 const api = axios.create({
-  baseURL: 'http://localhost:5001', // deployed backend URL eventually*******
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5001',
   withCredentials: true,
 });
 

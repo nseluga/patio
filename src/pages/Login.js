@@ -91,7 +91,8 @@ export default function Login() {
 
   return (
       <div className={styles.container}>
-        <h2>LOGIN</h2>
+        <h1 className={styles.appTitle}>PATIO</h1>
+        <p className={styles.appSubtitle}>🍺 Sports Betting 🍺</p>
         {error && <p className={styles.error}>{error}</p>}
         <input
           className={styles.input}
@@ -108,10 +109,10 @@ export default function Login() {
           placeholder="Password"
         />
         <button className={styles.button} onClick={handleLogin}>
-          Log In
+          LOG IN
         </button>
 
-        <p>
+        <p className={styles.registerLink}>
           Don't have an account? <Link to="/register">Register here</Link>
         </p>
       </div>

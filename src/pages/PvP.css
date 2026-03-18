@@ -1,5 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Alatsi:wght@400&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Anybody:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anybody:wght@400;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Rye:wght@400&display=swap');
 
 /* Page */
@@ -7,7 +7,7 @@
   background-size: cover;
   background-position: center;
   min-height: 100vh;
-} 
+}
 
 /* Header section at top of PvP page */
 .pvp-header {
@@ -15,66 +15,81 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding: 20px; /* brings the content inward from the edges */
-  background: linear-gradient(to bottom, rgb(69, 9, 74), rgb(0, 0, 0));
+  padding: 16px 20px;
+  background: linear-gradient(to bottom, rgb(55, 5, 65), rgb(15, 0, 20));
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
 
 /* Main title text */
 .pvp-title {
-  font-size: 50px;
+  font-size: 46px;
   font-weight: 700;
-  margin: 10px auto;
+  margin: 8px auto;
   color: #ffffff;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+  text-shadow:
+    0 0 25px rgba(220, 80, 240, 0.6),
+    2px 2px 0px rgba(0,0,0,0.5);
   font-family: "Rye";
-  font-style: bold;
 }
 
 /* Container for all bet cards */
 .bet-list {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  max-height: calc(100vh - 180px); /* Adjust if needed */
+  gap: 12px;
+  max-height: calc(100vh - 180px);
   overflow-y: auto;
-  padding-bottom: 80px; /* extra room above the nav bar */
+  padding-bottom: 80px;
+  padding: 0 12px 80px;
 }
 
 /* Circular + button for creating bets */
 .create-bet-button {
   all: unset;
-  width: 60px !important;
-  height: 60px !important;
+  width: 52px !important;
+  height: 52px !important;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   padding: 0;
-  color: rgb(0, 0, 0);
-  border: 3px solid white;
+  border: 2px solid rgba(255,255,255,0.6);
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
   cursor: pointer;
-  display: block;
+  display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(180, 40, 200, 0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
 
+.create-bet-button:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 24px rgba(180, 40, 200, 0.6);
 }
 
 /* Each individual bet card */
 .bet-card {
-  background: linear-gradient(to bottom, white, rgb(138, 117, 141));
-  width: 40%;
-  border-radius: 10px;
-  padding: 15px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  background: linear-gradient(145deg, rgba(255,255,255,0.97), rgba(210, 185, 215, 0.95));
+  width: min(420px, 92%);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow:
+    0 4px 16px rgba(0,0,0,0.25),
+    0 1px 0 rgba(255,255,255,0.5) inset;
   font-size: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   position: relative;
-  margin: 1px auto;
+  margin: 0 auto;
+  border: 1px solid rgba(255,255,255,0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.bet-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.5) inset;
 }
 
 /* Top row of bet card: poster + time + dismiss */
@@ -82,73 +97,95 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
-  color: #6a0a0a;
+  font-size: 12px;
+  color: #7a1a1a;
   font-family: "Anybody";
-  margin: 1px;
 }
 
 /* 'X' button to dismiss a bet */
 .dismiss-button {
   background: none;
   border: none;
-  font-size: 20px;
-  color: #aaa;
+  font-size: 18px;
+  color: #bbb;
   cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
 }
 
-/* Delete button hover state */
 .dismiss-button:hover {
-  color: #ef4444; /* red-500 */
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
 }
-
 
 .subject {
-  font-weight: 600;
-  font-size: 20px;
-  color: #333;
-  word-wrap: break-word;       
-  overflow-wrap: break-word;    
-  max-width: 90%;          
-  margin-bottom: 4px;   
-  font-family: "Anybody";    
+  font-weight: 700;
+  font-size: 18px;
+  color: #1a1a2e;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 90%;
+  margin-bottom: 2px;
+  font-family: "Anybody";
+  line-height: 1.3;
 }
 
 /* Bottom row: bet amount and line info */
 .bet-bottom {
   display: flex;
   justify-content: space-between;
-  font-size: 15px;
-  font-weight: 500;
-  color: #444;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3d1a4a;
   font-family: "Anybody";
-  line-height: 0.5;
+  line-height: 1.2;
 }
 
 /* Game Played */
 .game-played {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: #444;
+  color: #666;
+  font-family: "Anybody";
+}
+
+.game-played,
+.game-type {
+  font-size: 12px;
+  color: #777;
+  margin: 0;
+  padding: 0;
+  line-height: 1.3;
   font-family: "Anybody";
 }
 
 /* Button to enter or accept a bet */
 .accept-button {
-  width: 20%;
-  padding: 10px;
-  background: linear-gradient(to bottom, #c9afe1, #6f4ab0);
+  width: auto;
+  min-width: 90px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgb(140, 30, 165), rgb(190, 70, 15));
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
-  font-size: 15px;
-  margin: 1px auto;
+  font-size: 13px;
+  margin: 0 auto;
   align-self: center;
   font-family: "Anybody";
+  letter-spacing: 0.5px;
+  box-shadow: 0 3px 12px rgba(140, 30, 165, 0.4);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.accept-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 18px rgba(140, 30, 165, 0.55);
 }
 
 /* Modal backdrop overlay */
@@ -158,7 +195,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -167,35 +205,44 @@
 
 /* Modal box */
 .bet-modal {
-  background: radial-gradient(rgb(222, 89, 7), rgb(255, 151, 5));
-  padding: 20px;
-  border-radius: 16px;
+  background: linear-gradient(145deg, rgb(200, 75, 5), rgb(240, 140, 0));
+  padding: 24px;
+  border-radius: 20px;
   width: 95%;
   max-width: 400px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.25);
   z-index: 1001;
   display: flex;
   flex-direction: column;
   gap: 12px;
   color: white;
   font-family: "Anybody";
-  text-shadow: 0px 0px 10px rgb(83, 32, 0);
+  text-shadow: 0px 1px 4px rgba(80, 30, 0, 0.5);
   align-items: center;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: bold;
+  border: 1px solid rgba(255,255,255,0.2);
 }
-
 
 /* Input inside the modal */
 .modal-input {
-  padding: 10px;
-  border: 2px solid #792600;
-  border-radius: 6px;
-  font-size: 16px;
+  padding: 10px 14px;
+  border: 1.5px solid rgba(120, 40, 0, 0.5);
+  border-radius: 10px;
+  font-size: 15px;
   width: 100%;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   box-sizing: border-box;
   font-family: "Anybody";
+  background: rgba(255,255,255,0.92);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.modal-input:focus {
+  border-color: rgba(120, 40, 0, 0.9);
 }
 
 /* Container for cancel/confirm modal buttons */
@@ -203,72 +250,93 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  width: 100%;
 }
 
 /* Cancel button style */
 .cancel-button {
-  background: #ccc;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
   cursor: pointer;
   font-family: "Anybody";
   font-weight: bold;
+  transition: background 0.15s;
+}
+
+.cancel-button:hover {
+  background: rgba(0,0,0,0.35);
 }
 
 /* Confirm button style */
 .confirm-button {
-  background: #790c8c;
+  background: rgb(90, 10, 110);
   color: white;
   border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
+  padding: 8px 18px;
+  border-radius: 8px;
   cursor: pointer;
   font-family: "Anybody";
   font-weight: bold;
+  box-shadow: 0 3px 12px rgba(90, 10, 110, 0.5);
+  transition: opacity 0.15s;
+}
+
+.confirm-button:hover {
+  opacity: 0.88;
 }
 
 .line-type-toggle input[type="radio"] {
   accent-color: #9e317f;
 }
 
-/* Page layout background ??? */
+/* Page layout background */
 .tab-container {
-  background-color: #9e317f;
+  background: linear-gradient(170deg, rgb(50, 5, 60) 0%, rgb(10, 0, 18) 50%, rgb(25, 6, 4) 100%);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-/* Temporary confirmation popup ??? */
+/* Temporary confirmation popup */
 .popup-banner {
   position: fixed;
   bottom: 90px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #10b981;
+  background: linear-gradient(135deg, #059669, #10b981);
   color: white;
-  padding: 12px 20px;
-  border-radius: 10px;
+  padding: 12px 24px;
+  border-radius: 12px;
   font-weight: bold;
   z-index: 999;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+  font-family: "Anybody";
+  letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 .help-button {
-  font-size: 24px;
-  background: #da13c9;
+  font-size: 20px;
+  background: linear-gradient(135deg, rgb(140, 20, 160), rgb(190, 70, 10));
   color: white;
   border: none;
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 3px 12px rgba(140, 20, 160, 0.4);
   margin-left: auto;
+  transition: transform 0.15s;
+}
+
+.help-button:hover {
+  transform: scale(1.1);
 }
 
 .help-modal {
@@ -277,7 +345,8 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -286,22 +355,14 @@
 
 .help-content {
   background: white;
-  padding: 20px;
-  border-radius: 16px;
+  padding: 24px;
+  border-radius: 20px;
   width: 90%;
   max-width: 400px;
   text-align: left;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
 }
 
-.game-played,
-.game-type {
-  font-size: 14px;
-  color: #666;
-  margin: 0;
-  padding: 0;
-  line-height: 1;
-  font-family: "Anybody";
-}
 .team-player-row {
   display: flex;
   gap: 10px;
@@ -325,77 +386,74 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding: 20px;
-  background: linear-gradient(to bottom, rgb(69, 9, 74), rgb(0, 0, 0));
+  padding: 16px 20px;
+  background: linear-gradient(to bottom, rgb(55, 5, 65), rgb(15, 0, 20));
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
 .cpu-page .pvp-title {
-  font-size: 50px;
+  font-size: 46px;
   font-weight: 700;
-  margin: 10px auto;
+  margin: 8px auto;
   color: #ffffff;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 0 25px rgba(220, 80, 240, 0.6), 2px 2px 0px rgba(0,0,0,0.5);
   font-family: "Rye";
 }
 
 .cpu-page .bet-list {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  max-height: calc(100vh - 180px); /* Adjust if needed */
+  gap: 12px;
+  max-height: calc(100vh - 180px);
   overflow-y: auto;
-  padding-bottom: 80px; /* extra room above the nav bar */
+  padding: 0 12px 80px;
 }
 
 .cpu-page .create-bet-button {
   all: unset;
-  width: 60px !important;
-  height: 60px !important;
+  width: 52px !important;
+  height: 52px !important;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  padding: 0;
-  color: rgb(0, 0, 0);
-  border: 3px solid white;
+  border: 2px solid rgba(255,255,255,0.6);
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
   cursor: pointer;
-  display: block;
+  display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 16px rgba(180, 40, 200, 0.4);
 }
 
 .cpu-page .bet-card {
-  background: linear-gradient(to bottom, white, rgb(138, 117, 141));
-  width: 40%;
-  border-radius: 10px;
-  padding: 15px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  background: linear-gradient(145deg, rgba(255,255,255,0.97), rgba(210, 185, 215, 0.95));
+  width: min(420px, 92%);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25), 0 1px 0 rgba(255,255,255,0.5) inset;
   font-size: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   position: relative;
-  margin: 1px auto;
+  margin: 0 auto;
+  border: 1px solid rgba(255,255,255,0.3);
 }
 
 .cpu-page .bet-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
-  color: #6a0a0a;
+  font-size: 12px;
+  color: #7a1a1a;
   font-family: "Anybody";
-  margin: 1px;
 }
 
 .cpu-page .dismiss-button {
   background: none;
   border: none;
-  font-size: 20px;
-  color: #aaa;
+  font-size: 18px;
+  color: #bbb;
   cursor: pointer;
 }
 
@@ -404,121 +462,115 @@
 }
 
 .cpu-page .subject {
-  font-weight: 600;
-  font-size: 20px;
-  color: #333;
+  font-weight: 700;
+  font-size: 18px;
+  color: #1a1a2e;
   word-wrap: break-word;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   font-family: "Anybody";
 }
 
 .cpu-page .game-played,
 .cpu-page .game-type {
-  font-size: 14px;
-  color: #555;
+  font-size: 12px;
+  color: #777;
   font-family: "Anybody";
 }
 
 .cpu-page .bet-bottom {
   display: flex;
   justify-content: space-between;
-  font-size: 15px;
-  font-weight: 500;
-  color: #444;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3d1a4a;
   font-family: "Anybody";
-  line-height: 0.5;
+  line-height: 1.2;
 }
 
 .cpu-page .accept-button {
-  background-color: #8a2be2;
+  background: linear-gradient(135deg, rgb(140, 30, 165), rgb(190, 70, 15));
   color: white;
   font-weight: bold;
   border: none;
-  padding: 8px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
   cursor: pointer;
   font-family: "Anybody";
+  box-shadow: 0 3px 12px rgba(140, 30, 165, 0.4);
 }
 
 .cpu-page .accept-button:hover {
-  background-color: #6c1ecf;
+  opacity: 0.88;
 }
 
 
 /******************/
 /* Ongoing Styles */
 
-/* Page */
 .ongoing-page .pvp-page {
   background-size: cover;
   background-position: center;
   min-height: 100vh;
-} 
+}
 
-/* Header section at top of PvP page */
 .ongoing-page .pvp-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding: 20px;
-  background: linear-gradient(to bottom, rgb(69, 9, 74), rgb(0, 0, 0));
+  padding: 16px 20px;
+  background: linear-gradient(to bottom, rgb(55, 5, 65), rgb(15, 0, 20));
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
-/* Main title text */
 .ongoing-page .pvp-title {
-  font-size: 50px;
+  font-size: 46px;
   font-weight: 700;
-  margin: 10px auto;
+  margin: 8px auto;
   margin-left: 525px;
   color: #ffffff;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 0 25px rgba(220, 80, 240, 0.6), 2px 2px 0px rgba(0,0,0,0.5);
   font-family: "Rye";
-  font-style: bold;
 }
 
-/* Container for all bet cards */
 .ongoing-page .bet-list {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  max-height: calc(100vh - 180px); /* Adjust if needed */
+  gap: 12px;
+  max-height: calc(100vh - 180px);
   overflow-y: auto;
-  padding-bottom: 80px; /* extra room above the nav bar */
+  padding: 0 12px 80px;
 }
 
-/* Each individual bet card */
 .ongoing-page .bet-card {
-  background: linear-gradient(to bottom, white, rgb(138, 117, 141));
-  width: 40%;
-  border-radius: 10px;
-  padding: 15px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  background: linear-gradient(145deg, rgba(255,255,255,0.97), rgba(210, 185, 215, 0.95));
+  width: min(420px, 92%);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25), 0 1px 0 rgba(255,255,255,0.5) inset;
   font-size: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   position: relative;
-  margin: 1px auto;
+  margin: 0 auto;
+  border: 1px solid rgba(255,255,255,0.3);
 }
 
-/* Top row of bet card: poster + time + dismiss */
 .ongoing-page .bet-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
-  color: #6a0a0a;
+  font-size: 12px;
+  color: #7a1a1a;
   font-family: "Anybody";
-  margin: 1px;
 }
 
-/* 'X' button to dismiss a bet */
 .ongoing-page .dismiss-button {
   background: none;
   border: none;
-  font-size: 20px;
-  color: #aaa;
+  font-size: 18px;
+  color: #bbb;
   cursor: pointer;
 }
 
@@ -527,185 +579,189 @@
 }
 
 .ongoing-page .subject {
-  font-weight: 600;
-  font-size: 20px;
-  color: #333;
-  word-wrap: break-word;       
-  overflow-wrap: break-word;    
-  max-width: 90%;          
-  margin-bottom: 4px;   
-  font-family: "Anybody";    
+  font-weight: 700;
+  font-size: 18px;
+  color: #1a1a2e;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 90%;
+  margin-bottom: 2px;
+  font-family: "Anybody";
+  line-height: 1.3;
 }
 
-/* Bottom row: bet amount and line info */
 .ongoing-page .bet-bottom {
   display: flex;
   justify-content: space-between;
-  font-size: 15px;
-  font-weight: 500;
-  color: #444;
+  font-size: 14px;
+  font-weight: 600;
+  color: #3d1a4a;
   font-family: "Anybody";
-  line-height: 0.5;
+  line-height: 1.2;
 }
 
 .ongoing-page .game-played,
 .ongoing-page .game-type {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  color: #444;
+  color: #777;
   font-family: "Anybody";
 }
 
-/* Button to enter or accept a bet */
 .ongoing-page .accept-button {
-  width: 20%;
-  padding: 10px;
-  background: linear-gradient(to bottom, #c9afe1, #6f4ab0);
+  width: auto;
+  min-width: 90px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgb(140, 30, 165), rgb(190, 70, 15));
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: bold;
   cursor: pointer;
-  font-size: 15px;
-  margin: 1px auto;
+  font-size: 13px;
+  margin: 0 auto;
   align-self: center;
   font-family: "Anybody";
+  box-shadow: 0 3px 12px rgba(140, 30, 165, 0.4);
 }
 
-/* Modal backdrop overlay */
 .ongoing-page .bet-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 3;
 }
 
-/* Modal box */
 .ongoing-page .bet-modal {
-  background: rgb(116, 108, 208);
+  background: linear-gradient(145deg, rgb(90, 80, 190), rgb(50, 40, 130));
   padding: 24px;
-  border-radius: 16px;
+  border-radius: 20px;
   width: 95%;
   max-width: 400px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15);
   z-index: 1001;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  border: 1px solid rgba(255,255,255,0.15);
 }
 
-/* Input inside the modal */
 .ongoing-page .modal-input {
-  padding: 10px;
-  border: 1px solid #ffffff;
-  border-radius: 6px;
-  font-size: 16px;
+  padding: 10px 14px;
+  border: 1.5px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  font-size: 15px;
   width: 100%;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   box-sizing: border-box;
+  background: rgba(255,255,255,0.92);
+  outline: none;
 }
 
-/* Container for cancel/confirm modal buttons */
 .ongoing-page .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
 }
 
-/* Cancel button style */
 .ongoing-page .cancel-button {
-  background: #ccc;
-  border: none;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: white;
   padding: 8px 14px;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
+  font-family: "Anybody";
 }
 
-/* Confirm button style */
 .ongoing-page .confirm-button {
-  background: #2c1f5c;
+  background: rgb(35, 20, 80);
   color: white;
   border: none;
   padding: 8px 14px;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
+  font-family: "Anybody";
+  font-weight: bold;
 }
 
-/* Temporary confirmation popup */
 .ongoing-page .popup-banner {
   position: fixed;
   bottom: 90px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #10b981;
+  background: linear-gradient(135deg, #059669, #10b981);
   color: white;
-  padding: 12px 20px;
-  border-radius: 10px;
+  padding: 12px 24px;
+  border-radius: 12px;
   font-weight: bold;
   z-index: 999;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+  font-family: "Anybody";
 }
 
-/* Help button */
 .ongoing-page .help-button {
-  font-size: 24px;
-  background: #cea0ff;
+  font-size: 20px;
+  background: linear-gradient(135deg, rgb(180, 140, 255), rgb(140, 100, 220));
   color: white;
   border: none;
   border-radius: 50%;
-  width: 45px;
-  height: 45px;
+  width: 42px;
+  height: 42px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 3px 12px rgba(140, 100, 220, 0.4);
   margin-left: auto;
   font-family: "Rye";
 }
 
-/* Help modal overlay */
 .ongoing-page .help-modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
 }
 
-/* Help modal content */
 .ongoing-page .help-content {
   background: white;
   padding: 30px;
-  border-radius: 16px;
+  border-radius: 20px;
   height: 70%;
   max-width: 400px;
   text-align: left;
   font-family: "Anybody";
   margin: 5px 5px 20px 5px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
 }
 
-/* Help modal close button */
 .ongoing-page .help-close-button {
-  background: rgb(107, 57, 140);
+  background: linear-gradient(135deg, rgb(90, 50, 130), rgb(70, 40, 100));
   color: white;
   font-family: "Anybody";
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
-/* Team player row layout */
 .ongoing-page .team-player-row {
   display: flex;
   gap: 10px;
