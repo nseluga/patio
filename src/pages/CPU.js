@@ -7,6 +7,7 @@ import UserContext from "../UserContext";
 import { formatTimeAgo } from "../utils/timeUtils";
 import buttonpng from "../assets/images/button.png";
 import back1 from "../assets/images/back1.png";
+// eslint-disable-next-line no-unused-vars
 import betcard2 from "../assets/images/betcard2.png";
 import api from "../api";
 import "./PvP.css"; // Reuse PvP styles for layout and cards

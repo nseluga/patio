@@ -6,6 +6,7 @@ import { formatTimeAgo } from "../utils/timeUtils";
 import UserContext from "../UserContext";
 import back1 from "../assets/images/back1.png";
 import buttonpng from "../assets/images/button.png";
+// eslint-disable-next-line no-unused-vars
 import betcard from "../assets/images/betcard.png";
 import "./PvP.css";
 import api from "../api";
