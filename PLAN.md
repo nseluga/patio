@@ -117,6 +117,8 @@
 - **blocks:** 7.2 (stats tests need the final module shape)
 - **task:** Parameterize only genuinely identical logic across the 3 sport files. Keep real rule differences as explicit branches or injected strategies — do not force-fit a single code path where the sports actually differ.
 - **done when:** one module replaces three; behavior is identical per-sport; `/submit_stats` auth + logic both reflect the final state.
+- **flag: --opus** (architectural refactor across multiple files; requires side-by-side analysis of all three modules to identify natural seams and parameterization boundaries)
+- ⚠️ **AUTONOMOUS RUN — STOP HERE** (this task requires human design decisions; do not attempt autonomously)
 
 ---
 
@@ -129,7 +131,8 @@
 - **blocks:** 5.1 (cannot build a transaction-safe wallet service against models that don't exist)
 - **task:** Define SQLAlchemy models matching the existing schema exactly. Run `stamp head` against the live Supabase DB — do NOT generate a fresh migration that tries to recreate existing tables. Port routes domain-by-domain (auth → wallet → bets → lines), verifying each domain against real data before moving to the next. No big-bang cutover.
 - **done when:** all routes use SQLAlchemy; `stamp` is verified correct against prod schema (test on a Supabase branch/copy first if at all possible); no raw psycopg2 calls remain.
-- **flag:** this is the highest-risk item in the whole plan because it touches live data. Don't hand this to a subagent team to move fast on — work this one yourself, step by step, with manual review of the `stamp` step before applying to the real DB. This is the one place where "ordered checklist" should slow down, not speed up.
+- **flag: --opus** (highest-risk item in the whole plan because it touches live data. Don't hand this to a subagent team to move fast on — work this one yourself, step by step, with manual review of the `stamp` step before applying to the real DB. This is the one place where "ordered checklist" should slow down, not speed up.)
+- ⚠️ **AUTONOMOUS RUN — STOP HERE** (live database migration cannot be undone automatically; requires human approval before stamp step)
 - **audit notes:** (a) today `db.get_db()` opens a fresh psycopg2 connection per request with no pooling — configure the SQLAlchemy engine's connection pool explicitly as part of this port, don't leave it default-per-request. (b) `models.py` (the non-runtime DDL) has drifted from the live schema (`oppOutcome INTEGER` vs the TEXT it's used as; missing `cpu_acceptances`, `accepter_line_type`, the stat/aggregate tables) — model against the REAL Supabase schema, not `models.py`, and treat `models.py` as untrusted.
 
 ---
@@ -143,6 +146,8 @@
 - **blocks:** 7.1 (concurrency tests need this to exist), 8.1 (CI gate is meaningless without something to test)
 - **task:** Move all balance mutation into one service function. Single transaction: lock wallet row (`with_for_update()`), validate, write debit + bet record + credit as a block, commit from the top of the call stack. This closes the existing check-then-act race condition — treat that bug fix as part of this task, not a separate item.
 - **done when:** two concurrent requests against the same wallet cannot produce an incorrect balance (verify this manually before trusting it to the Stage 7 test suite).
+- **flag: --opus** (transaction design, race condition elimination, and integration across all settlement paths; requires deep reasoning about lock ordering and atomicity)
+- ⚠️ **AUTONOMOUS RUN — STOP HERE** (money-critical service layer; requires human verification of concurrency guarantees before proceeding)
 
 ### 5.2 — Refund/push semantics: stop silently burning caps (found in audit)
 - **status:** not started
@@ -150,6 +155,8 @@
 - **blocked_by:** 5.1 (do this inside the wallet service so refunds are atomic too)
 - **task:** Caps are deducted on create/accept but are never returned in several paths, so they silently vanish: (a) `cleanup_bets` DELETEs unaccepted `posted` bets after 7 days without refunding the poster's wager; (b) a tie produces `winner_id = None`, so the payout `UPDATE ... WHERE id = None` credits nobody and BOTH wagers disappear (no push/refund); (c) `accepted` bets that are never submitted are never cleaned up or refunded — caps stay locked forever. Add explicit refund-on-expiry, push/tie refund, and a settlement-timeout-with-refund, all through the wallet service.
 - **done when:** expired-unaccepted, tied, and abandoned bets return wagers to the right players; total caps in the system is conserved across a full create→expire and create→tie cycle.
+- **flag: --opus** (money-critical logic spanning multiple bet lifecycle paths; requires tracing all wager debit points and ensuring matching refund/push paths; game-theory implications of push vs. refund semantics)
+- ⚠️ **AUTONOMOUS RUN — STOP HERE** (refund logic affects game fairness and cap conservation; requires human audit of all paths)
 
 ### 5.3 — Settlement idempotency: stop double-paying (found in audit)
 - **status:** not started
@@ -157,6 +164,8 @@
 - **blocked_by:** 5.1
 - **task:** `submit_stats` has no guard against re-award. CPU path: re-posting matching stats sets `match_confirmed = TRUE` and credits `amount*2` AGAIN on every call. PvP path: relies only on `status='submitted'` flipping — make payout strictly once-only. Gate payouts on a state transition (e.g. only award when moving INTO the settled state, inside the same locked transaction as 5.1), so repeated submissions are no-ops.
 - **done when:** submitting matching stats N times pays out exactly once for both CPU and PvP bets.
+- **flag: --opus** (idempotency design across CPU and PvP settlement paths; requires state-machine reasoning and integrating payout guards into the 5.1 transaction boundary)
+- ⚠️ **AUTONOMOUS RUN — STOP HERE** (double-payout bug is critical; requires human verification that payout guards are airtight)
 
 ---
 
@@ -242,7 +251,8 @@
 - **blocks:** nothing
 - **task:** One Axios instance, service modules per domain (auth, wallet, bets, lines), a few custom hooks. Keep Context API — no Redux/feature-sliced architecture unless you exceed ~20 components or hit real cross-page state pain.
 - **done when:** API calls go through service modules, not ad-hoc Axios calls scattered in components.
-- **flag:** this is a different repo/deploy target than the backend, so you *could* work on it anytime without touching backend files. But if backend route paths or response shapes change during Stage 2/4 (blueprint split, SQLAlchemy port), this will need a follow-up pass. Since you're now running this as one sequential process rather than parallel tracks, the simplest move is to just leave this where it sits in the order — do it after Stage 4 so you're building against a stable contract instead of guessing at one.
+- **flag: --opus** (different repo/deploy target; requires tracking API contract changes from Stage 2/4 (blueprint split, SQLAlchemy port). Building against moving-target backend; coordinate architectural decisions on token storage and bet state authority across frontend/backend boundary)
+- ⚠️ **AUTONOMOUS RUN — STOP HERE** (security and architecture decisions needed on token storage and state authority; cannot be resolved autonomously)
 - **audit note:** `localStorage` is currently the source of truth for BOTH the JWT and ongoing-bet state (`App.js`, `acceptHandling.js`). That's an XSS-exfiltration surface for the token and lets client state diverge from the server. As part of this stage, decide on token storage (httpOnly cookie vs. accepting the localStorage tradeoff with eyes open) and make the server authoritative for bet state — don't just consolidate Axios while leaving local state as truth.
 
 ---
