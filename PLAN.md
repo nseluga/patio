@@ -1,4 +1,4 @@
-# Patio — Refactor Execution Plan
+# Patio — Refactor & App Store Launch Execution Plan
 > A linear, ordered process for one main agent (with its own subagent teams) to work through, top to bottom.
 > Each item still lists `owns_files` and `blocked_by` — not for parallel dispatch, but so that if the main agent
 > *does* spin up subagents for a single item (e.g. splitting the gitignore/port/logging cleanup across a few
@@ -6,9 +6,54 @@
 > this as strictly sequential: finish one, check it off, move to the next.
 > Update `status` as items complete. Don't skip ahead — several items are gated for real reasons, not just ordering preference.
 
+> **Mobile-first pivot (2026-07-02):** The end target is a **React Native (Expo) iOS app shipped on the App Store**,
+> not a web app. Stage M (conversion) runs FIRST, before the backend refactor stages. Stage 10 (App Store
+> submission) runs LAST because Apple review makes the Stage 0/5 security and money bugs launch-blockers:
+> you cannot ship a public app with unauthenticated destructive routes and a double-payout settlement path.
+> The CRA web app is retired at the end of Stage M; the Flask API stays exactly where it is (Render) and all
+> backend stages (0–8) apply unchanged to the API the mobile app consumes.
+
 ---
 
-## STAGE 0 — Security fixes (do first)
+## STAGE M — React Native conversion (do this first)
+
+### M.1 — Scaffold Expo app + navigation shell
+- **status:** not started
+- **owns_files:** new `mobile/` directory (Expo app: `app.json`/`app.config.js`, `App.js`, `package.json`), root `README.md` (dev-setup section only)
+- **blocked_by:** none
+- **blocks:** M.2, M.3, M.4
+- **task:** Create an Expo app (current Expo SDK — let the SDK pin the React/React Native version matrix, do NOT hand-roll `react-native init`) in a new `mobile/` directory alongside the existing CRA app. Install React Navigation (native stack for the auth flow + bottom-tab navigator replacing `src/components/BottomNav.js`). Wire API base URL via `EXPO_PUBLIC_API_URL` (dev: `http://localhost:5001`, or the machine's LAN IP for on-device testing). Leave the CRA app fully untouched until M.4 retires it — no big-bang deletion before the mobile app reaches parity.
+- **done when:** blank Expo app boots on the iOS simulator with a tab-bar shell (PvP / House / Ongoing / Leaderboard / Profile placeholders) and a stubbed Login screen outside the tabs.
+
+### M.2 — Fix `/me` + port the auth/API layer (SecureStore, no cookies)
+- **status:** not started
+- **owns_files:** `mobile/src/api.js`, `mobile/src/UserContext.js`, mobile auth bootstrap, Login/Register screens; `backend/auth.py` (`/me` handler — this **pulls item 0.6 forward**, because the mobile app cannot boot against a broken `/me`)
+- **blocked_by:** M.1
+- **blocks:** M.3
+- **task:** (a) Fix `/me` per 0.6 (strip `Bearer ` prefix before decode, SELECT only columns that exist) — do it now, not in Stage 0. (b) Port `src/api.js`: same axios-instance + `Authorization: Bearer` interceptor pattern, but token read from `expo-secure-store` instead of `localStorage`, and **drop `withCredentials`** — native clients have no cookie jar worth building on; header-token + SecureStore is the decided pattern (this resolves the token-storage question in the old 9.1 audit note). (c) Port the App.js auth-bootstrap (restore token → `GET /me` → populate `UserContext`) and the Login/Register screens.
+- **done when:** register → login → relaunch-with-persisted-session → logout all work on the simulator against the local backend; token lives in SecureStore; `GET /me` returns the profile without error.
+
+### M.3 — Port the five main screens to RN primitives
+- **status:** not started
+- **owns_files:** `mobile/src/screens/` (PvP, CPU/House, Ongoing, Leaderboard, Profile), `mobile/src/utils/` (port `betCreation.js`, `acceptHandling.js`, `timeUtils.js`), `mobile/src/assets/` (copy PNGs)
+- **blocked_by:** M.2
+- **blocks:** M.4
+- **task:** Port each page one at a time (order: Leaderboard → Profile → PvP → CPU → Ongoing, simplest first). JSX/DOM → RN primitives (`View`/`Text`/`FlatList`/`Pressable`), the 7 CSS files → co-located `StyleSheet.create` (keep one-file-per-screen convention), `lucide-react` → `lucide-react-native`, `window.confirm`/`alert` → RN `Alert`. `betCreation.js`/`timeUtils.js` are pure JS — port unchanged. `acceptHandling.js`: swap `localStorage` for `AsyncStorage` as a parity shim only — making the server authoritative for ongoing-bet state stays a Stage 9 task, don't redesign it mid-port. Skip the 17-line Messages stub entirely (see X.2).
+- **done when:** every flow that works on the web app today works on the simulator: browse/accept PvP and House bets, submit stats on Ongoing, view Leaderboard and Profile.
+- **flag: --opus** (largest single chunk of the conversion — ~1,300 LOC across 5 screens with layout re-thinking for mobile viewports, not mechanical find-replace)
+
+### M.4 — Retire the web app + repo restructure
+- **status:** not started
+- **owns_files:** root `package.json`, `src/`, `public/`, `server.js` (delete), `README.md`, `CLAUDE.md`, `.gitignore`
+- **blocked_by:** M.3 (parity first)
+- **blocks:** nothing
+- **task:** (a) Delete the CRA app (`src/`, `public/`, `react-scripts` and the `proxy` field) once M.3 parity is confirmed — the product runs on mobile, not on computer. (b) Delete `server.js` — this executes decision (a) of X.2; if messaging ever becomes a real feature it gets rebuilt with auth as a scoped item. (c) Update README/CLAUDE.md commands (Expo start replaces `npm start`; Vercel frontend deploy notes removed or marked legacy). (d) Cancel/park the Vercel deployment.
+- **done when:** fresh clone + `cd mobile && npx expo start` + backend run instructions are the documented (and working) dev loop; no CRA or Socket.IO code remains on `main`.
+- ⚠️ **AUTONOMOUS RUN — STOP HERE** (deleting the working web app is irreversible in effect even if git-recoverable; requires human confirmation that mobile parity is real)
+
+---
+
+## STAGE 0 — Security fixes (first of the backend stages — Stage M precedes it by product decision)
 
 ### 0.1 — Fix `/submit_stats/<bet_id>` missing auth check
 - **status:** not started
@@ -52,7 +97,7 @@
 - **done when:** every mutating/data-exposing route either requires a valid JWT (and uses server-derived identity) or is explicitly, intentionally public with a comment saying why; forged `posterId` in `/create_bet` is ignored.
 
 ### 0.6 — Fix or remove broken `/me` route in `auth.py` (found in audit)
-- **status:** not started
+- **status:** PULLED FORWARD into M.2 — the mobile app cannot boot against a broken `/me`. Do the fix there; when this row is reached, just verify it landed.
 - **owns_files:** `backend/auth.py` (the `/me` handler), coordinate with `App.js` `fetchUserFromBackend`
 - **blocked_by:** none
 - **blocks:** nothing
@@ -96,8 +141,8 @@
 - **owns_files:** new `error_handlers.py`, CORS config block, limiter init (likely in `create_app()`)
 - **blocked_by:** 2.1 (needs `create_app()` to exist as the place to register handlers/limiter)
 - **blocks:** nothing
-- **task:** Centralized JSON error handlers, CORS scoped to the Vercel origin only, Flask-Limiter (note Render in-memory-store caveat — fine at this scale, just document it).
-- **done when:** errors return consistent JSON shape; CORS rejects non-Vercel origins; rate limiting active on at least auth + wallet-mutating routes.
+- **task:** Centralized JSON error handlers, CORS lockdown, Flask-Limiter (note Render in-memory-store caveat — fine at this scale, just document it). **Mobile note:** native clients send no `Origin` header, so CORS is irrelevant to the RN app — after M.4 retires the web app there is no legitimate browser origin at all. Lock CORS down to nothing (or dev-localhost only) rather than scoping to Vercel.
+- **done when:** errors return consistent JSON shape; no wildcard CORS remains; rate limiting active on at least auth + wallet-mutating routes.
 
 ### 2.3 — Input validation layer (found in audit)
 - **status:** not started
@@ -192,7 +237,7 @@
 - **owns_files:** docs/portfolio assets only
 - **blocked_by:** 3.1 (the before/after writeup needs the "after" to exist)
 - **blocks:** nothing
-- **task:** Diagram React → Flask → Postgres + bet-generation flow. Write up the 3-file → 1-file sport module collapse as a portfolio talking point.
+- **task:** Diagram React Native (Expo) → Flask → Postgres + bet-generation flow. Write up the 3-file → 1-file sport module collapse and the web→mobile conversion as portfolio talking points.
 - **done when:** assets exist and accurately reflect final architecture.
 
 ---
@@ -242,18 +287,55 @@
 
 ---
 
-## STAGE 9 — Frontend
+## STAGE 9 — Mobile app hardening (was: Frontend)
 
-### 9.1 — Centralized Axios instance + per-domain service modules + hooks
+### 9.1 — Per-domain service modules + hooks + server-authoritative bet state
 - **status:** not started
-- **owns_files:** frontend repo only — `src/services/`, `src/hooks/`, `src/api.js`
-- **blocked_by:** none structurally — but see flag below
-- **blocks:** nothing
-- **task:** One Axios instance, service modules per domain (auth, wallet, bets, lines), a few custom hooks. Keep Context API — no Redux/feature-sliced architecture unless you exceed ~20 components or hit real cross-page state pain.
-- **done when:** API calls go through service modules, not ad-hoc Axios calls scattered in components.
-- **flag: --opus** (different repo/deploy target; requires tracking API contract changes from Stage 2/4 (blueprint split, SQLAlchemy port). Building against moving-target backend; coordinate architectural decisions on token storage and bet state authority across frontend/backend boundary)
-- ⚠️ **AUTONOMOUS RUN — STOP HERE** (security and architecture decisions needed on token storage and state authority; cannot be resolved autonomously)
-- **audit note:** `localStorage` is currently the source of truth for BOTH the JWT and ongoing-bet state (`App.js`, `acceptHandling.js`). That's an XSS-exfiltration surface for the token and lets client state diverge from the server. As part of this stage, decide on token storage (httpOnly cookie vs. accepting the localStorage tradeoff with eyes open) and make the server authoritative for bet state — don't just consolidate Axios while leaving local state as truth.
+- **owns_files:** `mobile/src/services/`, `mobile/src/hooks/`, `mobile/src/api.js`, `mobile/src/utils/acceptHandling.js`; backend: an ongoing-bets read endpoint if one doesn't exist by now
+- **blocked_by:** M.3 (screens must exist), and practically 2.1/4.1 (API contract settles after the blueprint split and SQLAlchemy port)
+- **blocks:** 10.4 (don't submit to review with client-side state as the source of truth for money-adjacent data)
+- **task:** One Axios instance (exists from M.2), service modules per domain (auth, wallet, bets, lines), a few custom hooks. Keep Context API — no Redux/feature-sliced architecture unless you exceed ~20 components or hit real cross-page state pain. **Kill the AsyncStorage parity shim from M.3:** make the server authoritative for ongoing-bet state — the app fetches accepted/ongoing bets from the API, local cache is just a cache. Token storage is already settled (SecureStore, decided in M.2) — no decision left there.
+- **done when:** API calls go through service modules, not ad-hoc Axios calls scattered in screens; deleting the app's local storage and reinstalling loses no bet state.
+- **flag: --opus** (requires tracking API contract changes from Stage 2/4 (blueprint split, SQLAlchemy port); building against a backend that has moved since M.3)
+- ⚠️ **AUTONOMOUS RUN — STOP HERE** (state-authority migration for money-adjacent data; requires human verification against real bets)
+
+---
+
+## STAGE 10 — App Store launch (last, gated on security + money correctness)
+
+### 10.1 — Production backend hardening for a public mobile launch
+- **status:** not started
+- **owns_files:** `Procfile`, `backend/requirements.txt`, `backend/auth.py` (token lifetime/refresh), Render config
+- **blocked_by:** 2.2 (limiter must exist), 0.7 (debug off)
+- **blocks:** 10.4
+- **task:** (a) Replace the Flask dev server in the Procfile with gunicorn (`gunicorn -w 2 'backend.app:app'` or the `create_app()` factory form post-2.1) — `flask run` will fall over under real App Store traffic. (b) Confirm the Render URL serves HTTPS-only; iOS App Transport Security requires TLS, no exceptions in `Info.plist`. (c) Give JWTs a sane expiry + a refresh path (or re-login flow the app handles gracefully) — an app in someone's pocket for months is not a browser tab.
+- **done when:** production runs gunicorn; plain-HTTP requests are refused/redirected; an expired token produces a clean re-auth flow in the app, not a silent dead session.
+
+### 10.2 — Account deletion (App Review Guideline 5.1.1(v) — mandatory)
+- **status:** not started
+- **owns_files:** backend: new authenticated `DELETE /me` (or equivalent) route + cascade/anonymization logic across `players`, `bets`, `cpu_acceptances`, stat tables; mobile: a delete-account action in Profile/settings
+- **blocked_by:** 5.1 (deletion touches wallet/bet rows — do it through the service layer, not raw deletes), 1.1 (must be behind the decorator)
+- **blocks:** 10.4 — **Apple rejects account-based apps without in-app account deletion. Non-negotiable.**
+- **task:** Design what deletion means for shared data: bets the user is party to should be settled-or-refunded (via 5.2's refund paths) then anonymized, not hard-deleted out from under the counterparty. Delete credentials + PII; anonymize the rest. Expose it in the app with a confirmation step.
+- **done when:** a user can delete their account entirely in-app; their login stops working; counterparties' bet history remains coherent; wagers locked in open bets are refunded through the wallet service.
+- ⚠️ **AUTONOMOUS RUN — STOP HERE** (destructive-by-design feature touching money paths; requires human sign-off on the deletion semantics)
+
+### 10.3 — App identity, privacy, and content-rating compliance
+- **status:** not started
+- **owns_files:** `mobile/app.json`/`app.config.js` (bundle ID, icon, splash, version), privacy policy doc + hosted URL, App Store Connect metadata (worked outside the repo)
+- **blocked_by:** M.4 (assets belong to the final app), 6.2 (no unvalidated quantitative claims in store copy either)
+- **blocks:** 10.4
+- **task:** (a) Bundle ID, app icon (1024px master), splash screen, display name — the existing `logo512.png` is a starting point, not a shippable icon. (b) Privacy policy: required for any account-based app; must cover what's collected (username, bet history) and the 10.2 deletion path; host it anywhere stable and link it in App Store Connect. (c) App Privacy "nutrition label" answers matching reality. (d) Age rating: virtual-currency betting ⇒ answer "Simulated Gambling" honestly (expect 17+). **Copy rule for every word of metadata and in-app text: caps are never purchasable and never cashed out — real-money gambling framing triggers Guideline 5.3 licensing requirements this app cannot meet. Keep it a game.**
+- **done when:** app builds with final identity assets; privacy policy is live at a stable URL; a dry-run of the App Store Connect questionnaire has answers for every field.
+
+### 10.4 — EAS Build → TestFlight → App Store submission
+- **status:** not started
+- **owns_files:** `mobile/eas.json`, Apple Developer account + App Store Connect (outside the repo)
+- **blocked_by:** 10.1, 10.2, 10.3, 9.1, and Stages 0/1/2/5 complete with Stage 7 tests green — **shipping publicly multiplies every open security and double-payout bug; do not submit around them**
+- **blocks:** nothing — this is the finish line
+- **task:** (a) Apple Developer Program enrollment ($99/yr — human task). (b) `eas build --platform ios` with production `EXPO_PUBLIC_API_URL` pointing at Render. (c) TestFlight beta with real users through full bet lifecycles (create → accept → submit → settle → refund) against production. (d) Fix what the beta finds, then submit for review. Expect at least one rejection round on a betting-adjacent app; respond with the no-real-money facts from 10.3.
+- **done when:** the app is live on the App Store.
+- ⚠️ **AUTONOMOUS RUN — STOP HERE** (publishing to the App Store is an outward-facing, human-owned action)
 
 ---
 
@@ -261,19 +343,18 @@
 
 ### X.1 — "General professional grade visual improvements"
 - **status:** blocked on scoping
-- **task:** Not actionable as written. Before this enters the plan, name the actual surface: which component(s), what kind of change (styling pass / new view / error states / responsive fixes)? Until scoped, don't put this in front of the agent — it has no defined "done."
+- **task:** Not actionable as written. Any scoping now targets the **RN screens in `mobile/`**, not the retired web CSS. Before this enters the plan, name the actual surface: which screen(s), what kind of change (styling pass / new view / error states / loading & empty states)? Note M.3 already forces a mobile-layout re-think per screen — scope this as polish on top of that, not a second re-layout. Until scoped, don't put this in front of the agent — it has no defined "done."
 
 ### X.2 — Decide the fate of the Socket.IO messaging server (found in audit)
-- **status:** blocked on scoping
-- **task:** `server.js` is a standalone Node/Socket.IO chat server (port 3001, `origin: "*"`, no auth) backing a stubbed 17-line `Messages.js`. It is not referenced anywhere in the rest of the plan and is effectively dead/insecure as-is. Decide: (a) cut it entirely, or (b) commit to messaging as a real feature — in which case scope auth, CORS scoping to the Vercel origin, and a deploy target for it. Until that decision is made, don't half-maintain it. Pairs with 6.1 (don't document messaging as working until it is).
+- **status:** RESOLVED — decision (a), cut it. M.4 deletes `server.js` and the Messages stub is not ported to mobile (M.3). If messaging ever becomes a committed feature, it enters the plan as a new scoped item (auth, deploy target, push notifications on mobile).
 
 ---
 
 ## Order of execution (top to bottom, no skipping)
 ```
-0.1 → 0.2 → 0.3 → 0.4 → 0.5 → 0.6 → 0.7 → 1.1 → 2.1 → 2.2 → 2.3 → 3.1 → 4.1 → 5.1 → 5.2 → 5.3 → 6.1 → 6.2 → 6.3 → 7.1 → 7.2 → 7.3 → 7.4 → 8.1 → 9.1
+M.1 → M.2 → M.3 → M.4 → 0.1 → 0.2 → 0.3 → 0.4 → 0.5 → 0.6(verify, landed in M.2) → 0.7 → 1.1 → 2.1 → 2.2 → 2.3 → 3.1 → 4.1 → 5.1 → 5.2 → 5.3 → 6.1 → 6.2 → 6.3 → 7.1 → 7.2 → 7.3 → 7.4 → 8.1 → 9.1 → 10.1 → 10.2 → 10.3 → 10.4
 ```
-This is now a strict line, not a graph — work it top to bottom. The `blocked_by`/`blocks` fields on each item are there so you understand *why* the order is what it is (and so you don't get tempted to jump ahead on a slow stage), not so a system can route around them.
+This is now a strict line, not a graph — work it top to bottom. The `blocked_by`/`blocks` fields on each item are there so you understand *why* the order is what it is (and so you don't get tempted to jump ahead on a slow stage), not so a system can route around them. Stage M runs first by explicit product decision (mobile is the product); Stage 10 runs last because App Store submission is gated on every security and money-correctness stage in between.
 
 ## Items NOT in this file (deferred, per stop-before lines — do not schedule)
 No Redis until >1 backend instance · no Celery until settlement/line-gen is too slow for a request cycle · no Redux until ~20+ frontend components or real cross-page state pain · no full Repository/Unit-of-Work class unless swapping data stores.
