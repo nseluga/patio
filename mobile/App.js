@@ -63,6 +63,7 @@ export default function App() {
     async function bootstrap() {
       try {
         const token = await SecureStore.getItemAsync('token');
+        const storedPlayerId = await SecureStore.getItemAsync('playerId');
         if (!token) {
           setLoading(false);
           return;
@@ -71,7 +72,7 @@ export default function App() {
         const res = await api.get('/me');
         const userObj = {
           ...res.data,
-          playerId: res.data.id,
+          playerId: storedPlayerId ? parseInt(storedPlayerId) : undefined,
           token,
         };
         setUser(userObj);
