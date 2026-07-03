@@ -12,7 +12,7 @@
 |---|---|---|
 | M | M.1 — Scaffold Expo app + navigation shell | done (commit 35d6a17, conversion branch) |
 | M | M.2 — Fix `/me` + port auth/API layer (SecureStore) | done (commit 2752114, conversion branch; absorbs 0.6) |
-| M | M.3 — Port five main screens to RN primitives | not started |
+| M | M.3 — Port five main screens to RN primitives | done (conversion branch; Leaderboard/Profile/PvP/CPU/Ongoing ported to RN) |
 | M | M.4 — Retire web app + repo restructure | not started |
 | 0 | 0.1 — `/submit_stats/<bet_id>` auth check | not started (still reads `playerId` from request body) |
 | 0 | 0.2 — Remove hardcoded JWT secret fallback | not started (`config.py` still has `"your-secret-key"` default) |
@@ -37,11 +37,14 @@
 
 ## Summary
 
-M.1 and M.2 are complete on the `conversion` branch. The Expo app skeleton is scaffolded in
-`mobile/` with React Navigation (bottom tabs + auth stack), SecureStore-backed token persistence,
-a working `/me` backend fix, and functional Login/Register screens. The CRA app in `src/` is
-untouched. Next up: **M.3** — port the five main screens to RN primitives (Leaderboard → Profile
-→ PvP → CPU → Ongoing). Flag: M.3 is marked --opus in PLAN.md for its complexity.
+M.1, M.2, and M.3 are complete on the `conversion` branch. The Expo app in `mobile/` has React
+Navigation (bottom tabs + auth stack), SecureStore-backed token persistence, a working `/me`
+backend fix, functional Login/Register screens, and now all five main screens ported to RN
+primitives (Leaderboard, Profile, PvP, CPU, Ongoing) with StyleSheet styling, Modal-based bet
+creation/stat entry, `@react-native-picker/picker` dropdowns, and an `@react-native-async-storage`
+ongoingBets cache. The CRA app in `src/` is untouched. Next up: **M.4** — retire the web app and
+restructure the repo. Image upload and the Messages tab were intentionally left out of the mobile
+port (see `.claude/dev-team/engineer-report-m3.md`).
 
 ## How to update this file
 
