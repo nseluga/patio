@@ -4,14 +4,14 @@
 > per-item `status` fields in PLAN.md) whenever a stage item is completed, so a fresh session can
 > tell what's done without re-auditing the whole codebase.
 
-**Last verified against code:** 2026-07-01
+**Last verified against code:** 2026-07-03
 
 ## Status by stage
 
 | Stage | Item | Status |
 |---|---|---|
-| M | M.1 — Scaffold Expo app + navigation shell | not started |
-| M | M.2 — Fix `/me` + port auth/API layer (SecureStore) | not started (absorbs 0.6) |
+| M | M.1 — Scaffold Expo app + navigation shell | done (commit 35d6a17, conversion branch) |
+| M | M.2 — Fix `/me` + port auth/API layer (SecureStore) | done (commit 2752114, conversion branch; absorbs 0.6) |
 | M | M.3 — Port five main screens to RN primitives | not started |
 | M | M.4 — Retire web app + repo restructure | not started |
 | 0 | 0.1 — `/submit_stats/<bet_id>` auth check | not started (still reads `playerId` from request body) |
@@ -19,7 +19,7 @@
 | 0 | 0.3 — Delete dead `bets` Blueprint in `auth.py` | not started (still present, unregistered) |
 | 0 | 0.4 — Cleanup batch (gitignore/stray files/port/logging) | not started (`backend/py/`, `backend/__pycache__/` still tracked; `.Rhistory` still present; `venv/` not in `.gitignore`) |
 | 0 | 0.5 — Route auth inventory (`cleanup_bets`, `get_all_bets`, `get_pvp_bets`, `create_bet`) | not started |
-| 0 | 0.6 — Fix/remove broken `/me` route | pulled forward into M.2 (verify only when reached) |
+| 0 | 0.6 — Fix/remove broken `/me` route | done in M.2 (verify only when reached in Stage 0) |
 | 0 | 0.7 — Stop leaking secrets in logs + disable debug mode | not started (`.flaskenv` still sets `FLASK_ENV=development`) |
 | 1 | 1.1 — `@token_required` decorator | not started |
 | 2 | 2.1–2.3 | not started |
@@ -37,11 +37,11 @@
 
 ## Summary
 
-No stage of PLAN.md has been started yet — the repo is still at its pre-refactor baseline.
-The plan was restructured on 2026-07-02 for the mobile-first pivot: Stage M (React Native/Expo
-conversion) now runs first, and Stage 10 (App Store launch) runs last, gated on the security and
-money-correctness stages. X.2 is resolved (cut `server.js`, executed in M.4).
-Next up per the execution order: **Stage M**, starting with M.1 (scaffold the Expo app).
+M.1 and M.2 are complete on the `conversion` branch. The Expo app skeleton is scaffolded in
+`mobile/` with React Navigation (bottom tabs + auth stack), SecureStore-backed token persistence,
+a working `/me` backend fix, and functional Login/Register screens. The CRA app in `src/` is
+untouched. Next up: **M.3** — port the five main screens to RN primitives (Leaderboard → Profile
+→ PvP → CPU → Ongoing). Flag: M.3 is marked --opus in PLAN.md for its complexity.
 
 ## How to update this file
 
