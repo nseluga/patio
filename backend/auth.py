@@ -108,16 +108,14 @@ def login():
 
 @auth.route('/me', methods=['GET'])
 def get_current_user():
-    print("📌 /me route in auth.py triggered")
-    token = request.headers.get('Authorization')
-    print("🔐 Authorization header:", token)
+    auth_header = request.headers.get('Authorization', '')
+    token = auth_header.replace('Bearer ', '').strip()
     if not token:
         return jsonify({'error': 'Missing token'}), 401
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
         user_id = payload['id']
-        print("✅ Token decoded. user_id =", user_id)
     except jwt.ExpiredSignatureError:
         return jsonify({'error': 'Token expired'}), 401
     except jwt.InvalidTokenError:
@@ -126,8 +124,10 @@ def get_current_user():
     conn = get_db()
     cur = conn.cursor()
 
-    # Get player info
-    cur.execute("SELECT username, email, caps_balance FROM players WHERE id = %s", (user_id,))
+    cur.execute(
+        "SELECT username, email, caps_balance, pvp_bets_played, pvp_bets_won FROM players WHERE id = %s",
+        (user_id,)
+    )
     player = cur.fetchone()
 
     if not player:
@@ -135,19 +135,10 @@ def get_current_user():
         conn.close()
         return jsonify({'error': 'User not found'}), 404
 
-    # Get stats
-    cur.execute("SELECT COUNT(*) FROM bets WHERE winner_id = %s", (user_id,))
-    bets_won = cur.fetchone()[0]
-
-    cur.execute("SELECT COUNT(*) FROM bets WHERE poster_id = %s OR accepter_id = %s", (user_id, user_id))
-    bets_played = cur.fetchone()[0]
-
-    # Get recent bets
     cur.execute("""
-        SELECT subject, player, line, game_type, posted_at
-        FROM bets
-        WHERE poster_id = %s OR accepter_id = %s
-        ORDER BY posted_at DESC LIMIT 5
+        SELECT gametype, status, amount, timePosted
+        FROM bets WHERE posterId = %s OR accepterid = %s
+        ORDER BY timePosted DESC LIMIT 5
     """, (user_id, user_id))
     recent_bets = cur.fetchall()
 
@@ -158,17 +149,17 @@ def get_current_user():
         'username': player[0],
         'email': player[1],
         'caps_balance': player[2],
-        'pvp_bets_won': bets_won,
-        'pvp_bets_played': bets_played,
+        'pvp_bets_played': player[3],
+        'pvp_bets_won': player[4],
         'recent_bets': [
             {
-                'subject': r[0],
-                'player': r[1],
-                'line': r[2],
-                'gameType': r[3],
-                'timePosted': r[4].isoformat()
-            } for r in recent_bets
-        ]
+                'gameType': r[0],
+                'status': r[1],
+                'amount': r[2],
+                'timePosted': r[3].isoformat() if r[3] else None,
+            }
+            for r in recent_bets
+        ],
     })
 
 bets = Blueprint('bets', __name__)
