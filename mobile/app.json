@@ -22,6 +22,9 @@
     },
     "plugins": [
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "apiUrl": "https://patio-backend-y4ft.onrender.com"
+    }
   }
 }

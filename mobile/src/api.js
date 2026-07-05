@@ -1,9 +1,8 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import Constants from 'expo-constants';
 
 const api = axios.create({
-  baseURL: Constants.expoConfig?.extra?.apiUrl || 'http://localhost:5001',
+  baseURL: 'https://patio-backend-y4ft.onrender.com',
 });
 
 api.interceptors.request.use(async (config) => {
