@@ -22,7 +22,7 @@ export default function Register({ navigation }) {
       await api.post('/register', { username, email, password });
       navigation.navigate('Login');
     } catch (err) {
-      setError('Registration failed. Try again.');
+      setError('Registration failed. Check your details and try again.');
     }
   };
 

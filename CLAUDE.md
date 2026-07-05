@@ -49,20 +49,15 @@ Flask app with no ORM — all queries use raw `psycopg2` with `RealDictCursor`.
 
 ### Database Schema (Supabase/Postgres)
 
-Key tables:
-- **`players`** — App users. `caps_balance` is the virtual currency. `id = 0` is the reserved CPU/House account.
-- **`bets`** — Unified table for all bet types. `status`: `'posted'` → `'accepted'` → `'submitted'` (PvP) or `'CPU'` (house bets, never changes).
-- **`cpu_acceptances`** — Tracks which users accepted which CPU bets (`match_confirmed`, `attempted` flags).
-- **`bettable_players`** — Players named in bets (game participants, not necessarily app users).
-- **`bettable_player_stats`** — Raw per-game stat rows logged when bets resolve.
-- **`player_stat_aggregates`** — Rolling `mean`, `std`, `mean_last_5`, `n_games`, `win_rate`, `defensive_value` per `(player_name, game_played, game_type, stat_name, team_size)`.
+**See [`DATABASE.md`](DATABASE.md) at repo root — that is the single trusted schema reference** (reconstructed
+from the live `information_schema`). It documents the "two-worlds" model (accounts vs. stats, bridged only by
+`bets`), every table's columns/keys/FKs, the bet-status state machine, the caps economy, and the drift/gotchas
+(camelCase case-sensitivity → the pre-existing 500s; `bets` FK-less text ids; aggregate column drift; untrusted
+`backend/models.py`). Do not trust the old bullet list that used to live here or `models.py` — both had drifted.
 
-**Bet fields** vary by `gameType`:
-- `"Score"` — `yourTeamA/B` (JSONB arrays of player names), `yourScoreA/B`, mirror `opp*` fields
-- `"Shots Made"` — `yourPlayer`, `yourShots`, `oppPlayer`, `oppShots`
-- `"Other"` — `yourOutcome`, `oppOutcome`
-
-Stats are confirmed when both poster and accepter submit matching values. On match, caps are awarded (winner gets 2× the wager amount).
+Quick orientation: `players` (app users; `id=0` = House), `bets` (unified, all types; `status` `posted`→
+`accepted`→`submitted`|`CPU`), `cpu_acceptances`, `bettable_players`/`bettable_player_stats`/
+`player_stat_aggregates` (the stats graph, keyed to `bettable_players`, **not** `players`).
 
 ### Frontend (`src/`)
 
