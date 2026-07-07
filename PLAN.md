@@ -24,6 +24,7 @@
 
 ### M.1 — Scaffold Expo app + navigation shell
 - **status:** not started
+- **track:** full
 - **owns_files:** new `mobile/` directory (Expo app: `app.json`/`app.config.js`, `App.js`, `package.json`), root `README.md` (dev-setup section only)
 - **blocked_by:** none
 - **blocks:** M.2, M.3, X.6 (web app retirement, now unscheduled)
@@ -32,6 +33,7 @@
 
 ### M.2 — Fix `/me` + port the auth/API layer (SecureStore, no cookies)
 - **status:** not started
+- **track:** full
 - **owns_files:** `mobile/src/api.js`, `mobile/src/UserContext.js`, mobile auth bootstrap, Login/Register screens; `backend/auth.py` (`/me` handler — this **pulls item 0.6 forward**, because the mobile app cannot boot against a broken `/me`)
 - **blocked_by:** M.1
 - **blocks:** M.3
@@ -40,6 +42,7 @@
 
 ### M.3 — Port the five main screens to RN primitives
 - **status:** not started
+- **track:** full
 - **owns_files:** `mobile/src/screens/` (PvP, CPU/House, Ongoing, Leaderboard, Profile), `mobile/src/utils/` (port `betCreation.js`, `acceptHandling.js`, `timeUtils.js`), `mobile/src/assets/` (copy PNGs)
 - **blocked_by:** M.2
 - **blocks:** X.6 (web app retirement, now unscheduled)
@@ -53,6 +56,7 @@
 
 ### 0.1 — Fix `/submit_stats/<bet_id>` missing auth check
 - **status:** not started
+- **track:** full
 - **owns_files:** `app.py` (route handler only — the `/submit_stats` function block)
 - **blocked_by:** none
 - **blocks:** 4.1 (sport module collapse touches the same handler logic)
@@ -61,6 +65,7 @@
 
 ### 0.2 — Remove hardcoded JWT secret fallback
 - **status:** not started
+- **track:** light
 - **owns_files:** wherever `SECRET_KEY = os.getenv(...)` is defined (likely `app.py` or `config.py`)
 - **blocked_by:** none
 - **blocks:** nothing
@@ -69,6 +74,7 @@
 
 ### 0.3 — Delete dead `bets` Blueprint in `auth.py`
 - **status:** not started
+- **track:** light
 - **owns_files:** `auth.py` (lines ~174–219 only)
 - **blocked_by:** none
 - **blocks:** nothing
@@ -77,6 +83,7 @@
 
 ### 0.4 — Cleanup batch (gitignore, stray files, port mismatch, logging)
 - **status:** not started
+- **track:** full
 - **owns_files:** `.gitignore`, `src/pages/.Rhistory` (delete), `backend/py/` (delete), `backend/__pycache__/` (untrack), `App.js` + `api.js` (port constant only), any `print()` call sites
 - **blocked_by:** none
 - **blocks:** nothing
@@ -86,6 +93,7 @@
 
 ### 0.5 — Route auth inventory + client-supplied identity (found in audit)
 - **status:** not started
+- **track:** full
 - **owns_files:** `app.py` (route handlers: `cleanup_bets`, `get_all_bets`, `get_pvp_bets`, `create_bet`)
 - **blocked_by:** none
 - **blocks:** 1.1 (the decorator needs the full list of which routes are "protected" — this item produces that list)
@@ -94,6 +102,7 @@
 
 ### 0.6 — Fix or remove broken `/me` route in `auth.py` (found in audit)
 - **status:** PULLED FORWARD into M.2 — the mobile app cannot boot against a broken `/me`. Do the fix there; when this row is reached, just verify it landed.
+- **track:** trivial
 - **owns_files:** `backend/auth.py` (the `/me` handler), coordinate with `App.js` `fetchUserFromBackend`
 - **blocked_by:** none
 - **blocks:** nothing
@@ -102,6 +111,7 @@
 
 ### 0.7 — Stop leaking secrets in logs + disable debug mode (found in audit)
 - **status:** not started
+- **track:** full
 - **owns_files:** `app.py` (`get_player_id` print at ~71/80), `auth.py` (~113), `backend/.flaskenv`
 - **blocked_by:** none
 - **blocks:** nothing (but pairs naturally with 0.4d's print→logging swap)
@@ -110,6 +120,7 @@
 
 ### 0.8 — Fix camelCase column access breaking core reads (found in DB audit 2026-07-05)
 - **status:** not started
+- **track:** full
 - **owns_files:** `app.py` (the read handlers: `get_pvp_bets`, the CPU/House bet reads, the ongoing-bets read), `auth.py` (`/me` bets query)
 - **blocked_by:** none — standalone patch; do it early so the app stops 500ing before the big 4.1 migration
 - **blocks:** nothing hard, but unblocks real QA of the X.5 redesign (screens can't load data while this is broken)
@@ -122,6 +133,7 @@
 
 ### 1.1 — `@token_required` decorator
 - **status:** not started
+- **track:** full
 - **owns_files:** new `utils/auth.py`, plus every route file with a protected endpoint (`app.py` and any blueprint-adjacent route files)
 - **blocked_by:** 0.1 (land the manual fix on `/submit_stats` first, then this item converts it to use the decorator — don't rewrite that handler twice in overlapping passes)
 - **blocks:** 2.1 (blueprint split touches every route file — do this first so 2.1 isn't relocating code that's about to change shape)
@@ -134,6 +146,7 @@
 
 ### 2.1 — App-factory + blueprints
 - **status:** not started
+- **track:** full
 - **owns_files:** `app.py` (full split into `create_app()` + blueprint files: `auth_routes.py`, `wallet_routes.py`, `bets_routes.py`, `lines_routes.py`, `main_routes.py`)
 - **blocked_by:** 1.1
 - **blocks:** 2.2, 3.1, 4.1
@@ -142,6 +155,7 @@
 
 ### 2.2 — Error handlers + CORS scoping + Flask-Limiter
 - **status:** not started
+- **track:** full
 - **owns_files:** new `error_handlers.py`, CORS config block, limiter init (likely in `create_app()`)
 - **blocked_by:** 2.1 (needs `create_app()` to exist as the place to register handlers/limiter)
 - **blocks:** nothing
@@ -150,6 +164,7 @@
 
 ### 2.3 — Input validation layer (found in audit)
 - **status:** not started
+- **track:** full
 - **owns_files:** new validation helpers/schemas, applied across the route files from 2.1
 - **blocked_by:** 2.1 (apply per-blueprint), pairs with 2.2's error handlers
 - **task:** Every route hand-parses `request.json` with no validation (e.g. `submit_stats` does `data['playerId']` and unguarded `int(...)` casts that 500 on bad input; `create_bet` accepts arbitrary fields). Add a lightweight schema layer (pydantic or marshmallow) for the mutating endpoints so malformed/missing fields return a clean 400, not a 500 or a silent bad write. Reuse the 2.2 error handler for the shape.
@@ -161,6 +176,7 @@
 
 ### 3.1 — Collapse 3 sport modules → 1 parameterized module
 - **status:** not started
+- **track:** full
 - **owns_files:** the 3 sport modules + their single replacement file, plus the `/submit_stats` handler (already touched in 0.1/1.1 — this is the third and final touch)
 - **blocked_by:** 0.1, 1.1, 2.1
 - **blocks:** 7.2 (stats tests need the final module shape)
@@ -175,6 +191,7 @@
 
 ### 4.1 — SQLAlchemy models + Flask-Migrate + stamp existing Supabase DB
 - **status:** not started
+- **track:** full
 - **owns_files:** new `models.py` (or `models/` package), migration config/folder, and — incrementally — every route file as it's ported off raw psycopg2
 - **blocked_by:** 2.1 (port routes domain-by-domain into the now-existing blueprints)
 - **blocks:** 5.1 (cannot build a transaction-safe wallet service against models that don't exist)
@@ -190,6 +207,7 @@
 
 ### 5.1 — Service layer for wallet/settlement + atomic transaction
 - **status:** not started
+- **track:** full
 - **owns_files:** new `services/wallet.py`, and the create/accept/settle bet route handlers that currently do check-then-act balance logic
 - **blocked_by:** 4.1 (needs SQLAlchemy models + session management to exist)
 - **blocks:** 7.1 (concurrency tests need this to exist), 8.1 (CI gate is meaningless without something to test)
@@ -200,6 +218,7 @@
 
 ### 5.2 — Refund/push semantics: stop silently burning caps (found in audit)
 - **status:** not started — **semantics decided 2026-07-05 (rules below); no open design questions.**
+- **track:** full
 - **owns_files:** `cleanup_bets`, the settlement block in `submit_stats`, `create_bet` (line validation), and the new `services/wallet.py`
 - **blocked_by:** 5.1 (do this inside the wallet service so refunds are atomic too)
 - **task:** Caps are deducted on create/accept but never returned in several paths, so they vanish. Implement these **decided rules**, all through the wallet service:
@@ -213,6 +232,7 @@
 
 ### 5.3 — Settlement idempotency: stop double-paying (found in audit)
 - **status:** not started
+- **track:** full
 - **owns_files:** `submit_stats` (CPU + PvP branches), `services/wallet.py`
 - **blocked_by:** 5.1
 - **task:** `submit_stats` has no guard against re-award. CPU path: re-posting matching stats sets `match_confirmed = TRUE` and credits `amount*2` AGAIN on every call. PvP path: relies only on `status='submitted'` flipping — make payout strictly once-only. Gate payouts on a state transition (e.g. only award when moving INTO the settled state, inside the same locked transaction as 5.1), so repeated submissions are no-ops. **Note (X.3 interaction):** once House wagers move onto `cpu_acceptances` (per-acceptance amount), the CPU payout must read `2 × acceptance_wager`, not `bets.amount`, and the once-only guard keys on `cpu_acceptances.match_confirmed`. See `DATABASE.md` → cpu_acceptances + lifecycle.
@@ -226,6 +246,7 @@
 
 ### 6.1 — README stack-honesty + Design Decisions section
 - **status:** not started
+- **track:** trivial
 - **owns_files:** `README.md`
 - **blocked_by:** 4.1 (don't claim SQLAlchemy in the README until it's actually true)
 - **blocks:** nothing
@@ -234,6 +255,7 @@
 
 ### 6.2 — Backtest or relabel "house edge" claim
 - **status:** not started
+- **track:** trivial
 - **owns_files:** wherever the house-edge claim lives (README/portfolio writeup, not app code)
 - **blocked_by:** none — this is a documentation-honesty fix, not contingent on refactor progress. Fine to do early if you want it off your plate.
 - **blocks:** nothing
@@ -242,6 +264,7 @@
 
 ### 6.3 — Architecture diagram + portfolio writeup (sport-module refactor before/after)
 - **status:** not started
+- **track:** trivial
 - **owns_files:** docs/portfolio assets only
 - **blocked_by:** 3.1 (the before/after writeup needs the "after" to exist)
 - **blocks:** nothing
@@ -254,6 +277,7 @@
 
 ### 7.1 — Settlement + balance-concurrency tests
 - **status:** not started
+- **track:** full
 - **owns_files:** new `tests/test_wallet.py` or similar
 - **blocked_by:** 5.1
 - **blocks:** 8.1
@@ -261,6 +285,7 @@
 
 ### 7.2 — Line-generation stats tests
 - **status:** not started
+- **track:** full
 - **owns_files:** new `tests/test_lines.py` or similar
 - **blocked_by:** 3.1
 - **blocks:** 8.1
@@ -268,6 +293,7 @@
 
 ### 7.3 — Test scaffolding (fixtures, conftest, CI-runnable structure)
 - **status:** not started
+- **track:** light
 - **owns_files:** `conftest.py`, test directory structure
 - **blocked_by:** none — this is just scaffolding, no real test bodies depend on the refactor being done
 - **blocks:** nothing directly, but 7.1/7.2 will want this in place first
@@ -276,6 +302,7 @@
 
 ### 7.4 — Bet-lifecycle integration + auth tests (found in audit)
 - **status:** not started
+- **track:** full
 - **owns_files:** new `tests/test_bets.py`, `tests/test_auth.py`
 - **blocked_by:** 7.3 (wants the fixtures), and 0.5/5.2/5.3 (so there's correct behavior to assert)
 - **blocks:** 8.1
@@ -288,6 +315,7 @@
 
 ### 8.1 — GitHub Actions CI as test gate
 - **status:** not started
+- **track:** light
 - **owns_files:** `.github/workflows/*.yml`
 - **blocked_by:** 7.1, 7.2 (a CI gate with no real tests behind it isn't a gate)
 - **blocks:** nothing
@@ -299,6 +327,7 @@
 
 ### 9.1 — Per-domain service modules + hooks + server-authoritative bet state
 - **status:** not started
+- **track:** full
 - **owns_files:** `mobile/src/services/`, `mobile/src/hooks/`, `mobile/src/api.js`, `mobile/src/utils/acceptHandling.js`; backend: an ongoing-bets read endpoint if one doesn't exist by now
 - **blocked_by:** M.3 (screens must exist), and practically 2.1/4.1 (API contract settles after the blueprint split and SQLAlchemy port)
 - **blocks:** 10.4 (don't submit to review with client-side state as the source of truth for money-adjacent data)
@@ -313,6 +342,7 @@
 
 ### 10.1 — Production backend hardening for a public mobile launch
 - **status:** not started
+- **track:** full
 - **owns_files:** `Procfile`, `backend/requirements.txt`, `backend/auth.py` (token lifetime/refresh), Render config
 - **blocked_by:** 2.2 (limiter must exist), 0.7 (debug off)
 - **blocks:** 10.4
@@ -321,6 +351,7 @@
 
 ### 10.2 — Account deletion (App Review Guideline 5.1.1(v) — mandatory)
 - **status:** not started — **semantics decided 2026-07-05 (tombstone; rules below); no open design questions.**
+- **track:** full
 - **owns_files:** backend: new authenticated `DELETE /me` (or equivalent) route + tombstone/refund logic on `players` and the user's in-flight `bets`/`cpu_acceptances`; mobile: a delete-account action in Profile/settings
 - **blocked_by:** 5.1 (deletion refunds in-flight bets via the wallet service, not raw deletes), 1.1 (must be behind the decorator)
 - **blocks:** 10.4 — **Apple rejects account-based apps without in-app account deletion. Non-negotiable.**
@@ -330,6 +361,7 @@
 
 ### 10.3 — App identity, privacy, and content-rating compliance
 - **status:** not started
+- **track:** trivial
 - **owns_files:** `mobile/app.json`/`app.config.js` (bundle ID, icon, splash, version), privacy policy doc + hosted URL, App Store Connect metadata (worked outside the repo)
 - **blocked_by:** M.3 (assets belong to the final mobile app), 6.2 (no unvalidated quantitative claims in store copy either)
 - **blocks:** 10.4
@@ -338,6 +370,7 @@
 
 ### 10.4 — EAS Build → TestFlight → App Store submission
 - **status:** not started
+- **track:** full
 - **owns_files:** `mobile/eas.json`, Apple Developer account + App Store Connect (outside the repo)
 - **blocked_by:** 10.1, 10.2, 10.3, 9.1, and Stages 0/1/2/5 complete with Stage 7 tests green — **shipping publicly multiplies every open security and double-payout bug; do not submit around them**
 - **blocks:** nothing — this is the finish line
