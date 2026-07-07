@@ -2,11 +2,20 @@
 QA tests for item 0.4: Cleanup batch.
 
 Criteria verified:
-  (a) No .pyc files are git-tracked; venv/ is in .gitignore.
+  (a) No .pyc files are git-tracked; venv/ and .venv/ are in .gitignore.
   (b) .Rhistory is not git-tracked (was deleted from repo).
   (c) src/App.js uses :5001 in its localhost fallback — no :5000 present.
   (d) No uncommented print() calls remain in backend/*.py; logging is used
       instead; sensitive data (raw token, JWT payload) not logged.
+
+Review-findings tests (post-Bug-Fixer):
+  (e) No logger.error() calls remain in exception handlers — all use
+      logger.exception() so tracebacks are captured automatically.
+  (f) accept_cpu_bet exception handler has logger.exception (was missing
+      entirely before the fix).
+  (g) compute_status_message closes its DB connection via try/finally.
+  (h) Bet-generation files use a single batched ANY(%s) query, not one
+      SELECT per player (N+1 fix).
 
 Tests use static source analysis and subprocess git checks — no live DB needed.
 """
@@ -253,3 +262,160 @@ def test_jwt_decode_error_only_logs_exception_not_token():
                 f"JWT except logger call may be exposing the token: {stripped}"
             )
             in_except = False
+
+
+# ---------------------------------------------------------------------------
+# Review findings (post-Bug-Fixer): e, f, g, h
+# ---------------------------------------------------------------------------
+
+BET_GEN_FILES = [
+    "caps_bet_generation.py",
+    "pong_bet_generation.py",
+    "beerball_bet_generation.py",
+]
+
+
+def test_no_logger_error_in_exception_handlers():
+    """No exception handler in app.py or bet-gen files should use logger.error().
+    All caught exceptions must use logger.exception() so tracebacks are captured.
+    """
+    files_to_check = ["app.py"] + BET_GEN_FILES
+    violations: list[str] = []
+    for fname in files_to_check:
+        fpath = BACKEND_DIR / fname
+        if not fpath.exists():
+            continue
+        source = fpath.read_text()
+        in_except = False
+        for lineno, line in enumerate(source.splitlines(), start=1):
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            # Detect entering an except block
+            if re.match(r"except(\s+\S+)?\s*:", stripped) or re.match(r"except\s*:", stripped):
+                in_except = True
+            # Detect leaving an except block (back to top-level or new block)
+            # Simple heuristic: a non-indented non-blank line after entering except
+            if in_except and line and not line[0].isspace() and not stripped.startswith("except"):
+                in_except = False
+            if in_except and re.search(r'\blogger\.error\s*\(', stripped):
+                violations.append(f"{fname}:{lineno}: {stripped}")
+    assert not violations, (
+        "logger.error() found inside except handlers — use logger.exception() instead:\n"
+        + "\n".join(f"  {v}" for v in violations)
+    )
+
+
+def test_accept_cpu_bet_has_logger_exception():
+    """accept_cpu_bet's except block must call logger.exception() (was absent before fix)."""
+    app_py = BACKEND_DIR / "app.py"
+    source = app_py.read_text()
+
+    # Find the accept_cpu_bet function and confirm logger.exception is in its except block.
+    # We use AST to locate the function, then scan its source lines.
+    tree = ast.parse(source)
+    func_node = None
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == "accept_cpu_bet":
+            func_node = node
+            break
+    assert func_node is not None, "accept_cpu_bet function not found in app.py"
+
+    lines = source.splitlines()
+    func_lines = lines[func_node.lineno - 1: func_node.end_lineno]
+    func_source = "\n".join(func_lines)
+
+    # Confirm at least one logger.exception call inside the function
+    assert re.search(r'\blogger\.exception\s*\(', func_source), (
+        "accept_cpu_bet has no logger.exception() call — exception handler is silent"
+    )
+
+    # Confirm no logger.error call is used in its place
+    assert not re.search(r'\blogger\.error\s*\(', func_source), (
+        "accept_cpu_bet still uses logger.error() — should be logger.exception()"
+    )
+
+
+def test_compute_status_message_closes_connection():
+    """compute_status_message must close the DB connection it opens.
+    The fix wraps cursor ops in try/finally and calls conn.close() in finally.
+    """
+    app_py = BACKEND_DIR / "app.py"
+    source = app_py.read_text()
+    tree = ast.parse(source)
+
+    func_node = None
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == "compute_status_message":
+            func_node = node
+            break
+    assert func_node is not None, "compute_status_message function not found in app.py"
+
+    lines = source.splitlines()
+    func_lines = lines[func_node.lineno - 1: func_node.end_lineno]
+    func_source = "\n".join(func_lines)
+
+    assert "conn = get_db()" in func_source, (
+        "compute_status_message does not store the connection in 'conn'"
+    )
+    assert "conn.close()" in func_source, (
+        "compute_status_message never calls conn.close() — connection is leaked"
+    )
+    assert "finally:" in func_source, (
+        "compute_status_message has no finally block — conn.close() may not execute on error"
+    )
+
+
+def _function_source(filepath: Path, func_name: str) -> str:
+    """Return the source lines for a top-level function in a Python file."""
+    source = filepath.read_text()
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == func_name:
+            lines = source.splitlines()
+            return "\n".join(lines[node.lineno - 1: node.end_lineno])
+    return ""
+
+
+def test_caps_bet_gen_uses_batch_query():
+    """get_global_caps_score_strength_average must use ANY(%s) not a per-player loop query."""
+    fpath = BACKEND_DIR / "caps_bet_generation.py"
+    func_src = _function_source(fpath, "get_global_caps_score_strength_average")
+    assert func_src, "get_global_caps_score_strength_average not found in caps_bet_generation.py"
+    assert re.search(r'ANY\s*\(\s*%s\s*\)', func_src), (
+        "caps_bet_generation.py: get_global_caps_score_strength_average does not use "
+        "ANY(%s) batch query — N+1 per-player queries may still be present"
+    )
+
+
+def test_pong_bet_gen_uses_batch_query():
+    """get_global_pong_score_strength_average must use ANY(%s) not a per-player loop query."""
+    fpath = BACKEND_DIR / "pong_bet_generation.py"
+    func_src = _function_source(fpath, "get_global_pong_score_strength_average")
+    assert func_src, "get_global_pong_score_strength_average not found in pong_bet_generation.py"
+    assert re.search(r'ANY\s*\(\s*%s\s*\)', func_src), (
+        "pong_bet_generation.py: get_global_pong_score_strength_average does not use "
+        "ANY(%s) batch query — N+1 per-player queries may still be present"
+    )
+
+
+def test_beerball_bet_gen_uses_batch_query():
+    """get_global_beerball_score_strength_average must use ANY(%s) not a per-player loop query."""
+    fpath = BACKEND_DIR / "beerball_bet_generation.py"
+    func_src = _function_source(fpath, "get_global_beerball_score_strength_average")
+    assert func_src, (
+        "get_global_beerball_score_strength_average not found in beerball_bet_generation.py"
+    )
+    assert re.search(r'ANY\s*\(\s*%s\s*\)', func_src), (
+        "beerball_bet_generation.py: get_global_beerball_score_strength_average does not use "
+        "ANY(%s) batch query — N+1 per-player queries may still be present"
+    )
+
+
+def test_dotvenv_in_gitignore():
+    """.venv/ (dotted variant) must appear in .gitignore alongside venv/."""
+    content = GITIGNORE.read_text()
+    lines = [ln.strip() for ln in content.splitlines()]
+    assert ".venv/" in lines, (
+        "'.venv/' not found in .gitignore — Poetry / python -m venv dotted variant is unignored"
+    )
