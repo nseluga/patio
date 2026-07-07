@@ -160,7 +160,7 @@ def cleanup_bets():
 
     except Exception as e:
         conn.rollback()
-        logger.error("Cleanup failed: %s", e)
+        logger.exception("Cleanup failed")
         return jsonify({"error": str(e)}), 500
 
     finally:
@@ -223,7 +223,7 @@ def create_bet():
         return jsonify({"status": "success"}), 201
 
     except Exception as e:
-        logger.error("Bet insert failed: %s", e)
+        logger.exception("Bet insert failed")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -372,7 +372,7 @@ def accept_bet(bet_id):
 
     except Exception as e:
         conn.rollback()
-        logger.error("Accept bet error: %s", e)
+        logger.exception("Accept bet error")
         return jsonify({"error": str(e)}), 500
 
     finally:
@@ -435,6 +435,7 @@ def accept_cpu_bet(bet_id):
         return jsonify({"status": "accepted"}), 200
 
     except Exception as e:
+        logger.exception("Accept CPU bet error")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -542,13 +543,17 @@ def check_stats_match(bet):
 
 def compute_status_message(bet, player_id):
     if bet["status"] == "CPU" and player_id != 0:
-        cur = get_db().cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("""
-            SELECT match_confirmed, attempted FROM cpu_acceptances
-            WHERE id = %s AND accepter_id = %s
-        """, (bet["id"], player_id))
-        row = cur.fetchone()
-        cur.close()
+        conn = get_db()
+        try:
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            cur.execute("""
+                SELECT match_confirmed, attempted FROM cpu_acceptances
+                WHERE id = %s AND accepter_id = %s
+            """, (bet["id"], player_id))
+            row = cur.fetchone()
+            cur.close()
+        finally:
+            conn.close()
 
         if not row:
             return "You have not submitted stats yet"
@@ -987,7 +992,7 @@ def get_all_bets():
         bets = [dict(zip(colnames, row)) for row in rows]
         return jsonify(bets), 200
     except Exception as e:
-        logger.error("Failed to fetch bets: %s", e)
+        logger.exception("Failed to fetch bets")
         return jsonify({"error": str(e)}), 500
     finally:
         cur.close()
@@ -1065,7 +1070,7 @@ def create_cpu_caps_shots_bet():
         return jsonify({"message": "CPU bet created"}), 201
 
     except Exception as e:
-        logger.error("CPU Caps shots bet creation failed: %s", e)
+        logger.exception("CPU Caps shots bet creation failed")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -1147,7 +1152,7 @@ def create_cpu_pong_shots_bet():
         return jsonify({"message": "CPU bet created"}), 201
 
     except Exception as e:
-        logger.error("CPU Pong shots bet creation failed: %s", e)
+        logger.exception("CPU Pong shots bet creation failed")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -1255,7 +1260,7 @@ def create_cpu_beerball_shots_bet():
         return jsonify({"message": "Beerball CPU bet created"}), 201
 
     except Exception as e:
-        logger.error("CPU Beerball shots bet creation failed: %s", e)
+        logger.exception("CPU Beerball shots bet creation failed")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -1334,7 +1339,7 @@ def create_cpu_beerball_score_bet():
         return jsonify({"message": "Beerball Score CPU bet created"}), 201
 
     except Exception as e:
-        logger.error("CPU Beerball score bet creation failed: %s", e)
+        logger.exception("CPU Beerball score bet creation failed")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -1421,7 +1426,7 @@ def create_cpu_caps_score_bet():
         return jsonify({"message": "Caps Score CPU bet created"}), 201
 
     except Exception as e:
-        logger.error("CPU Caps score bet creation failed: %s", e)
+        logger.exception("CPU Caps score bet creation failed")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -1501,7 +1506,7 @@ def create_cpu_pong_score_bet():
         return jsonify({"message": "Pong Score CPU bet created"}), 201
 
     except Exception as e:
-        logger.error("CPU Pong score bet creation failed: %s", e)
+        logger.exception("CPU Pong score bet creation failed")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 

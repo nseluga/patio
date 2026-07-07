@@ -71,26 +71,27 @@ def get_global_caps_score_strength_average(cur, team_size, recency_weight=0.1):
     """, (team_size,))
     score_rows = cur.fetchall()
 
+    player_names = [row["player_name"] for row in score_rows]
+    cur.execute("""
+        SELECT player_name, mean
+        FROM player_stat_aggregates
+        WHERE player_name = ANY(%s)
+          AND game_played = 'Caps'
+          AND game_type = 'Shots Made'
+          AND stat_name = 'shots_made'
+          AND team_size = %s
+    """, (player_names, team_size))
+    shots_by_name = {row["player_name"]: row["mean"] for row in cur.fetchall()}
+
     strengths = []
     for row in score_rows:
         profile = dict(row)
         name = profile["player_name"]
 
-        # Get shots profile
-        cur.execute("""
-            SELECT mean
-            FROM player_stat_aggregates
-            WHERE player_name = %s
-              AND game_played = 'Caps'
-              AND game_type = 'Shots Made'
-              AND stat_name = 'shots_made'
-              AND team_size = %s
-        """, (name, team_size))
-        shots_row = cur.fetchone()
-        if not shots_row:
+        if name not in shots_by_name:
             continue  # skip if missing shots
 
-        shots = shots_row["mean"]
+        shots = shots_by_name[name]
 
         score_adj = adjust(profile, recency_weight)
         win_rate = profile.get("win_rate", 0.5)
