@@ -337,8 +337,10 @@ def test_accept_cpu_bet_has_logger_exception():
 
 
 def test_compute_status_message_closes_connection():
-    """compute_status_message must close the DB connection it opens.
-    The fix wraps cursor ops in try/finally and calls conn.close() in finally.
+    """compute_status_message must not open its own DB connection.
+    The Bug Fixer refactored the function to accept `conn` as a parameter (item 0.5
+    review finding), eliminating the internal get_db() call and the connection leak.
+    The cursor is still wrapped in try/finally to ensure it is closed.
     """
     app_py = BACKEND_DIR / "app.py"
     source = app_py.read_text()
@@ -355,14 +357,21 @@ def test_compute_status_message_closes_connection():
     func_lines = lines[func_node.lineno - 1: func_node.end_lineno]
     func_source = "\n".join(func_lines)
 
-    assert "conn = get_db()" in func_source, (
-        "compute_status_message does not store the connection in 'conn'"
+    # Refactored design: conn is a parameter, NOT opened inside the function.
+    assert "get_db()" not in func_source, (
+        "compute_status_message calls get_db() internally — should accept conn as a parameter"
     )
-    assert "conn.close()" in func_source, (
-        "compute_status_message never calls conn.close() — connection is leaked"
+    # The conn parameter must appear in the function signature.
+    first_line = func_source.splitlines()[0]
+    assert "conn" in first_line, (
+        f"compute_status_message does not declare `conn` in its signature: {first_line!r}"
     )
+    # Cursor must still be closed in a finally block to avoid cursor leaks.
     assert "finally:" in func_source, (
-        "compute_status_message has no finally block — conn.close() may not execute on error"
+        "compute_status_message has no finally block — cursor may not be closed on error"
+    )
+    assert "cur.close()" in func_source, (
+        "compute_status_message does not call cur.close() in finally — cursor is leaked"
     )
 
 
