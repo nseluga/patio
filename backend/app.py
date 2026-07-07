@@ -630,7 +630,11 @@ def compute_status_message(bet, player_id):
 @app.route('/submit_stats/<bet_id>', methods=['POST'])
 def submit_stats(bet_id):
     data = request.json
-    player_id = data['playerId']
+
+    # Authenticate via JWT — do not trust playerId from the request body
+    player_id = get_player_id()
+    if player_id is None:
+        return jsonify({"error": "Unauthorized"}), 401
 
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -639,12 +643,22 @@ def submit_stats(bet_id):
     cur.execute("SELECT * FROM bets WHERE id = %s", (bet_id,))
     bet = cur.fetchone()
     if not bet:
+        cur.close()
+        conn.close()
         return jsonify({"error": "Bet not found"}), 404
 
     is_poster = player_id == bet['posterid']
     is_accepter = player_id == bet['accepterid']
     is_cpu_bet = bet['status'] == 'CPU'
     is_admin = player_id == 0
+
+    # Authorization: for PvP bets, only the poster or accepter may submit stats.
+    # CPU bets are open to any authenticated user who accepted them (enforced via
+    # cpu_acceptances row-match further in this handler).
+    if not is_cpu_bet and not is_poster and not is_accepter:
+        cur.close()
+        conn.close()
+        return jsonify({"error": "Forbidden"}), 403
 
     # ✅ If non-admin tries to submit to a CPU bet, do nothing and return success
     if is_cpu_bet and not is_admin:
