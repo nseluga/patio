@@ -106,8 +106,11 @@ def get_player_id():
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         return payload["id"]
-    except Exception as e:
+    except (jwt.exceptions.DecodeError, jwt.exceptions.InvalidTokenError, KeyError) as e:
         logger.warning("JWT decode failed: %s", e)
+        return None
+    except Exception as e:
+        logger.exception("Unexpected error in get_player_id")
         return None
 
 
@@ -160,6 +163,8 @@ def cleanup_bets():
     player_id = get_player_id()
     if player_id is None:
         return jsonify({"error": "Unauthorized"}), 401
+    if player_id != 0:
+        return jsonify({"error": "Forbidden"}), 403
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=7)
     conn = get_db()
@@ -218,23 +223,25 @@ def create_bet():
     try:
         # Derive poster identity from the authenticated player — never trust the request body.
         # JWT carries only `id`; fetch username from DB.
-        cur.execute("SELECT username, caps_balance FROM players WHERE id = %s", (player_id,))
+        cur.execute("SELECT username FROM players WHERE id = %s", (player_id,))
         player_row = cur.fetchone()
         if not player_row:
             return jsonify({"error": "Player not found"}), 404
-        poster_username, caps_balance = player_row
-
-        # Check if player has enough caps
-        if caps_balance < amount:
-            return jsonify({"error": "Insufficient caps"}), 400
+        poster_username = player_row[0]
 
         # Server-side bet metadata — never trust client-supplied id, poster, posterId,
         # timePosted, or status for these fields.
         bet_id = str(uuid4())
         time_posted = datetime.now(timezone.utc)
 
-        # Deduct caps from poster
-        cur.execute("UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s", (amount, player_id))
+        # Atomic caps debit — prevents TOCTOU race between balance check and update.
+        # The WHERE caps_balance >= %s guard makes the check and debit a single atomic step.
+        cur.execute(
+            "UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s AND caps_balance >= %s",
+            (amount, player_id, amount)
+        )
+        if cur.rowcount == 0:
+            return jsonify({"error": "Insufficient caps"}), 400
 
         # Insert bet
         cur.execute('''
@@ -513,7 +520,7 @@ def get_ongoing_bets():
         result = []
         for row in rows:
             bet = dict(zip(colnames, row))
-            bet["status_message"] = compute_status_message(bet, player_id)
+            bet["status_message"] = compute_status_message(bet, player_id, conn)
             result.append({
                 "id": bet["id"],
                 "poster": bet["poster"],
@@ -585,19 +592,17 @@ def check_stats_match(bet):
     return False
 
 
-def compute_status_message(bet, player_id):
+def compute_status_message(bet, player_id, conn):
     if bet["status"] == "CPU" and player_id != 0:
-        conn = get_db()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         try:
-            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
             cur.execute("""
                 SELECT match_confirmed, attempted FROM cpu_acceptances
                 WHERE id = %s AND accepter_id = %s
             """, (bet["id"], player_id))
             row = cur.fetchone()
-            cur.close()
         finally:
-            conn.close()
+            cur.close()
 
         if not row:
             return "You have not submitted stats yet"
@@ -772,7 +777,7 @@ def submit_stats(bet_id):
             
             # 🔄 Re-fetch the bet for fresh data (optional, since bet itself didn't change, just cpu_acceptances)
             updated_bet = bet  # can reuse bet if no need to refetch from `bets`
-            status_message = compute_status_message(updated_bet, player_id)
+            status_message = compute_status_message(updated_bet, player_id, conn)
     
         else:
             # Prepare stat update fields
@@ -810,7 +815,7 @@ def submit_stats(bet_id):
             cur.execute("SELECT * FROM bets WHERE id = %s", (bet_id,))
             updated_bet = cur.fetchone()
             match = check_stats_match(updated_bet)
-            status_message = compute_status_message(updated_bet, player_id)
+            status_message = compute_status_message(updated_bet, player_id, conn)
     
             if match:
                 # ✅ Update bet status
@@ -1033,10 +1038,20 @@ def get_all_bets():
     if player_id is None:
         return jsonify({"error": "Unauthorized"}), 401
 
+    page = request.args.get('page', 1, type=int)
+    per_page = min(request.args.get('per_page', 50, type=int), 100)
+    offset = (page - 1) * per_page
+
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute("SELECT * FROM bets")
+        cur.execute(
+            """SELECT * FROM bets
+               WHERE posterid = %s OR accepterid = %s
+               ORDER BY timeposted DESC
+               LIMIT %s OFFSET %s""",
+            (player_id, player_id, per_page, offset)
+        )
         rows = cur.fetchall()
         colnames = [desc[0] for desc in cur.description]
         bets = [dict(zip(colnames, row)) for row in rows]
