@@ -68,6 +68,32 @@ CORS(
 # Register authentication-related routes
 app.register_blueprint(auth)
 
+# ---------------------------------------------------------------------------
+# ROUTE AUTH TABLE — single source of truth for item 1.1 decorator pass
+#
+# Route                              Method  Auth              Notes
+# ---------------------------------- ------  ----------------  -------------------------
+# /register                          POST    Public            Login flow
+# /login                             POST    Public            Login flow
+# /me                                GET     JWT (any user)    auth.py blueprint
+# /leaderboard                       GET     Public            No sensitive data exposed
+# /cleanup_bets                      POST    JWT (any user)    Destructive; gated in 0.5
+# /create_bet                        POST    JWT (any user)    Poster identity server-side
+# /pvp_bets                          GET     JWT (any user)    Filter by JWT identity
+# /cpu_bets                          GET     JWT (any user)    Already gated
+# /accept_bet/<bet_id>               POST    JWT (any user)    Already gated
+# /accept_cpu_bet/<bet_id>           POST    JWT (any user)    Already gated
+# /ongoing_bets                      GET     JWT (any user)    Already gated
+# /submit_stats/<bet_id>             POST    JWT (any user)    Already gated
+# /bets                              GET     JWT (any user)    Dump route; gated in 0.5
+# /cpu/create_caps_shots_bet         POST    JWT (player_id=0) CPU account only
+# /cpu/create_pong_shots_bet         POST    JWT (player_id=0) CPU account only
+# /cpu/create_beerball_shots_bet     POST    JWT (player_id=0) CPU account only
+# /cpu/create_beerball_score_bet     POST    JWT (player_id=0) CPU account only
+# /cpu/create_caps_score_bet         POST    JWT (player_id=0) CPU account only
+# /cpu/create_pong_score_bet         POST    JWT (player_id=0) CPU account only
+# ---------------------------------------------------------------------------
+
 # Helper function to get player ID from JWT
 def get_player_id():
     auth_header = request.headers.get('Authorization')
@@ -129,6 +155,12 @@ def public_leaderboard():
 
 @app.route("/cleanup_bets", methods=["POST"])
 def cleanup_bets():
+    # Auth gate — destructive route; valid JWT required.
+    # Item 1.1 will apply a proper decorator; for now a manual check suffices.
+    player_id = get_player_id()
+    if player_id is None:
+        return jsonify({"error": "Unauthorized"}), 401
+
     cutoff = datetime.now(timezone.utc) - timedelta(days=7)
     conn = get_db()
     cur = conn.cursor()
@@ -184,11 +216,22 @@ def create_bet():
     cur = conn.cursor()
 
     try:
+        # Derive poster identity from the authenticated player — never trust the request body.
+        # JWT carries only `id`; fetch username from DB.
+        cur.execute("SELECT username, caps_balance FROM players WHERE id = %s", (player_id,))
+        player_row = cur.fetchone()
+        if not player_row:
+            return jsonify({"error": "Player not found"}), 404
+        poster_username, caps_balance = player_row
+
         # Check if player has enough caps
-        cur.execute("SELECT caps_balance FROM players WHERE id = %s", (player_id,))
-        caps = cur.fetchone()
-        if not caps or caps[0] < amount:
+        if caps_balance < amount:
             return jsonify({"error": "Insufficient caps"}), 400
+
+        # Server-side bet metadata — never trust client-supplied id, poster, posterId,
+        # timePosted, or status for these fields.
+        bet_id = str(uuid4())
+        time_posted = datetime.now(timezone.utc)
 
         # Deduct caps from poster
         cur.execute("UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s", (amount, player_id))
@@ -206,7 +249,7 @@ def create_bet():
                       %s, %s, %s, %s, %s, %s, %s, %s,
                       %s, %s, %s, %s, %s, %s, %s)
         ''', (
-            bet.get('id'), bet.get('poster'), bet.get('posterId'), bet.get('timePosted'),
+            bet_id, poster_username, player_id, time_posted,
             bet.get('matchup'), bet.get('amount'), bet.get('lineType'), bet.get('lineNumber'),
             bet.get('gameType'), bet.get('gamePlayed'), bet.get('gameSize'),
             Json(bet.get('yourTeamA')), Json(bet.get('yourTeamB')),
@@ -216,7 +259,7 @@ def create_bet():
             bet.get('yourPlayer'), bet.get('yourShots'),
             bet.get('oppPlayer'), bet.get('oppShots'),
             bet.get('yourOutcome'), bet.get('oppOutcome'),
-            bet.get('status', 'posted')
+            'posted'
         ))
 
         conn.commit()
@@ -233,9 +276,10 @@ def create_bet():
 
 @app.route("/pvp_bets", methods=["GET"])
 def get_pvp_bets():
-    player_id = request.args.get("playerId")
+    # Identity derived from JWT — never trusted from query params.
+    player_id = get_player_id()
     if player_id is None:
-        return jsonify({"error": "Missing playerId"}), 400
+        return jsonify({"error": "Unauthorized"}), 401
 
     conn = get_db()
     cur = conn.cursor()
@@ -983,6 +1027,12 @@ def submit_stats(bet_id):
 
 @app.route("/bets", methods=["GET"])
 def get_all_bets():
+    # Auth gate — full bet dump; valid JWT required.
+    # Item 1.1 will apply a proper decorator; for now a manual check suffices.
+    player_id = get_player_id()
+    if player_id is None:
+        return jsonify({"error": "Unauthorized"}), 401
+
     conn = get_db()
     cur = conn.cursor()
     try:
