@@ -55,7 +55,7 @@
 ## STAGE 0 — Security fixes (first of the backend stages — Stage M precedes it by product decision)
 
 ### 0.1 — Fix `/submit_stats/<bet_id>` missing auth check
-- **status:** not started
+- **status:** done
 - **track:** full
 - **owns_files:** `app.py` (route handler only — the `/submit_stats` function block)
 - **blocked_by:** none
@@ -64,7 +64,7 @@
 - **done when:** a request with a forged `playerId` and another user's valid JWT is rejected with 401/403.
 
 ### 0.2 — Remove hardcoded JWT secret fallback
-- **status:** not started
+- **status:** done
 - **track:** light
 - **owns_files:** wherever `SECRET_KEY = os.getenv(...)` is defined (likely `app.py` or `config.py`)
 - **blocked_by:** none
@@ -73,7 +73,7 @@
 - **done when:** app fails to boot locally with `SECRET_KEY` unset, and boots normally with it set.
 
 ### 0.3 — Delete dead `bets` Blueprint in `auth.py`
-- **status:** not started
+- **status:** done
 - **track:** light
 - **owns_files:** `auth.py` (lines ~174–219 only)
 - **blocked_by:** none
@@ -82,7 +82,7 @@
 - **done when:** block is removed, app still imports/boots clean.
 
 ### 0.4 — Cleanup batch (gitignore, stray files, port mismatch, logging)
-- **status:** not started
+- **status:** done
 - **track:** full
 - **owns_files:** `.gitignore`, `src/pages/.Rhistory` (delete), `backend/py/` (delete), `backend/__pycache__/` (untrack), `App.js` + `api.js` (port constant only), any `print()` call sites
 - **blocked_by:** none
@@ -92,7 +92,7 @@
 - **subagent note:** these four sub-pieces don't touch each other and are genuinely fine to hand to parallel subagents *within this one item* if you want — they just all need to land before Stage 0 is considered done.
 
 ### 0.5 — Route auth inventory + client-supplied identity (found in audit)
-- **status:** not started
+- **status:** done
 - **track:** full
 - **owns_files:** `app.py` (route handlers: `cleanup_bets`, `get_all_bets`, `get_pvp_bets`, `create_bet`)
 - **blocked_by:** none
