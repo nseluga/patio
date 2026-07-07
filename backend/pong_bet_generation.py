@@ -1,7 +1,10 @@
 # Functions for pong generation cpu bets
+import logging
 from scipy.stats import norm
 import numpy as np
 import random
+
+logger = logging.getLogger(__name__)
 
 def get_pong_shots_players(cur, team_size):
     cur.execute("""
@@ -185,9 +188,9 @@ def generate_biased_pong_shots_line(subject_stats, teammates_stats, opp_team_sta
     else:  # "Under"
         final_line = min(base + 0.5, 9.5)
 
-    print(f"Subject: {subj_adj:.2f}, Teammates: {team_adj}, Opponents: {opp_adj}")
-    print(f"Balance ratio: {balance_ratio:.2f}, Opportunity: {opportunity:.2f}")
-    print(f"Expected: {expected:.2f}, Final line: {final_line:.2f}")
+    logger.debug("Subject: %.2f, Teammates: %s, Opponents: %s", subj_adj, team_adj, opp_adj)
+    logger.debug("Balance ratio: %.2f, Opportunity: %.2f", balance_ratio, opportunity)
+    logger.debug("Expected: %.2f, Final line: %.2f", expected, final_line)
     return final_line
 
 def generate_biased_pong_score_line(
@@ -240,5 +243,5 @@ def generate_biased_pong_score_line(
     base = round(line)
     final_line = base - 0.5 if line_type == "Over" else base + 0.5
 
-    print(f"[PONG Score] Expected margin: {expected_margin:.2f}, Line: {final_line} ({line_type})")
+    logger.debug("[Pong Score] Expected margin: %.2f, Line: %s (%s)", expected_margin, final_line, line_type)
     return final_line, line_type

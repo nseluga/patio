@@ -1,7 +1,10 @@
 # Functions for beerball generation cpu bets
+import logging
 import numpy as np
 from scipy.stats import norm
 import random
+
+logger = logging.getLogger(__name__)
 
 def get_beerball_shots_players(cur, team_size):
     cur.execute("""
@@ -102,14 +105,14 @@ def get_global_beerball_score_strength_average(cur, team_size, recency_weight=0.
             0.25 * profile.get("defensive_value", 0.5)
         )
         strengths.append(strength)
-        print(f"  ✔️ Included strength for {name}: {strength:.2f}")
+        logger.debug("Included strength for %s: %.2f", name, strength)
 
     if not strengths:
-        print("⚠️ No players had both Score and Shots Made data")
+        logger.warning("No players had both Score and Shots Made data")
         return 1.0
 
     avg_strength = np.mean(strengths)
-    print(f"  ✅ Global average strength (from {len(strengths)} players): {avg_strength:.4f}")
+    logger.debug("Global average strength (from %d players): %.4f", len(strengths), avg_strength)
     return avg_strength
 
 
@@ -131,11 +134,8 @@ def assemble_beerball_matchup(players, team_size):
     else:
         raise ValueError("Unsupported team size")
     
-    print("🏗️ Matchup generated:")
-    print("  Your team:", your_team)
-    print("  Opponent team:", opp_team)
-    print("  Line subject:", playerA)
-    print("  Matchup string:", matchup)
+    logger.debug("Matchup generated: your_team=%s, opp_team=%s, line_subject=%s, matchup=%s",
+                 your_team, opp_team, playerA, matchup)
 
     return {
         "your_team": your_team,
@@ -184,13 +184,9 @@ def generate_biased_beerball_shots_line(cur, team_size, subject_stats, your_win_
     base = round(line)
     final_line = base - 0.5 if line_type == "Over" else base + 0.5
 
-    print("📏 Generated line details:")
-    print("  Adjusted mean:", subj_adj)
-    print("  Opportunity multiplier:", opportunity)
-    print("  Expected value:", expected)
-    print("  Final line:", line)
-
-    print(f"Expected: {expected:.2f}, Line type: {line_type}, Final line: {final_line:.2f}")
+    logger.debug("Generated line: adjusted_mean=%s, opportunity=%s, expected=%s, raw_line=%s",
+                 subj_adj, opportunity, expected, line)
+    logger.debug("Expected: %.2f, Line type: %s, Final line: %.2f", expected, line_type, final_line)
     return final_line
 
 def generate_biased_beerball_score_line(
@@ -221,8 +217,7 @@ def generate_biased_beerball_score_line(
     your_strengths = [player_strength(p, s) for p, s in zip(your_team_profiles, your_team_shots)]
     opp_strengths  = [player_strength(p, s) for p, s in zip(opp_team_profiles, opp_team_shots)]
 
-    print("  Your strengths:", your_strengths)
-    print("  Opponent strengths:", opp_strengths)
+    logger.debug("Your strengths: %s, Opponent strengths: %s", your_strengths, opp_strengths)
 
     your_avg_score = sum(your_adj_scores) / len(your_adj_scores)
     opp_avg_score  = sum(opp_adj_scores) / len(opp_adj_scores)
@@ -240,8 +235,7 @@ def generate_biased_beerball_score_line(
     std = 1.5  # assumed margin volatility
     line = norm(expected_margin, std).ppf(percentile)
 
-    print(" Line:", line)
-    print(" Line type:", line_type)
+    logger.debug("Line: %s, Line type: %s", line, line_type)
 
     # Ensure all lines are non-negative
     if line < 0:
@@ -251,17 +245,17 @@ def generate_biased_beerball_score_line(
     base = round(line)
     final_line = base - 0.5 if line_type == "Over" else base + 0.5
 
-    print("📊 Composite Score Prediction")
-    print("  Global average strength:", global_avg_strength)
-    print("  Your team multiplier:", team_strength_multiplier(your_strength, global_avg_strength))
-    print("  Opponent team multiplier:", team_strength_multiplier(opp_strength, global_avg_strength))
-    print("  Your avg score:", your_avg_score)
-    print("  Your team strength:", your_strength)
-    print("  Your team score:", your_score)
-    print("  Opponent avg score:", opp_avg_score)
-    print("  Opponent team strength:", opp_strength)
-    print("  Opponent team score:", opp_score)
-    print("  Expected margin:", expected_margin)
-    print(f"  Line type: {line_type}, Final line: {final_line:.2f}")
+    logger.debug(
+        "Composite Score: global_avg=%s, your_mult=%s, opp_mult=%s, "
+        "your_avg_score=%s, your_strength=%s, your_score=%s, "
+        "opp_avg_score=%s, opp_strength=%s, opp_score=%s, "
+        "expected_margin=%s, line_type=%s, final_line=%.2f",
+        global_avg_strength,
+        team_strength_multiplier(your_strength, global_avg_strength),
+        team_strength_multiplier(opp_strength, global_avg_strength),
+        your_avg_score, your_strength, your_score,
+        opp_avg_score, opp_strength, opp_score,
+        expected_margin, line_type, final_line,
+    )
 
     return final_line, line_type

@@ -3,8 +3,11 @@ from flask_cors import CORS
 from backend.auth import auth
 from backend.db import get_db
 import jwt
+import logging
 import os
 from backend.config import SECRET_KEY
+
+logger = logging.getLogger(__name__)
 import psycopg2.extras
 from psycopg2.extras import Json
 from random import sample, randint
@@ -68,19 +71,17 @@ app.register_blueprint(auth)
 # Helper function to get player ID from JWT
 def get_player_id():
     auth_header = request.headers.get('Authorization')
-    print("🔑 Raw auth header:", auth_header)
 
     if not auth_header or not auth_header.startswith("Bearer "):
-        print("⚠️ Missing or invalid header format")
+        logger.warning("Missing or invalid Authorization header format")
         return None
 
     token = auth_header.split(" ")[1]
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        print("✅ JWT payload:", payload)
         return payload["id"]
     except Exception as e:
-        print("❌ JWT decode failed:", e)
+        logger.warning("JWT decode failed: %s", e)
         return None
 
 
@@ -138,28 +139,28 @@ def cleanup_bets():
             DELETE FROM bets
             WHERE status = 'posted' AND accepterId IS NULL AND timePosted < %s
         """, (cutoff,))
-        print("🗑️ Deleted unaccepted PvP bets older than 1 week")
+        logger.info("Deleted unaccepted PvP bets older than 1 week")
 
         # 🧼 Delete resolved bets (already submitted by both players)
         cur.execute("""
             DELETE FROM bets
             WHERE status = 'submitted' AND timePosted < %s
         """, (cutoff,))
-        print("🗑️ Deleted submitted bets older than 1 week")
+        logger.info("Deleted submitted bets older than 1 week")
 
         # 🧼 Delete CPU bets after 30s no matter what
         cur.execute("""
             DELETE FROM bets
             WHERE status = 'CPU' AND timePosted < %s
         """, (cutoff,))
-        print("🗑️ Deleted expired CPU bets older than 1 week")
+        logger.info("Deleted expired CPU bets older than 1 week")
 
         conn.commit()
         return jsonify({"message": "Cleanup completed"}), 200
 
     except Exception as e:
         conn.rollback()
-        print("❌ Cleanup failed:", e)
+        logger.error("Cleanup failed: %s", e)
         return jsonify({"error": str(e)}), 500
 
     finally:
@@ -222,7 +223,7 @@ def create_bet():
         return jsonify({"status": "success"}), 201
 
     except Exception as e:
-        print("❌ Bet insert failed:", e)
+        logger.error("Bet insert failed: %s", e)
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -321,7 +322,7 @@ def get_cpu_bets():
 @app.route("/accept_bet/<bet_id>", methods=["POST"])
 def accept_bet(bet_id):
     player_id = get_player_id()
-    print("👤 PvP accept_bet triggered by player_id:", player_id)
+    logger.debug("PvP accept_bet triggered by player_id: %s", player_id)
     if player_id is None:
         return jsonify({"error": "Unauthorized"}), 401
 
@@ -371,7 +372,7 @@ def accept_bet(bet_id):
 
     except Exception as e:
         conn.rollback()
-        print("❌ Accept bet error:", e)
+        logger.error("Accept bet error: %s", e)
         return jsonify({"error": str(e)}), 500
 
     finally:
@@ -535,7 +536,7 @@ def check_stats_match(bet):
             your_outcome == opp_outcome
         )
 
-    print("⚠️ Unknown game type:", game_type)
+    logger.warning("Unknown game type: %s", game_type)
     return False
 
 
@@ -986,7 +987,7 @@ def get_all_bets():
         bets = [dict(zip(colnames, row)) for row in rows]
         return jsonify(bets), 200
     except Exception as e:
-        print("❌ Failed to fetch bets:", e)
+        logger.error("Failed to fetch bets: %s", e)
         return jsonify({"error": str(e)}), 500
     finally:
         cur.close()
@@ -1064,7 +1065,7 @@ def create_cpu_caps_shots_bet():
         return jsonify({"message": "CPU bet created"}), 201
 
     except Exception as e:
-        print("❌ CPU bet creation failed:", e)
+        logger.error("CPU Caps shots bet creation failed: %s", e)
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -1146,7 +1147,7 @@ def create_cpu_pong_shots_bet():
         return jsonify({"message": "CPU bet created"}), 201
 
     except Exception as e:
-        print("❌ CPU Pong bet creation failed:", e)
+        logger.error("CPU Pong shots bet creation failed: %s", e)
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -1185,7 +1186,7 @@ def create_cpu_beerball_shots_bet():
         if not playerA_stats:
             return jsonify({"error": "Missing stats for line subject"}), 400
 
-        print("📊 Line subject stats (Shots Made):", playerA_stats)
+        logger.debug("Line subject stats (Shots Made): %s", playerA_stats)
 
         # Get win_rate + DV from score profile for both teams
         teammate_profiles = [get_player_beerball_score_profile(cur, p, team_size) for p in your_team]
@@ -1194,13 +1195,13 @@ def create_cpu_beerball_shots_bet():
         if not all(teammate_profiles) or not all(opp_profiles):
             return jsonify({"error": "Missing win_rate or DV for one or more players"}), 400
 
-        print("🧠 Teammate score profiles:")
+        logger.debug("Teammate score profiles:")
         for p in teammate_profiles:
-            print(" ", p)
+            logger.debug("  %s", p)
 
-        print("🛡️ Opponent score profiles:")
+        logger.debug("Opponent score profiles:")
         for p in opp_profiles:
-            print(" ", p)
+            logger.debug("  %s", p)
 
         # Calculate win_rate and defensive_value aggregates
         your_win_rate = np.mean([p["win_rate"] for p in teammate_profiles])
@@ -1220,10 +1221,8 @@ def create_cpu_beerball_shots_bet():
             line_type
         )
 
-        print("📈 Aggregates:")
-        print("  Your win rate:", your_win_rate)
-        print("  Opponent win rate:", opp_win_rate)
-        print("  Opponent DV avg:", avg_opp_dv)
+        logger.debug("Aggregates: your_win_rate=%s, opp_win_rate=%s, avg_opp_dv=%s",
+                     your_win_rate, opp_win_rate, avg_opp_dv)
 
         # Insert the bet
         bet_id = str(uuid4())
@@ -1256,7 +1255,7 @@ def create_cpu_beerball_shots_bet():
         return jsonify({"message": "Beerball CPU bet created"}), 201
 
     except Exception as e:
-        print("❌ CPU Beerball bet creation failed:", e)
+        logger.error("CPU Beerball shots bet creation failed: %s", e)
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -1335,7 +1334,7 @@ def create_cpu_beerball_score_bet():
         return jsonify({"message": "Beerball Score CPU bet created"}), 201
 
     except Exception as e:
-        print("❌ CPU Beerball Score bet creation failed:", e)
+        logger.error("CPU Beerball score bet creation failed: %s", e)
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -1422,7 +1421,7 @@ def create_cpu_caps_score_bet():
         return jsonify({"message": "Caps Score CPU bet created"}), 201
 
     except Exception as e:
-        print("❌ CPU Caps Score bet creation failed:", e)
+        logger.error("CPU Caps score bet creation failed: %s", e)
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -1502,7 +1501,7 @@ def create_cpu_pong_score_bet():
         return jsonify({"message": "Pong Score CPU bet created"}), 201
 
     except Exception as e:
-        print("❌ CPU Pong Score bet creation failed:", e)
+        logger.error("CPU Pong score bet creation failed: %s", e)
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 

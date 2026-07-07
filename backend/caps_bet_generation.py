@@ -1,7 +1,10 @@
 # Functions for caps generation cpu bets
+import logging
 from scipy.stats import norm
 import numpy as np
 import random
+
+logger = logging.getLogger(__name__)
 
 def get_caps_shots_players(cur, team_size):
     cur.execute("""
@@ -94,14 +97,14 @@ def get_global_caps_score_strength_average(cur, team_size, recency_weight=0.1):
 
         strength = 0.25 * score_adj + 0.25 * shots + 0.25 * win_rate
         strengths.append(strength)
-        print(f"✔️ Included {name}: {strength:.2f}")
+        logger.debug("Included %s: %.2f", name, strength)
 
     if not strengths:
-        print("⚠️ No players had both Score and Shots data")
+        logger.warning("No players had both Score and Shots data")
         return 1.0
 
     avg = np.mean(strengths)
-    print(f"✅ Global avg Caps strength: {avg:.4f}")
+    logger.debug("Global avg Caps strength: %.4f", avg)
     return avg
 
 def assemble_caps_matchup(players, team_size):
@@ -189,8 +192,7 @@ def generate_biased_caps_shots_line(subject_stats, teammates_stats, opp_team_sta
     base = round(line)
     final_line = base - 0.5 if line_type == "Over" else base + 0.5
 
-    # Debug
-    print(f"Expected: {expected:.2f}, Line type: {line_type}, Final line: {final_line:.2f}")
+    logger.debug("Expected: %.2f, Line type: %s, Final line: %.2f", expected, line_type, final_line)
 
     return final_line
 
@@ -240,13 +242,13 @@ def generate_biased_caps_score_line(
     base = round(line)
     final_line = base - 0.5 if line_type == "Over" else base + 0.5
 
-    # Debug
-    print("🧠 CAPS Score Biasing")
-    print("  Your team strengths:", your_strengths)
-    print("  Opp team strengths:", opp_strengths)
-    print("  Your team strength (harmonic):", your_team_strength)
-    print("  Opp team strength (harmonic):", opp_team_strength)
-    print("  Expected margin:", expected_margin)
-    print(f"  Final line: {final_line:.2f} ({line_type})")
+    logger.debug(
+        "Caps Score biasing: your_strengths=%s, opp_strengths=%s, "
+        "your_team_strength(harmonic)=%s, opp_team_strength(harmonic)=%s, "
+        "expected_margin=%s, final_line=%.2f (%s)",
+        your_strengths, opp_strengths,
+        your_team_strength, opp_team_strength,
+        expected_margin, final_line, line_type,
+    )
 
     return final_line, line_type

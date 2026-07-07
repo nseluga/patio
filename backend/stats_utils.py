@@ -1,5 +1,8 @@
 # Stats utility functions for handling player statistics tracking
+import logging
 import math
+
+logger = logging.getLogger(__name__)
 
 def insert_stat(cur, bet_id, subject_id, game_played, game_type, stat_name, stat_value, team=None, team_size=None, winning_team=None):
         cur.execute("""
@@ -17,7 +20,7 @@ def calculate_defensive_value_for_game(cur, bet_id, team, team_players, opponent
     id_to_name = {str(row["id"]): row["name"] for row in cur.fetchall()}
     opponent_names = [id_to_name.get(pid) for pid in opponent_players]
 
-    print(f"\n🔍 Opponent Player IDs → Names: {opponent_players} → {opponent_names}")
+    logger.debug("Opponent Player IDs -> Names: %s -> %s", opponent_players, opponent_names)
 
     cur.execute(f"""
         SELECT player_name, mean
@@ -29,14 +32,14 @@ def calculate_defensive_value_for_game(cur, bet_id, team, team_players, opponent
     """, opponent_names)
     shot_map = {r["player_name"]: r["mean"] for r in cur.fetchall()}
 
-    print(f"📊 Opponent Shots Map: {shot_map}")
+    logger.debug("Opponent Shots Map: %s", shot_map)
 
     opponent_estimated_shots = sum(shot_map.get(name, 0) for name in opponent_names)
-    print(f"📈 Opponent estimated shots: {opponent_estimated_shots}")
-    print(f"📉 Opponent actual score: {opponent_score}")
+    logger.debug("Opponent estimated shots: %s", opponent_estimated_shots)
+    logger.debug("Opponent actual score: %s", opponent_score)
 
     if opponent_estimated_shots == 0:
-        print("⚠️ No shot data found for opponents! DV set to 0.0")
+        logger.warning("No shot data found for opponents; DV set to 0.0")
         dv = 0.0
     else:
         MAX_TPP = 15
@@ -49,7 +52,7 @@ def calculate_defensive_value_for_game(cur, bet_id, team, team_players, opponent
 
         # Clamp and shift
         dv = max(0.0, min(1.0, dv))
-        print(f"🛡️ Team {team} vs {opponent_team} → DV: {dv:.3f}")
+        logger.debug("Team %s vs %s -> DV: %.3f", team, opponent_team, dv)
 
     return {int(player_id): dv for player_id in team_players}
 
@@ -155,12 +158,12 @@ def update_player_aggregate(cur, player_name, game_played, game_type, stat_name,
             """, (subject_id,))
             row = cur.fetchone()
             if not row:
-                print("❌ No team or bet_id found for player — exiting DV")
+                logger.warning("No team or bet_id found for player; exiting DV")
                 return
             if row:
                 team = row["team"]
                 bet_id = row["bet_id"]
-                print(f"✅ Using team: {team}, bet_id: {bet_id}")
+                logger.debug("Using team: %s, bet_id: %s", team, bet_id)
                 cur.execute("""
                     SELECT DISTINCT ON (subject_player) subject_player, team, stat_value
                     FROM bettable_player_stats
@@ -169,26 +172,26 @@ def update_player_aggregate(cur, player_name, game_played, game_type, stat_name,
                 """, (bet_id,))
                 results = cur.fetchall()
 
-                print(f"📊 Full bet stats: {results}")
+                logger.debug("Full bet stats: %s", results)
                 team_players = [r["subject_player"] for r in results if r["team"] == team]
                 opponent_players = [r["subject_player"] for r in results if r["team"] != team]
                 opponent_team = [r["team"] for r in results if r["team"] != team][0]
 
-                print(f"🧩 Team players: {team_players}")
-                print(f"🛡️ Opponent players: {opponent_players}")
-                print(f"📌 Opponent teams found: {opponent_team}")
+                logger.debug("Team players: %s", team_players)
+                logger.debug("Opponent players: %s", opponent_players)
+                logger.debug("Opponent teams found: %s", opponent_team)
                 opponent_score = max([r["stat_value"] for r in results if r["team"] != team])
 
-                print(f"\n🔧 Computing DV for {player_name} (Team {team}) vs Team {opponent_team}")
-                print(f"🧩 Team players: {team_players}, Opponents: {opponent_players}, Opponent Score: {opponent_score}")
+                logger.debug("Computing DV for %s (Team %s) vs Team %s", player_name, team, opponent_team)
+                logger.debug("Team players: %s, Opponents: %s, Opponent Score: %s", team_players, opponent_players, opponent_score)
 
                 dvs = calculate_defensive_value_for_game(
                     cur, bet_id, team, team_players, opponent_team, opponent_players, opponent_score
                 )
 
-                print(f"📦 All DVs for this game: {dvs}")
-                print(f"🔍 player_name: {player_name}, subject_id: {subject_id}")
-                print(f"🧬 Looking for subject_id {subject_id} in DV keys: {list(dvs.keys())}")
+                logger.debug("All DVs for this game: %s", dvs)
+                logger.debug("player_name: %s, subject_id: %s", player_name, subject_id)
+                logger.debug("Looking for subject_id %s in DV keys: %s", subject_id, list(dvs.keys()))
                 defensive_value = dvs.get(subject_id)
 
                 # Compute new rolling average DV
@@ -196,9 +199,9 @@ def update_player_aggregate(cur, player_name, game_played, game_type, stat_name,
                 delta_dv = (defensive_value or 0.0) - old_dv
                 new_dv = old_dv + delta_dv / new_n
 
-                print(f"🛠️ Final defensive_value to update: {defensive_value} for {player_name}")
+                logger.debug("Final defensive_value to update: %s for %s", defensive_value, player_name)
             else:
-                print(f"⚠️ No matching row for player {player_name} to calculate DV")
+                logger.warning("No matching row for player %s to calculate DV", player_name)
 
         cur.execute("""
             UPDATE player_stat_aggregates

@@ -1,10 +1,13 @@
 from flask import Blueprint, request, jsonify
 from psycopg2.extras import RealDictCursor
 import jwt
+import logging
 from backend.db import get_db
 from backend.config import SECRET_KEY
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime, timedelta, timezone
+
+logger = logging.getLogger(__name__)
 
 # Create a Flask blueprint for authentication routes
 auth = Blueprint('auth', __name__)
@@ -79,7 +82,7 @@ def login():
             WHERE id = %s
         """, (caps_balance, now, user_id))
         caps_refreshed = True
-        print(f"✅ Refreshed caps for {username} on login")
+        logger.info("Refreshed caps for %s on login", username)
 
     conn.commit()
     cur.close()
