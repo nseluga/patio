@@ -1,5 +1,8 @@
 # Import the get_db function to establish a database connection
+import logging
 from backend.db import get_db
+
+logger = logging.getLogger(__name__)
 
 
 # Create the players table
@@ -20,7 +23,7 @@ def create_players_table():
     conn.commit()
     cur.close()
     conn.close()
-    print("✅ players table created!")
+    logger.info("players table created")
 
 # Create the bets table
 def create_bets_table():
@@ -65,7 +68,7 @@ def create_bets_table():
     conn.commit()
     cur.close()
     conn.close()
-    print("✅ bets table created!")
+    logger.info("bets table created")
 
 # Run when script is executed directly
 if __name__ == "__main__":

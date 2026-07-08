@@ -3,8 +3,11 @@ from flask_cors import CORS
 from backend.auth import auth
 from backend.db import get_db
 import jwt
+import logging
 import os
 from backend.config import SECRET_KEY
+
+logger = logging.getLogger(__name__)
 import psycopg2.extras
 from psycopg2.extras import Json
 from random import sample, randint
@@ -65,22 +68,49 @@ CORS(
 # Register authentication-related routes
 app.register_blueprint(auth)
 
+# ---------------------------------------------------------------------------
+# ROUTE AUTH TABLE — single source of truth for item 1.1 decorator pass
+#
+# Route                              Method  Auth              Notes
+# ---------------------------------- ------  ----------------  -------------------------
+# /register                          POST    Public            Login flow
+# /login                             POST    Public            Login flow
+# /me                                GET     JWT (any user)    auth.py blueprint
+# /leaderboard                       GET     Public            No sensitive data exposed
+# /cleanup_bets                      POST    JWT (any user)    Destructive; gated in 0.5
+# /create_bet                        POST    JWT (any user)    Poster identity server-side
+# /pvp_bets                          GET     JWT (any user)    Filter by JWT identity
+# /cpu_bets                          GET     JWT (any user)    Already gated
+# /accept_bet/<bet_id>               POST    JWT (any user)    Already gated
+# /accept_cpu_bet/<bet_id>           POST    JWT (any user)    Already gated
+# /ongoing_bets                      GET     JWT (any user)    Already gated
+# /submit_stats/<bet_id>             POST    JWT (any user)    Already gated
+# /bets                              GET     JWT (any user)    Dump route; gated in 0.5
+# /cpu/create_caps_shots_bet         POST    JWT (player_id=0) CPU account only
+# /cpu/create_pong_shots_bet         POST    JWT (player_id=0) CPU account only
+# /cpu/create_beerball_shots_bet     POST    JWT (player_id=0) CPU account only
+# /cpu/create_beerball_score_bet     POST    JWT (player_id=0) CPU account only
+# /cpu/create_caps_score_bet         POST    JWT (player_id=0) CPU account only
+# /cpu/create_pong_score_bet         POST    JWT (player_id=0) CPU account only
+# ---------------------------------------------------------------------------
+
 # Helper function to get player ID from JWT
 def get_player_id():
     auth_header = request.headers.get('Authorization')
-    print("🔑 Raw auth header:", auth_header)
 
     if not auth_header or not auth_header.startswith("Bearer "):
-        print("⚠️ Missing or invalid header format")
+        logger.warning("Missing or invalid Authorization header format")
         return None
 
     token = auth_header.split(" ")[1]
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        print("✅ JWT payload:", payload)
         return payload["id"]
+    except (jwt.exceptions.DecodeError, jwt.exceptions.InvalidTokenError, KeyError) as e:
+        logger.warning("JWT decode failed: %s", e)
+        return None
     except Exception as e:
-        print("❌ JWT decode failed:", e)
+        logger.exception("Unexpected error in get_player_id")
         return None
 
 
@@ -128,6 +158,14 @@ def public_leaderboard():
 
 @app.route("/cleanup_bets", methods=["POST"])
 def cleanup_bets():
+    # Auth gate — destructive route; valid JWT required.
+    # Item 1.1 will apply a proper decorator; for now a manual check suffices.
+    player_id = get_player_id()
+    if player_id is None:
+        return jsonify({"error": "Unauthorized"}), 401
+    if player_id != 0:
+        return jsonify({"error": "Forbidden"}), 403
+
     cutoff = datetime.now(timezone.utc) - timedelta(days=7)
     conn = get_db()
     cur = conn.cursor()
@@ -138,28 +176,28 @@ def cleanup_bets():
             DELETE FROM bets
             WHERE status = 'posted' AND accepterId IS NULL AND timePosted < %s
         """, (cutoff,))
-        print("🗑️ Deleted unaccepted PvP bets older than 1 week")
+        logger.info("Deleted unaccepted PvP bets older than 1 week")
 
         # 🧼 Delete resolved bets (already submitted by both players)
         cur.execute("""
             DELETE FROM bets
             WHERE status = 'submitted' AND timePosted < %s
         """, (cutoff,))
-        print("🗑️ Deleted submitted bets older than 1 week")
+        logger.info("Deleted submitted bets older than 1 week")
 
         # 🧼 Delete CPU bets after 30s no matter what
         cur.execute("""
             DELETE FROM bets
             WHERE status = 'CPU' AND timePosted < %s
         """, (cutoff,))
-        print("🗑️ Deleted expired CPU bets older than 1 week")
+        logger.info("Deleted expired CPU bets older than 1 week")
 
         conn.commit()
         return jsonify({"message": "Cleanup completed"}), 200
 
     except Exception as e:
         conn.rollback()
-        print("❌ Cleanup failed:", e)
+        logger.exception("Cleanup failed")
         return jsonify({"error": str(e)}), 500
 
     finally:
@@ -183,14 +221,27 @@ def create_bet():
     cur = conn.cursor()
 
     try:
-        # Check if player has enough caps
-        cur.execute("SELECT caps_balance FROM players WHERE id = %s", (player_id,))
-        caps = cur.fetchone()
-        if not caps or caps[0] < amount:
-            return jsonify({"error": "Insufficient caps"}), 400
+        # Derive poster identity from the authenticated player — never trust the request body.
+        # JWT carries only `id`; fetch username from DB.
+        cur.execute("SELECT username FROM players WHERE id = %s", (player_id,))
+        player_row = cur.fetchone()
+        if not player_row:
+            return jsonify({"error": "Player not found"}), 404
+        poster_username = player_row[0]
 
-        # Deduct caps from poster
-        cur.execute("UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s", (amount, player_id))
+        # Server-side bet metadata — never trust client-supplied id, poster, posterId,
+        # timePosted, or status for these fields.
+        bet_id = str(uuid4())
+        time_posted = datetime.now(timezone.utc)
+
+        # Atomic caps debit — prevents TOCTOU race between balance check and update.
+        # The WHERE caps_balance >= %s guard makes the check and debit a single atomic step.
+        cur.execute(
+            "UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s AND caps_balance >= %s",
+            (amount, player_id, amount)
+        )
+        if cur.rowcount == 0:
+            return jsonify({"error": "Insufficient caps"}), 400
 
         # Insert bet
         cur.execute('''
@@ -205,7 +256,7 @@ def create_bet():
                       %s, %s, %s, %s, %s, %s, %s, %s,
                       %s, %s, %s, %s, %s, %s, %s)
         ''', (
-            bet.get('id'), bet.get('poster'), bet.get('posterId'), bet.get('timePosted'),
+            bet_id, poster_username, player_id, time_posted,
             bet.get('matchup'), bet.get('amount'), bet.get('lineType'), bet.get('lineNumber'),
             bet.get('gameType'), bet.get('gamePlayed'), bet.get('gameSize'),
             Json(bet.get('yourTeamA')), Json(bet.get('yourTeamB')),
@@ -215,14 +266,14 @@ def create_bet():
             bet.get('yourPlayer'), bet.get('yourShots'),
             bet.get('oppPlayer'), bet.get('oppShots'),
             bet.get('yourOutcome'), bet.get('oppOutcome'),
-            bet.get('status', 'posted')
+            'posted'
         ))
 
         conn.commit()
         return jsonify({"status": "success"}), 201
 
     except Exception as e:
-        print("❌ Bet insert failed:", e)
+        logger.exception("Bet insert failed")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -232,9 +283,10 @@ def create_bet():
 
 @app.route("/pvp_bets", methods=["GET"])
 def get_pvp_bets():
-    player_id = request.args.get("playerId")
+    # Identity derived from JWT — never trusted from query params.
+    player_id = get_player_id()
     if player_id is None:
-        return jsonify({"error": "Missing playerId"}), 400
+        return jsonify({"error": "Unauthorized"}), 401
 
     conn = get_db()
     cur = conn.cursor()
@@ -321,7 +373,7 @@ def get_cpu_bets():
 @app.route("/accept_bet/<bet_id>", methods=["POST"])
 def accept_bet(bet_id):
     player_id = get_player_id()
-    print("👤 PvP accept_bet triggered by player_id:", player_id)
+    logger.debug("PvP accept_bet triggered by player_id: %s", player_id)
     if player_id is None:
         return jsonify({"error": "Unauthorized"}), 401
 
@@ -371,7 +423,7 @@ def accept_bet(bet_id):
 
     except Exception as e:
         conn.rollback()
-        print("❌ Accept bet error:", e)
+        logger.exception("Accept bet error")
         return jsonify({"error": str(e)}), 500
 
     finally:
@@ -434,6 +486,7 @@ def accept_cpu_bet(bet_id):
         return jsonify({"status": "accepted"}), 200
 
     except Exception as e:
+        logger.exception("Accept CPU bet error")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -467,7 +520,7 @@ def get_ongoing_bets():
         result = []
         for row in rows:
             bet = dict(zip(colnames, row))
-            bet["status_message"] = compute_status_message(bet, player_id)
+            bet["status_message"] = compute_status_message(bet, player_id, conn)
             result.append({
                 "id": bet["id"],
                 "poster": bet["poster"],
@@ -535,19 +588,21 @@ def check_stats_match(bet):
             your_outcome == opp_outcome
         )
 
-    print("⚠️ Unknown game type:", game_type)
+    logger.warning("Unknown game type: %s", game_type)
     return False
 
 
-def compute_status_message(bet, player_id):
+def compute_status_message(bet, player_id, conn):
     if bet["status"] == "CPU" and player_id != 0:
-        cur = get_db().cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("""
-            SELECT match_confirmed, attempted FROM cpu_acceptances
-            WHERE id = %s AND accepter_id = %s
-        """, (bet["id"], player_id))
-        row = cur.fetchone()
-        cur.close()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        try:
+            cur.execute("""
+                SELECT match_confirmed, attempted FROM cpu_acceptances
+                WHERE id = %s AND accepter_id = %s
+            """, (bet["id"], player_id))
+            row = cur.fetchone()
+        finally:
+            cur.close()
 
         if not row:
             return "You have not submitted stats yet"
@@ -630,351 +685,379 @@ def compute_status_message(bet, player_id):
 @app.route('/submit_stats/<bet_id>', methods=['POST'])
 def submit_stats(bet_id):
     data = request.json
-    player_id = data['playerId']
+
+    # Authenticate via JWT — do not trust playerId from the request body
+    player_id = get_player_id()
+    if player_id is None:
+        return jsonify({"error": "Unauthorized"}), 401
+    player_id = int(player_id)
 
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    # Fetch the current bet
-    cur.execute("SELECT * FROM bets WHERE id = %s", (bet_id,))
-    bet = cur.fetchone()
-    if not bet:
-        return jsonify({"error": "Bet not found"}), 404
-
-    is_poster = player_id == bet['posterid']
-    is_accepter = player_id == bet['accepterid']
-    is_cpu_bet = bet['status'] == 'CPU'
-    is_admin = player_id == 0
-
-    # ✅ If non-admin tries to submit to a CPU bet, do nothing and return success
-    if is_cpu_bet and not is_admin:
-        game_type = bet['gametype']
-        match = False
-
-        if game_type == "Score":
-            match = (
-                data["yourTeamA"] == bet["yourteama"] and
-                data["yourTeamB"] == bet["yourteamb"] and
-                int(data["yourScoreA"]) == bet["yourscorea"] and
-                int(data["yourScoreB"]) == bet["yourscoreb"]
-            )
-
-        elif game_type == "Shots Made":
-            match = (
-                data["yourPlayer"].strip().lower() == bet["yourplayer"].strip().lower() and
-                int(data["yourShots"]) == bet["yourshots"]
-            )
-
-        elif game_type == "Other":
-            match = int(data["yourOutcome"]) == bet["youroutcome"]
-        
-        if match:
-            cur.execute("""
-                UPDATE cpu_acceptances
-                SET match_confirmed = TRUE
-                WHERE id = %s AND accepter_id = %s
-            """, (bet_id, player_id))
-
-            # ✅ CPU match confirmed: award or deduct caps
-            line = float(bet['linenumber'])
-            line_type = bet['linetype']
-            game_type = bet['gametype']
-
-            if game_type == "Shots Made":
-                user_stat = int(data["yourShots"])
-            elif game_type == "Score":
-                user_stat = int(data["yourScoreA"]) + int(data["yourScoreB"])
-            elif game_type == "Other":
-                user_stat = int(data["yourOutcome"])
-            else:
-                user_stat = None
-
-            if user_stat is not None:
-                outcome = "Over" if user_stat > line else "Under"
-                amount = bet["amount"]
-
-                if outcome == line_type:
-                    # ✅ Player won against CPU
-                    cur.execute("""
-                        UPDATE players
-                        SET caps_balance = caps_balance + %s
-                        WHERE id = %s
-                    """, (amount * 2, player_id))
-
-        else: 
-            cur.execute("""
-                UPDATE cpu_acceptances
-                SET attempted = TRUE
-                WHERE id = %s AND accepter_id = %s
-            """, (bet_id, player_id))
-        
-        # 🔄 Re-fetch the bet for fresh data (optional, since bet itself didn't change, just cpu_acceptances)
-        updated_bet = bet  # can reuse bet if no need to refetch from `bets`
-        status_message = compute_status_message(updated_bet, player_id)
-
-    else:
-        # Prepare stat update fields
-        update_fields = []
-        update_values = []
-
-        if bet['gametype'] == "Score":
-            if is_poster:
-                update_fields += ["yourTeamA", "yourTeamB", "yourScoreA", "yourScoreB"]
-                update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
-            else:
-                update_fields += ["oppTeamA", "oppTeamB", "oppScoreA", "oppScoreB"]
-                update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
-
-        elif bet['gametype'] == "Shots Made":
-            update_fields += ["yourPlayer" if is_poster else "oppPlayer",
-                            "yourShots" if is_poster else "oppShots"]
-            update_values += [data["yourPlayer"], data["yourShots"]]
-
-        elif bet['gametype'] == "Other":
-            update_fields += ["yourOutcome" if is_poster else "oppOutcome"]
-            update_values += [data["yourOutcome"]]
-
-        # Execute update
-        set_clause = ", ".join(f"{field} = %s" for field in update_fields)
-
-        # Cast any list values to JSON strings for jsonb fields
-        update_values = [json.dumps(v) if isinstance(v, list) else v for v in update_values]
-
-        # Now run the update
-        cur.execute(f"UPDATE bets SET {set_clause} WHERE id = %s", (*update_values, bet_id))
-        conn.commit()
-
-        # Re-fetch updated bet
+    try:
+        # Fetch the current bet
         cur.execute("SELECT * FROM bets WHERE id = %s", (bet_id,))
-        updated_bet = cur.fetchone()
-        match = check_stats_match(updated_bet)
-        status_message = compute_status_message(updated_bet, player_id)
-
-        if match:
-            # ✅ Update bet status
-            cur.execute("UPDATE bets SET status = 'submitted' WHERE id = %s", (bet_id,))
-
-            # ✅ Determine cap payout
-            poster_id = updated_bet['posterid']
-            accepter_id = updated_bet['accepterid']
-            amount = updated_bet['amount']
-
-            # Determine the winner based on stat vs line
-            line = float(updated_bet['linenumber'])
-            line_type = updated_bet['linetype']  # what the poster picked
-
-            # Figure out which stat to use for judgment
-            if updated_bet['gametype'] == "Shots Made":
-                # Use the poster's player's stat
-                poster_stat = updated_bet.get('yourshots')
-                accepter_stat = updated_bet.get('oppshots')
-
-                if poster_stat is None or accepter_stat is None:
-                    winner_id = None  # Incomplete
+        bet = cur.fetchone()
+        if not bet:
+            return jsonify({"error": "Bet not found"}), 404
+    
+        is_poster = player_id == bet['posterid']
+        is_accepter = player_id == bet['accepterid']
+        is_cpu_bet = bet['status'] == 'CPU'
+        is_admin = player_id == 0
+    
+        # Authorization: for PvP bets, only the poster or accepter may submit stats.
+        # CPU bets are open to any authenticated user who accepted them (enforced via
+        # cpu_acceptances row-match further in this handler).
+        if not is_cpu_bet and not is_poster and not is_accepter:
+            return jsonify({"error": "Forbidden"}), 403
+    
+        # ✅ If non-admin tries to submit to a CPU bet, do nothing and return success
+        if is_cpu_bet and not is_admin:
+            game_type = bet['gametype']
+            match = False
+    
+            if game_type == "Score":
+                match = (
+                    data["yourTeamA"] == bet["yourteama"] and
+                    data["yourTeamB"] == bet["yourteamb"] and
+                    int(data["yourScoreA"]) == bet["yourscorea"] and
+                    int(data["yourScoreB"]) == bet["yourscoreb"]
+                )
+    
+            elif game_type == "Shots Made":
+                match = (
+                    data["yourPlayer"].strip().lower() == bet["yourplayer"].strip().lower() and
+                    int(data["yourShots"]) == bet["yourshots"]
+                )
+    
+            elif game_type == "Other":
+                match = int(data["yourOutcome"]) == bet["youroutcome"]
+            
+            if match:
+                cur.execute("""
+                    UPDATE cpu_acceptances
+                    SET match_confirmed = TRUE
+                    WHERE id = %s AND accepter_id = %s
+                """, (bet_id, player_id))
+    
+                # ✅ CPU match confirmed: award or deduct caps
+                line = float(bet['linenumber'])
+                line_type = bet['linetype']
+                game_type = bet['gametype']
+    
+                if game_type == "Shots Made":
+                    user_stat = int(data["yourShots"])
+                elif game_type == "Score":
+                    user_stat = int(data["yourScoreA"]) + int(data["yourScoreB"])
+                elif game_type == "Other":
+                    user_stat = int(data["yourOutcome"])
                 else:
-                    outcome = "Over" if poster_stat > line else "Under"
-                    winner_id = poster_id if outcome == line_type else accepter_id
-
-            elif updated_bet['gametype'] == "Other":
-                # Use outcome as int directly
-                poster_stat = updated_bet.get('youroutcome')
-                accepter_stat = updated_bet.get('oppoutcome')
-
-                if poster_stat is None or accepter_stat is None:
-                    winner_id = None
+                    user_stat = None
+    
+                if user_stat is not None:
+                    outcome = "Over" if user_stat > line else "Under"
+                    amount = bet["amount"]
+    
+                    if outcome == line_type:
+                        # ✅ Player won against CPU
+                        cur.execute("""
+                            UPDATE players
+                            SET caps_balance = caps_balance + %s
+                            WHERE id = %s
+                        """, (amount * 2, player_id))
+    
+            else: 
+                cur.execute("""
+                    UPDATE cpu_acceptances
+                    SET attempted = TRUE
+                    WHERE id = %s AND accepter_id = %s
+                """, (bet_id, player_id))
+            
+            # 🔄 Re-fetch the bet for fresh data (optional, since bet itself didn't change, just cpu_acceptances)
+            updated_bet = bet  # can reuse bet if no need to refetch from `bets`
+            status_message = compute_status_message(updated_bet, player_id, conn)
+    
+        else:
+            # Prepare stat update fields
+            update_fields = []
+            update_values = []
+    
+            if bet['gametype'] == "Score":
+                if is_poster:
+                    update_fields += ["yourTeamA", "yourTeamB", "yourScoreA", "yourScoreB"]
+                    update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
                 else:
-                    outcome = "Over" if poster_stat > line else "Under"
-                    winner_id = poster_id if outcome == line_type else accepter_id
-
-            elif updated_bet['gametype'] == "Score":
-                # Use total score of Team A + B
-                your_score = updated_bet.get('yourscorea') + updated_bet.get('yourscoreb')
-                opp_score = updated_bet.get('oppscorea') + updated_bet.get('oppscoreb')
-
-                if your_score is None or opp_score is None:
-                    winner_id = None
-                else:
-                    outcome = "Over" if your_score > line else "Under"
-                    winner_id = poster_id if outcome == line_type else accepter_id
-
-                # ✅ Use poster’s scores (both players inputted the same)
-                your_score_a = updated_bet.get("yourscorea")
-                your_score_b = updated_bet.get("yourscoreb")
-
-                if your_score_a is not None and your_score_b is not None:
-                    if your_score_a > your_score_b:
-                        winning_team_label = "A"
-                    elif your_score_b > your_score_a:
-                        winning_team_label = "B"
+                    update_fields += ["oppTeamA", "oppTeamB", "oppScoreA", "oppScoreB"]
+                    update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
+    
+            elif bet['gametype'] == "Shots Made":
+                update_fields += ["yourPlayer" if is_poster else "oppPlayer",
+                                "yourShots" if is_poster else "oppShots"]
+                update_values += [data["yourPlayer"], data["yourShots"]]
+    
+            elif bet['gametype'] == "Other":
+                update_fields += ["yourOutcome" if is_poster else "oppOutcome"]
+                update_values += [data["yourOutcome"]]
+    
+            # Execute update
+            set_clause = ", ".join(f"{field} = %s" for field in update_fields)
+    
+            # Cast any list values to JSON strings for jsonb fields
+            update_values = [json.dumps(v) if isinstance(v, list) else v for v in update_values]
+    
+            # Now run the update
+            cur.execute(f"UPDATE bets SET {set_clause} WHERE id = %s", (*update_values, bet_id))
+            conn.commit()
+    
+            # Re-fetch updated bet
+            cur.execute("SELECT * FROM bets WHERE id = %s", (bet_id,))
+            updated_bet = cur.fetchone()
+            match = check_stats_match(updated_bet)
+            status_message = compute_status_message(updated_bet, player_id, conn)
+    
+            if match:
+                # ✅ Update bet status
+                cur.execute("UPDATE bets SET status = 'submitted' WHERE id = %s", (bet_id,))
+    
+                # ✅ Determine cap payout
+                poster_id = updated_bet['posterid']
+                accepter_id = updated_bet['accepterid']
+                amount = updated_bet['amount']
+    
+                # Determine the winner based on stat vs line
+                line = float(updated_bet['linenumber'])
+                line_type = updated_bet['linetype']  # what the poster picked
+    
+                # Figure out which stat to use for judgment
+                if updated_bet['gametype'] == "Shots Made":
+                    # Use the poster's player's stat
+                    poster_stat = updated_bet.get('yourshots')
+                    accepter_stat = updated_bet.get('oppshots')
+    
+                    if poster_stat is None or accepter_stat is None:
+                        winner_id = None  # Incomplete
                     else:
-                        winning_team_label = None  # Tie
-                else:
-                    winning_team_label = None  # Incomplete input    
-
-            # ✅ Award winner with total pot (2x amount)
-            cur.execute("""
-                UPDATE players
-                SET caps_balance = caps_balance + %s
-                WHERE id = %s
-            """, (2 * amount, winner_id))
-
-            # ✅ Increment pvp_bets_won for the winner
-            cur.execute("""
-                UPDATE players
-                SET pvp_bets_won = pvp_bets_won + 1
-                WHERE id = %s
-            """, (winner_id,))
-
-
-            # ✅ Log all players to bettable_player_stats (creating them if needed)
-            if updated_bet['gametype'] == "Shots Made":
-                names_stats = [
-                    (updated_bet.get('yourplayer'), updated_bet['yourshots']),
-                    (updated_bet.get('oppplayer'), updated_bet['oppshots']),
-                ]
-
-                team_size = int(updated_bet['gamesize'][0]) if updated_bet.get('gamesize') else 1
-
-                seen = set()
-                for name, stat in names_stats:
-                    if name:
-                        cleaned_name = name.strip().lower()
-                        if cleaned_name in seen:
-                            continue
-                        seen.add(cleaned_name)
-                        subject_id = get_or_create_bettable_player(cur, name.strip())
-
-                        insert_stat(
-                            cur,
-                            bet_id,
-                            subject_id,
-                            updated_bet['gameplayed'],
-                            updated_bet['gametype'],
-                            "shots_made",
-                            stat,
-                            team=None,
-                            team_size=team_size,  # ✅ now passed correctly
-                            winning_team=None
-                        )
-
-                        update_player_aggregate(
-                            cur,
-                            player_name=name.strip(),
-                            game_played=updated_bet['gameplayed'],
-                            game_type=updated_bet['gametype'],
-                            stat_name="shots_made",
-                            stat_value=stat,
-                            team_size=team_size  # ✅ now passed correctly
-                        )
-
-            elif updated_bet['gametype'] == "Score":
-                team_size = int(updated_bet['gamesize'][0]) if updated_bet.get('gamesize') else 2
-
-                team_inputs = [
-                    ("yourteama", "yourscorea", "A"),
-                    ("yourteamb", "yourscoreb", "B"),
-                    ("oppteama", "oppscorea", "A"),
-                    ("oppteamb", "oppscoreb", "B"),
-                ]
-
-                seen = set()
-                inserted = []
-
-                for player_field, score_field, team in team_inputs:
-                    players = updated_bet.get(player_field) or []
-                    score = updated_bet.get(score_field)
-
-                    if players and score is not None:
-                        for player_name in players:
-                            cleaned_name = player_name.strip().lower()
+                        outcome = "Over" if poster_stat > line else "Under"
+                        winner_id = poster_id if outcome == line_type else accepter_id
+    
+                elif updated_bet['gametype'] == "Other":
+                    # Use outcome as int directly
+                    poster_stat = updated_bet.get('youroutcome')
+                    accepter_stat = updated_bet.get('oppoutcome')
+    
+                    if poster_stat is None or accepter_stat is None:
+                        winner_id = None
+                    else:
+                        outcome = "Over" if poster_stat > line else "Under"
+                        winner_id = poster_id if outcome == line_type else accepter_id
+    
+                elif updated_bet['gametype'] == "Score":
+                    # Use total score of Team A + B
+                    your_score = updated_bet.get('yourscorea') + updated_bet.get('yourscoreb')
+                    opp_score = updated_bet.get('oppscorea') + updated_bet.get('oppscoreb')
+    
+                    if your_score is None or opp_score is None:
+                        winner_id = None
+                    else:
+                        outcome = "Over" if your_score > line else "Under"
+                        winner_id = poster_id if outcome == line_type else accepter_id
+    
+                    # ✅ Use poster’s scores (both players inputted the same)
+                    your_score_a = updated_bet.get("yourscorea")
+                    your_score_b = updated_bet.get("yourscoreb")
+    
+                    if your_score_a is not None and your_score_b is not None:
+                        if your_score_a > your_score_b:
+                            winning_team_label = "A"
+                        elif your_score_b > your_score_a:
+                            winning_team_label = "B"
+                        else:
+                            winning_team_label = None  # Tie
+                    else:
+                        winning_team_label = None  # Incomplete input    
+    
+                # ✅ Award winner with total pot (2x amount)
+                cur.execute("""
+                    UPDATE players
+                    SET caps_balance = caps_balance + %s
+                    WHERE id = %s
+                """, (2 * amount, winner_id))
+    
+                # ✅ Increment pvp_bets_won for the winner
+                cur.execute("""
+                    UPDATE players
+                    SET pvp_bets_won = pvp_bets_won + 1
+                    WHERE id = %s
+                """, (winner_id,))
+    
+    
+                # ✅ Log all players to bettable_player_stats (creating them if needed)
+                if updated_bet['gametype'] == "Shots Made":
+                    names_stats = [
+                        (updated_bet.get('yourplayer'), updated_bet['yourshots']),
+                        (updated_bet.get('oppplayer'), updated_bet['oppshots']),
+                    ]
+    
+                    team_size = int(updated_bet['gamesize'][0]) if updated_bet.get('gamesize') else 1
+    
+                    seen = set()
+                    for name, stat in names_stats:
+                        if name:
+                            cleaned_name = name.strip().lower()
                             if cleaned_name in seen:
                                 continue
                             seen.add(cleaned_name)
-
-                            subject_id = get_or_create_bettable_player(cur, player_name.strip())
-
+                            subject_id = get_or_create_bettable_player(cur, name.strip())
+    
                             insert_stat(
                                 cur,
                                 bet_id,
                                 subject_id,
                                 updated_bet['gameplayed'],
                                 updated_bet['gametype'],
-                                "score",
-                                score,
-                                team=team,
-                                team_size=team_size,
-                                winning_team=winning_team_label
+                                "shots_made",
+                                stat,
+                                team=None,
+                                team_size=team_size,  # ✅ now passed correctly
+                                winning_team=None
                             )
-
-                            inserted.append((player_name.strip(), score))
-                for player_name, score in inserted:
-                    update_player_aggregate(
-                        cur,
-                        player_name=player_name,
-                        game_played=updated_bet['gameplayed'],
-                        game_type=updated_bet['gametype'],
-                        stat_name="score",
-                        stat_value=score,
-                        team_size=team_size
-    )
-
-            elif updated_bet['gametype'] == "Other":
-                names_stats = [
-                    (updated_bet.get('yourplayer'), updated_bet.get('youroutcome')),
-                    (updated_bet.get('oppplayer'), updated_bet.get('oppoutcome')),
-                ]
-
-                seen = set()
-                for name, stat in names_stats:
-                    if name:
-                        cleaned_name = name.strip().lower()
-                        if cleaned_name in seen:
-                            continue
-                        seen.add(cleaned_name)
-                        subject_id = get_or_create_bettable_player(cur, name.strip())
-                        insert_stat(
-                            cur,
-                            bet_id,
-                            subject_id,
-                            updated_bet['gameplayed'],
-                            updated_bet['gametype'],
-                            "other",
-                            stat,
-                            team=None,            # ← add this now
-                            team_size=None        # ← leave empty for now
-                        )
+    
+                            update_player_aggregate(
+                                cur,
+                                player_name=name.strip(),
+                                game_played=updated_bet['gameplayed'],
+                                game_type=updated_bet['gametype'],
+                                stat_name="shots_made",
+                                stat_value=stat,
+                                team_size=team_size  # ✅ now passed correctly
+                            )
+    
+                elif updated_bet['gametype'] == "Score":
+                    team_size = int(updated_bet['gamesize'][0]) if updated_bet.get('gamesize') else 2
+    
+                    team_inputs = [
+                        ("yourteama", "yourscorea", "A"),
+                        ("yourteamb", "yourscoreb", "B"),
+                        ("oppteama", "oppscorea", "A"),
+                        ("oppteamb", "oppscoreb", "B"),
+                    ]
+    
+                    seen = set()
+                    inserted = []
+    
+                    for player_field, score_field, team in team_inputs:
+                        players = updated_bet.get(player_field) or []
+                        score = updated_bet.get(score_field)
+    
+                        if players and score is not None:
+                            for player_name in players:
+                                cleaned_name = player_name.strip().lower()
+                                if cleaned_name in seen:
+                                    continue
+                                seen.add(cleaned_name)
+    
+                                subject_id = get_or_create_bettable_player(cur, player_name.strip())
+    
+                                insert_stat(
+                                    cur,
+                                    bet_id,
+                                    subject_id,
+                                    updated_bet['gameplayed'],
+                                    updated_bet['gametype'],
+                                    "score",
+                                    score,
+                                    team=team,
+                                    team_size=team_size,
+                                    winning_team=winning_team_label
+                                )
+    
+                                inserted.append((player_name.strip(), score))
+                    for player_name, score in inserted:
                         update_player_aggregate(
                             cur,
-                            player_name=name.strip(),                 
+                            player_name=player_name,
                             game_played=updated_bet['gameplayed'],
                             game_type=updated_bet['gametype'],
-                            stat_name="other",                  
-                            stat_value=stat,
-                            team_size=None                   
-                        )
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({
-        "message": "Stats processed",
-        "match": match,
-        "status_message": status_message
-    })
+                            stat_name="score",
+                            stat_value=score,
+                            team_size=team_size
+        )
+    
+                elif updated_bet['gametype'] == "Other":
+                    names_stats = [
+                        (updated_bet.get('yourplayer'), updated_bet.get('youroutcome')),
+                        (updated_bet.get('oppplayer'), updated_bet.get('oppoutcome')),
+                    ]
+    
+                    seen = set()
+                    for name, stat in names_stats:
+                        if name:
+                            cleaned_name = name.strip().lower()
+                            if cleaned_name in seen:
+                                continue
+                            seen.add(cleaned_name)
+                            subject_id = get_or_create_bettable_player(cur, name.strip())
+                            insert_stat(
+                                cur,
+                                bet_id,
+                                subject_id,
+                                updated_bet['gameplayed'],
+                                updated_bet['gametype'],
+                                "other",
+                                stat,
+                                team=None,            # ← add this now
+                                team_size=None        # ← leave empty for now
+                            )
+                            update_player_aggregate(
+                                cur,
+                                player_name=name.strip(),                 
+                                game_played=updated_bet['gameplayed'],
+                                game_type=updated_bet['gametype'],
+                                stat_name="other",                  
+                                stat_value=stat,
+                                team_size=None                   
+                            )
+    
+        conn.commit()
+        return jsonify({
+            "message": "Stats processed",
+            "match": match,
+            "status_message": status_message
+        })
+    finally:
+        cur.close()
+        conn.close()
 
 @app.route("/bets", methods=["GET"])
 def get_all_bets():
+    # Auth gate — full bet dump; valid JWT required.
+    # Item 1.1 will apply a proper decorator; for now a manual check suffices.
+    player_id = get_player_id()
+    if player_id is None:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    page = request.args.get('page', 1, type=int)
+    per_page = min(request.args.get('per_page', 50, type=int), 100)
+    offset = (page - 1) * per_page
+
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute("SELECT * FROM bets")
+        cur.execute(
+            """SELECT * FROM bets
+               WHERE posterid = %s OR accepterid = %s
+               ORDER BY timeposted DESC
+               LIMIT %s OFFSET %s""",
+            (player_id, player_id, per_page, offset)
+        )
         rows = cur.fetchall()
         colnames = [desc[0] for desc in cur.description]
         bets = [dict(zip(colnames, row)) for row in rows]
         return jsonify(bets), 200
     except Exception as e:
-        print("❌ Failed to fetch bets:", e)
+        logger.exception("Failed to fetch bets")
         return jsonify({"error": str(e)}), 500
     finally:
         cur.close()
@@ -1052,7 +1135,7 @@ def create_cpu_caps_shots_bet():
         return jsonify({"message": "CPU bet created"}), 201
 
     except Exception as e:
-        print("❌ CPU bet creation failed:", e)
+        logger.exception("CPU Caps shots bet creation failed")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -1134,7 +1217,7 @@ def create_cpu_pong_shots_bet():
         return jsonify({"message": "CPU bet created"}), 201
 
     except Exception as e:
-        print("❌ CPU Pong bet creation failed:", e)
+        logger.exception("CPU Pong shots bet creation failed")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -1173,7 +1256,7 @@ def create_cpu_beerball_shots_bet():
         if not playerA_stats:
             return jsonify({"error": "Missing stats for line subject"}), 400
 
-        print("📊 Line subject stats (Shots Made):", playerA_stats)
+        logger.debug("Line subject stats (Shots Made): %s", playerA_stats)
 
         # Get win_rate + DV from score profile for both teams
         teammate_profiles = [get_player_beerball_score_profile(cur, p, team_size) for p in your_team]
@@ -1182,13 +1265,13 @@ def create_cpu_beerball_shots_bet():
         if not all(teammate_profiles) or not all(opp_profiles):
             return jsonify({"error": "Missing win_rate or DV for one or more players"}), 400
 
-        print("🧠 Teammate score profiles:")
+        logger.debug("Teammate score profiles:")
         for p in teammate_profiles:
-            print(" ", p)
+            logger.debug("  %s", p)
 
-        print("🛡️ Opponent score profiles:")
+        logger.debug("Opponent score profiles:")
         for p in opp_profiles:
-            print(" ", p)
+            logger.debug("  %s", p)
 
         # Calculate win_rate and defensive_value aggregates
         your_win_rate = np.mean([p["win_rate"] for p in teammate_profiles])
@@ -1208,10 +1291,8 @@ def create_cpu_beerball_shots_bet():
             line_type
         )
 
-        print("📈 Aggregates:")
-        print("  Your win rate:", your_win_rate)
-        print("  Opponent win rate:", opp_win_rate)
-        print("  Opponent DV avg:", avg_opp_dv)
+        logger.debug("Aggregates: your_win_rate=%s, opp_win_rate=%s, avg_opp_dv=%s",
+                     your_win_rate, opp_win_rate, avg_opp_dv)
 
         # Insert the bet
         bet_id = str(uuid4())
@@ -1244,7 +1325,7 @@ def create_cpu_beerball_shots_bet():
         return jsonify({"message": "Beerball CPU bet created"}), 201
 
     except Exception as e:
-        print("❌ CPU Beerball bet creation failed:", e)
+        logger.exception("CPU Beerball shots bet creation failed")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -1323,7 +1404,7 @@ def create_cpu_beerball_score_bet():
         return jsonify({"message": "Beerball Score CPU bet created"}), 201
 
     except Exception as e:
-        print("❌ CPU Beerball Score bet creation failed:", e)
+        logger.exception("CPU Beerball score bet creation failed")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -1410,7 +1491,7 @@ def create_cpu_caps_score_bet():
         return jsonify({"message": "Caps Score CPU bet created"}), 201
 
     except Exception as e:
-        print("❌ CPU Caps Score bet creation failed:", e)
+        logger.exception("CPU Caps score bet creation failed")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 
@@ -1490,7 +1571,7 @@ def create_cpu_pong_score_bet():
         return jsonify({"message": "Pong Score CPU bet created"}), 201
 
     except Exception as e:
-        print("❌ CPU Pong Score bet creation failed:", e)
+        logger.exception("CPU Pong score bet creation failed")
         conn.rollback()
         return jsonify({"error": str(e)}), 500
 

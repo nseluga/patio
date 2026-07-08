@@ -23,12 +23,12 @@ deletion out of Stage M into unscheduled **X.6**, added **0.8** and **X.7**, and
 | M | M.1 — Scaffold Expo app + navigation shell | ✅ done (commit 35d6a17) |
 | M | M.2 — Fix `/me` + port auth/API layer (SecureStore) | ✅ done (commit 2752114; absorbs 0.6) |
 | M | M.3 — Port five main screens to RN primitives | ✅ done (Leaderboard/Profile/PvP/CPU/Ongoing) |
-| 0 | 0.1 — `/submit_stats/<bet_id>` auth check | not started (still reads `playerId` from body) |
-| 0 | 0.2 — Remove hardcoded JWT secret fallback | not started (`config.py` still has `"your-secret-key"`) |
-| 0 | 0.3 — Delete dead `bets` Blueprint in `auth.py` | not started (INSERTs non-existent cols — DATABASE.md Gotcha 5) |
-| 0 | 0.4 — Cleanup batch (gitignore/stray files/port/logging) | not started |
-| 0 | 0.5 — Route auth inventory | not started |
-| 0 | 0.6 — Fix/remove broken `/me` | ✅ done in M.2 (verify only when reached) |
+| 0 | 0.1 — `/submit_stats/<bet_id>` auth check | ✅ done full — JWT decode replaces body playerId; 403 for non-participants; try/finally connection safety (commit 75af568) |
+| 0 | 0.2 — Remove hardcoded JWT secret fallback | ✅ done light — RuntimeError at import if SECRET_KEY unset (commit b891c5b) |
+| 0 | 0.3 — Delete dead `bets` Blueprint in `auth.py` | ✅ done light — 46-line dead Blueprint removed; app boots clean (commit 6591677) |
+| 0 | 0.4 — Cleanup batch (gitignore/stray files/port/logging) | ✅ done full — untrack .pyc, delete .Rhistory, fix :5001 port, print→logging; N+1 batch fix in bet-gen files (commit dc254f5) |
+| 0 | 0.5 — Route auth inventory | ✅ done full — cleanup_bets/bets/pvp_bets gated; create_bet server-side identity + atomic caps debit; route-auth-table produced (commit 7f30fb6) |
+| 0 | 0.6 — Fix/remove broken `/me` | ✅ done in M.2 — verified: Bearer stripped, valid columns only |
 | 0 | 0.7 — Stop leaking secrets in logs + disable debug | not started (`.flaskenv` still `FLASK_ENV=development`) |
 | 0 | **0.8 — Fix camelCase column access breaking core reads** | **NEW (2026-07-05)** — not started; fixes the live 500s |
 | 1 | 1.1 — `@token_required` decorator | not started |

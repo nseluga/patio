@@ -28,7 +28,7 @@ function App() {
   useEffect(() => {
     const fetchUserFromBackend = async (token) => {
       try {
-        const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/me`, {
+        const res = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

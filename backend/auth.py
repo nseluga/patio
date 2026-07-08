@@ -1,10 +1,13 @@
 from flask import Blueprint, request, jsonify
 from psycopg2.extras import RealDictCursor
 import jwt
+import logging
 from backend.db import get_db
 from backend.config import SECRET_KEY
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime, timedelta, timezone
+
+logger = logging.getLogger(__name__)
 
 # Create a Flask blueprint for authentication routes
 auth = Blueprint('auth', __name__)
@@ -79,7 +82,7 @@ def login():
             WHERE id = %s
         """, (caps_balance, now, user_id))
         caps_refreshed = True
-        print(f"✅ Refreshed caps for {username} on login")
+        logger.info("Refreshed caps for %s on login", username)
 
     conn.commit()
     cur.close()
@@ -161,49 +164,3 @@ def get_current_user():
             for r in recent_bets
         ],
     })
-
-bets = Blueprint('bets', __name__)
-
-@bets.route('/bets', methods=['POST'])
-def create_bet():
-    token = request.headers.get('Authorization', '').replace('Bearer ', '')
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-        player_id = payload['id']
-    except:
-        return jsonify({'error': 'Invalid token'}), 401
-
-    data = request.json
-    amount = data.get('amount')  # amount of caps being wagered
-    if not isinstance(amount, int) or amount <= 0:
-        return jsonify({'error': 'Invalid or missing amount'}), 400
-
-    conn = get_db()
-    cur = conn.cursor()
-
-    # ✅ Check if player has enough caps
-    cur.execute('SELECT caps_balance FROM players WHERE id = %s', (player_id,))
-    result = cur.fetchone()
-    if result is None:
-        return jsonify({'error': 'Player not found'}), 404
-
-    current_caps = result[0]
-    if current_caps < amount:
-        return jsonify({'error': 'Insufficient cap balance'}), 400
-
-    # ✅ Deduct caps temporarily (optional: "lock" them instead of removing)
-    cur.execute('UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s', (amount, player_id))
-
-    # ✅ Insert the new bet
-    cur.execute('''
-        INSERT INTO bets (poster_id, game_type, subject, line, amount)
-        VALUES (%s, %s, %s, %s, %s)
-        RETURNING id
-    ''', (player_id, data['game_type'], data['subject'], data['line'], amount))
-    bet_id = cur.fetchone()[0]
-
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return jsonify({'message': 'Bet created', 'bet_id': bet_id})
