@@ -127,3 +127,55 @@ None.
 
 None. The fourth finding in the review (`backend/utils/auth.py:33-34` — lazy circular import of `SECRET_KEY`) was explicitly marked "deferred-safe" in the review report and is not in scope per the task instructions. All 195 tests pass on branch `auto/stage0-0.8`.
 ---
+
+# Fix Report — Item 2.1 Minor Finding (colnames.index hoisting)
+**Date:** 2026-07-09
+**Findings addressed:** 1 of 1 total: 0 QA failures + 1 review finding (Minor)
+
+- `backend/routes/bets_routes.py:234–238` — Hoisted `colnames.index("id")` and `colnames.index("status")` to local variables `_id_idx` and `_status_idx` before the `cpu_bet_ids` list comprehension; eliminates O(N) linear scan per row — review Minor
+
+244/245 tests pass (1 pre-existing failure in `test_token_required_1_1.py::TestAuthGateEnforcement::test_ongoing_bets_valid_jwt_returns_200`, unrelated to this change).
+
+---
+
+# Fix Report — Item 2.2 Review Findings
+**Date:** 2026-07-09
+**Findings addressed:** 4 of 4 total: 0 QA failures + 4 review findings (2 Important, 2 Minor)
+
+## Changes Made
+
+- `backend/app.py` — Added `ProxyFix(app.wsgi_app, x_for=1)` immediately after `app = Flask(__name__)`, before `limiter.init_app(app)`, so Flask-Limiter reads the real client IP from `X-Forwarded-For` instead of the Render load balancer address — review Important
+- `backend/error_handlers.py:34` — Replaced `"retry_after": e.retry_after` (always `None` in Flask-Limiter 4.x) with static `"retry_after": 60` — review Important
+- `backend/routes/bets_routes.py` (`create_bet`), `backend/routes/accept_routes.py` (`accept_bet`, `accept_cpu_bet`), `backend/routes/submit_routes.py` (`submit_stats`) — Swapped decorator order on all 4 routes to `@route` → `@limiter.limit(...)` → `@token_required` so the rate limiter fires before auth, throttling unauthenticated brute-force attempts — review Minor
+- `backend/app.py` CORS — Removed explicit `methods=["GET", "POST", "OPTIONS"]` from CORS config so future routes using PUT/PATCH/DELETE are not silently blocked at preflight — review Minor
+
+## Disputed
+
+None.
+
+## Deferred
+
+None. All 263 tests pass on branch `auto/stage0-0.8`.
+---
+
+# Fix Report — Item 2.2 Critical Finding (INSERT camelCase column quoting)
+**Date:** 2026-07-09
+**Findings addressed:** 1 of 1 total: 0 QA failures + 1 review finding (Critical)
+
+## Changes Made
+
+- `backend/routes/bets_routes.py:57–63` — Quoted all 7 camelCase columns in `create_bet` INSERT column list: `"posterId"`, `"timePosted"`, `"lineType"`, `"lineNumber"`, `"gameType"`, `"gamePlayed"`, `"gameSize"`; also corrected `yourTeamA/B`, `oppTeamA/B`, `yourScoreA/B`, `oppScoreA/B`, `yourPlayer`, `yourShots`, `oppPlayer`, `oppShots`, `yourOutcome`, `oppOutcome` to their actual lowercase DB names (`yourteama`, `yourteamb`, etc.) consistent with all existing SELECTs — review Critical
+- `backend/routes/lines_routes.py:96–99` (`create_cpu_caps_shots_bet`) — Quoted `"posterId"`, `"timePosted"`, `"lineType"`, `"lineNumber"`, `"gameType"`, `"gamePlayed"`, `"gameSize"`; corrected `yourPlayer`, `oppPlayer` to lowercase — review Critical
+- `backend/routes/lines_routes.py:178–181` (`create_cpu_pong_shots_bet`) — Same quoting fixes as caps shots — review Critical
+- `backend/routes/lines_routes.py:286–290` (`create_cpu_beerball_shots_bet`) — Same quoting fixes as caps shots — review Critical
+- `backend/routes/lines_routes.py:374–378` (`create_cpu_beerball_score_bet`) — Quoted 7 camelCase columns; corrected `yourTeamA/B`, `oppTeamA/B` to lowercase — review Critical
+- `backend/routes/lines_routes.py:461–465` (`create_cpu_caps_score_bet`) — Same quoting fixes as beerball score — review Critical
+- `backend/routes/lines_routes.py:541–546` (`create_cpu_pong_score_bet`) — Same quoting fixes as beerball score — review Critical
+
+## Disputed
+
+None.
+
+## Deferred
+
+None. All 272 tests pass on branch `auto/stage0-0.8`.

@@ -94,9 +94,9 @@ def create_cpu_caps_shots_bet():
 
         cur.execute("""
             INSERT INTO bets (
-                id, poster, posterId, timePosted, matchup, amount,
-                lineType, lineNumber, gameType, gamePlayed, gameSize,
-                yourPlayer, oppPlayer, status
+                id, poster, "posterId", "timePosted", matchup, amount,
+                "lineType", "lineNumber", "gameType", "gamePlayed", "gameSize",
+                yourplayer, oppplayer, status
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             bet_id,
@@ -176,9 +176,9 @@ def create_cpu_pong_shots_bet():
 
         cur.execute("""
             INSERT INTO bets (
-                id, poster, posterId, timePosted, matchup, amount,
-                lineType, lineNumber, gameType, gamePlayed, gameSize,
-                yourPlayer, oppPlayer, status
+                id, poster, "posterId", "timePosted", matchup, amount,
+                "lineType", "lineNumber", "gameType", "gamePlayed", "gameSize",
+                yourplayer, oppplayer, status
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             bet_id,
@@ -284,9 +284,9 @@ def create_cpu_beerball_shots_bet():
 
         cur.execute("""
             INSERT INTO bets (
-                id, poster, posterId, timePosted, matchup, amount,
-                lineType, lineNumber, gameType, gamePlayed, gameSize,
-                yourPlayer, oppPlayer, status
+                id, poster, "posterId", "timePosted", matchup, amount,
+                "lineType", "lineNumber", "gameType", "gamePlayed", "gameSize",
+                yourplayer, oppplayer, status
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             bet_id,
@@ -372,9 +372,9 @@ def create_cpu_beerball_score_bet():
 
         cur.execute("""
             INSERT INTO bets (
-                id, poster, posterId, timePosted, matchup, amount,
-                lineType, lineNumber, gameType, gamePlayed, gameSize,
-                yourTeamA, yourTeamB, oppTeamA, oppTeamB, status
+                id, poster, "posterId", "timePosted", matchup, amount,
+                "lineType", "lineNumber", "gameType", "gamePlayed", "gameSize",
+                yourteama, yourteamb, oppteama, oppteamb, status
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                     %s, %s, %s, %s, %s)
         """, (
@@ -459,9 +459,9 @@ def create_cpu_caps_score_bet():
 
         cur.execute("""
             INSERT INTO bets (
-                id, poster, posterId, timePosted, matchup, amount,
-                lineType, lineNumber, gameType, gamePlayed, gameSize,
-                yourTeamA, yourTeamB, oppTeamA, oppTeamB, status
+                id, poster, "posterId", "timePosted", matchup, amount,
+                "lineType", "lineNumber", "gameType", "gamePlayed", "gameSize",
+                yourteama, yourteamb, oppteama, oppteamb, status
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                       %s, %s, %s, %s, %s)
         """, (
@@ -539,9 +539,9 @@ def create_cpu_pong_score_bet():
 
         cur.execute("""
             INSERT INTO bets (
-                id, poster, posterId, timePosted, matchup, amount,
-                lineType, lineNumber, gameType, gamePlayed, gameSize,
-                yourTeamA, yourTeamB, oppTeamA, oppTeamB, status
+                id, poster, "posterId", "timePosted", matchup, amount,
+                "lineType", "lineNumber", "gameType", "gamePlayed", "gameSize",
+                yourteama, yourteamb, oppteama, oppteamb, status
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                       %s, %s, %s, %s, %s)
         """, (

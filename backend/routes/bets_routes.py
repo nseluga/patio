@@ -55,12 +55,12 @@ def create_bet():
         # Insert bet
         cur.execute('''
             INSERT INTO bets (
-                id, poster, posterId, timePosted, matchup, amount,
-                lineType, lineNumber, gameType, gamePlayed, gameSize,
-                yourTeamA, yourTeamB, oppTeamA, oppTeamB,
-                yourScoreA, yourScoreB, oppScoreA, oppScoreB,
-                yourPlayer, yourShots, oppPlayer, oppShots,
-                yourOutcome, oppOutcome, status
+                id, poster, "posterId", "timePosted", matchup, amount,
+                "lineType", "lineNumber", "gameType", "gamePlayed", "gameSize",
+                yourteama, yourteamb, oppteama, oppteamb,
+                yourscorea, yourscoreb, oppscorea, oppscoreb,
+                yourplayer, yourshots, oppplayer, oppshots,
+                youroutcome, oppoutcome, status
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
                       %s, %s, %s, %s, %s, %s, %s, %s,
                       %s, %s, %s, %s, %s, %s, %s)
