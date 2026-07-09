@@ -3,7 +3,6 @@ from flask_cors import CORS
 from backend.auth import auth
 from backend.db import get_db
 from backend.utils.auth import token_required
-import jwt
 import logging
 import os
 from backend.config import SECRET_KEY
@@ -1104,8 +1103,8 @@ def get_all_bets():
 @token_required
 def create_cpu_caps_shots_bet():
     if g.player_id != 0:
-        return jsonify({"error": "Unauthorized"}), 401
-    
+        return jsonify({"error": "Forbidden"}), 403
+
     data = request.get_json()
     game_size = data.get("gameSize", "1v1")
     team_size = int(game_size[0])  # "1v1" -> 1
@@ -1184,7 +1183,7 @@ def create_cpu_caps_shots_bet():
 @token_required
 def create_cpu_pong_shots_bet():
     if g.player_id != 0:
-        return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({"error": "Forbidden"}), 403
 
     data = request.get_json()
     game_size = data.get("gameSize", "1v1")
@@ -1266,7 +1265,7 @@ def create_cpu_pong_shots_bet():
 @token_required
 def create_cpu_beerball_shots_bet():
     if g.player_id != 0:
-        return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({"error": "Forbidden"}), 403
 
     data = request.get_json()
     game_size = data.get("gameSize", "1v1")
@@ -1374,7 +1373,7 @@ def create_cpu_beerball_shots_bet():
 @token_required
 def create_cpu_beerball_score_bet():
     if g.player_id != 0:
-        return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({"error": "Forbidden"}), 403
 
     data = request.get_json()
     game_size = data.get("gameSize", "2v2")
@@ -1453,7 +1452,7 @@ def create_cpu_beerball_score_bet():
 @token_required
 def create_cpu_caps_score_bet():
     if g.player_id != 0:
-        return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({"error": "Forbidden"}), 403
 
     data = request.get_json()
     game_size = data.get("gameSize", "2v2")
@@ -1540,7 +1539,7 @@ def create_cpu_caps_score_bet():
 @token_required
 def create_cpu_pong_score_bet():
     if g.player_id != 0:
-        return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({"error": "Forbidden"}), 403
 
     data = request.get_json()
     game_size = data.get("gameSize", "2v2")

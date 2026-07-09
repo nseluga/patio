@@ -40,7 +40,7 @@ def token_required(f):
         try:
             payload = jwt.decode(token, secret_key, algorithms=['HS256'])
             g.player_id = int(payload['id'])
-        except (jwt.exceptions.DecodeError, jwt.exceptions.InvalidTokenError, KeyError) as e:
+        except (jwt.exceptions.DecodeError, jwt.exceptions.InvalidTokenError, jwt.exceptions.InvalidKeyError, KeyError) as e:
             logger.warning("JWT decode failed: %s", e)
             return jsonify({'error': 'Unauthorized'}), 401
         except Exception as e:
