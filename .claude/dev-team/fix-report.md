@@ -179,3 +179,42 @@ None.
 ## Deferred
 
 None. All 272 tests pass on branch `auto/stage0-0.8`.
+---
+
+# Fix Report — Item 2.3 QA Bug (PvP Score coerce_int gap)
+**Date:** 2026-07-09
+**Findings addressed:** 1 of 1 total: 1 QA bug failure + 0 review findings
+
+## Changes Made
+
+- `backend/routes/submit_routes.py:158–167` — Added `coerce_int` calls for `yourScoreA` and `yourScoreB` in the PvP Score branch after `require_fields`; used coerced integers (`score_a`, `score_b`) in `update_values` instead of raw request strings; non-numeric values now return 400 instead of silently writing bad data to the DB — QA bug
+
+## Disputed
+
+None.
+
+## Deferred
+
+None. All 322 tests pass on branch `auto/stage0-0.8`.
+
+---
+
+# Fix Report — Item 2.3 Review Findings
+**Date:** 2026-07-09
+**Findings addressed:** 5 of 5 total: 0 QA failures + 5 review findings (2 Critical, 1 Important, 2 Minor)
+
+## Changes Made
+
+- `backend/routes/submit_routes.py:175-186` — PvP "Shots Made" branch: added `coerce_int(data.get("yourShots"), "yourShots")`, returns 400 on non-numeric, uses coerced `shots` in `update_values` — review Critical
+- `backend/routes/submit_routes.py:187-196` — PvP "Other" branch: added `coerce_int(data.get("yourOutcome"), "yourOutcome")`, returns 400 on non-numeric, uses coerced `outcome` in `update_values` — review Critical
+- `backend/routes/bets_routes.py:14,29-37` — `/create_bet`: added `VALID_LINE_TYPES = {"Over", "Under"}` constant; `lineNumber` validated via `float()` try-except → 400; `lineType` validated as non-empty and in valid set → 400, before caps deduction — review Important
+- `backend/validation.py:8` — `require_fields`: changed `data.get(f) is None` to `data.get(f) in (None, "")` so blank strings are rejected as missing fields; used `in (None, "")` form (reviewer's parenthetical suggestion) instead of `not data.get(f)` to avoid false-rejecting integer 0 — review Minor
+- `backend/routes/lines_routes.py:60,142,226,336,417,506` — All 6 CPU routes: added `if team_size < 1: return jsonify({"error": "Invalid gameSize"}), 400` after `team_size = int(game_size[0])` — review Minor
+
+## Disputed
+
+None.
+
+## Deferred
+
+None. All 322 tests pass on branch `auto/stage0-0.8`.
