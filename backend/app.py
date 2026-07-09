@@ -15,9 +15,12 @@ import os
 
 from flask import Flask
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from backend.config import SECRET_KEY  # re-exported for test patch compatibility
 from backend.db import get_db  # re-exported for test patch compatibility
+from backend.error_handlers import register_error_handlers
+from backend.extensions import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -27,16 +30,24 @@ def create_app():
     app = Flask(__name__)
 
     # ---------------------------------------------------------------------------
-    # CORS
+    # ProxyFix — trust one level of X-Forwarded-For so Flask-Limiter sees the
+    # real client IP instead of the Render load balancer address.
     # ---------------------------------------------------------------------------
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
+
+    # ---------------------------------------------------------------------------
+    # CORS — only include FRONTEND_URL when the env var is actually set;
+    # never fall back to a hardcoded placeholder URL.
+    # ---------------------------------------------------------------------------
+    cors_origins = ["http://localhost:3000"]
+    frontend_url = os.getenv("FRONTEND_URL")
+    if frontend_url:
+        cors_origins.append(frontend_url)
+
     CORS(
         app,
-        resources={r"/*": {"origins": [
-            "http://localhost:3000",
-            os.getenv("FRONTEND_URL", "https://your-app.vercel.app")
-        ]}},
+        resources={r"/*": {"origins": cors_origins}},
         supports_credentials=True,
-        methods=["GET", "POST", "OPTIONS"],
         allow_headers=["Content-Type", "Authorization"]
     )
 
@@ -44,6 +55,17 @@ def create_app():
     # Logging
     # ---------------------------------------------------------------------------
     logging.basicConfig(level=logging.INFO)
+
+    # ---------------------------------------------------------------------------
+    # Rate limiter (Flask-Limiter)
+    # Render in-memory store resets on each dyno restart — fine at this scale.
+    # ---------------------------------------------------------------------------
+    limiter.init_app(app)
+
+    # ---------------------------------------------------------------------------
+    # Error handlers — consistent JSON shape for all HTTP errors
+    # ---------------------------------------------------------------------------
+    register_error_handlers(app)
 
     # ---------------------------------------------------------------------------
     # Blueprints

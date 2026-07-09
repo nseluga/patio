@@ -7,6 +7,7 @@ import psycopg2.extras
 from flask import Blueprint, g, jsonify, request
 from psycopg2.extras import Json
 
+from backend.extensions import limiter
 from backend.routes._db import get_db
 from backend.utils.auth import token_required
 
@@ -16,6 +17,7 @@ bets_bp = Blueprint('bets', __name__)
 
 
 @bets_bp.route("/create_bet", methods=["POST"])
+@limiter.limit("30 per minute")
 @token_required
 def create_bet():
     player_id = g.player_id

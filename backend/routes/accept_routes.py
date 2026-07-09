@@ -2,6 +2,7 @@ import logging
 
 from flask import Blueprint, g, jsonify, request
 
+from backend.extensions import limiter
 from backend.routes._db import get_db
 from backend.utils.auth import token_required
 
@@ -11,6 +12,7 @@ accept_bp = Blueprint('accept', __name__)
 
 
 @accept_bp.route("/accept_bet/<bet_id>", methods=["POST"])
+@limiter.limit("30 per minute")
 @token_required
 def accept_bet(bet_id):
     player_id = g.player_id
@@ -70,6 +72,7 @@ def accept_bet(bet_id):
         conn.close()
 
 @accept_bp.route("/accept_cpu_bet/<bet_id>", methods=["POST"])
+@limiter.limit("30 per minute")
 @token_required
 def accept_cpu_bet(bet_id):
     player_id = g.player_id

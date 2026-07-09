@@ -4,6 +4,7 @@ import logging
 import psycopg2.extras
 from flask import Blueprint, g, jsonify, request
 
+from backend.extensions import limiter
 from backend.routes._db import get_db
 from backend.routes.bets_routes import check_stats_match, compute_status_message
 from backend.stats_utils import (
@@ -19,6 +20,7 @@ submit_bp = Blueprint('submit', __name__)
 
 
 @submit_bp.route('/submit_stats/<bet_id>', methods=['POST'])
+@limiter.limit("30 per minute")
 @token_required
 def submit_stats(bet_id):
     data = request.json
