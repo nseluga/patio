@@ -292,10 +292,14 @@ def get_pvp_bets():
     cur = conn.cursor()
     try:
         cur.execute('''
-            SELECT *
+            SELECT id, poster, "posterId" AS posterid, "accepterId" AS accepterid,
+                   "timePosted" AS timeposted, matchup, amount,
+                   "lineType" AS linetype, "lineNumber" AS linenumber,
+                   "gameType" AS gametype, "gamePlayed" AS gameplayed,
+                   "gameSize" AS gamesize, status
             FROM bets
-            WHERE status = 'posted' AND posterid != %s
-            ORDER BY timePosted DESC
+            WHERE status = 'posted' AND "posterId" != %s
+            ORDER BY "timePosted" DESC
         ''', (player_id,))
         rows = cur.fetchall()
         colnames = [desc[0] for desc in cur.description]
@@ -335,12 +339,17 @@ def get_cpu_bets():
 
     try:
         cur.execute("""
-            SELECT * FROM bets
+            SELECT id, poster, "posterId" AS posterid, "accepterId" AS accepterid,
+                   "timePosted" AS timeposted, matchup, amount,
+                   "lineType" AS linetype, "lineNumber" AS linenumber,
+                   "gameType" AS gametype, "gamePlayed" AS gameplayed,
+                   "gameSize" AS gamesize, status
+            FROM bets
             WHERE status = 'CPU'
             AND id NOT IN (
                 SELECT id FROM cpu_acceptances WHERE accepter_id = %s
             )
-            ORDER BY timePosted DESC
+            ORDER BY "timePosted" DESC
         """, (player_id,))
 
         rows = cur.fetchall()
@@ -502,15 +511,42 @@ def get_ongoing_bets():
     cur = conn.cursor()
     try:
         cur.execute("""
-            SELECT * FROM bets
-            WHERE status = 'accepted' AND (posterid = %s OR accepterid = %s)
+            SELECT id, poster, "posterId" AS posterid, "accepterId" AS accepterid,
+                   "timePosted" AS timeposted, matchup, amount,
+                   "lineType" AS linetype, "lineNumber" AS linenumber,
+                   "gameType" AS gametype, "gamePlayed" AS gameplayed,
+                   "gameSize" AS gamesize, status,
+                   yourteama, yourteamb, oppteama, oppteamb,
+                   yourscorea, yourscoreb, oppscorea, oppscoreb,
+                   yourplayer, yourshots, oppplayer, oppshots,
+                   youroutcome, oppoutcome
+            FROM bets
+            WHERE status = 'accepted' AND ("posterId" = %s OR "accepterId" = %s)
             UNION
-            SELECT b.* FROM bets b
+            SELECT b.id, b.poster, b."posterId" AS posterid, b."accepterId" AS accepterid,
+                   b."timePosted" AS timeposted, b.matchup, b.amount,
+                   b."lineType" AS linetype, b."lineNumber" AS linenumber,
+                   b."gameType" AS gametype, b."gamePlayed" AS gameplayed,
+                   b."gameSize" AS gamesize, b.status,
+                   b.yourteama, b.yourteamb, b.oppteama, b.oppteamb,
+                   b.yourscorea, b.yourscoreb, b.oppscorea, b.oppscoreb,
+                   b.yourplayer, b.yourshots, b.oppplayer, b.oppshots,
+                   b.youroutcome, b.oppoutcome
+            FROM bets b
             INNER JOIN cpu_acceptances c ON b.id = c.id
             WHERE c.accepter_id = %s AND c.match_confirmed = FALSE
             UNION
-            SELECT * FROM bets
-            WHERE status = 'CPU' AND posterid = 0 AND %s = 0
+            SELECT id, poster, "posterId" AS posterid, "accepterId" AS accepterid,
+                   "timePosted" AS timeposted, matchup, amount,
+                   "lineType" AS linetype, "lineNumber" AS linenumber,
+                   "gameType" AS gametype, "gamePlayed" AS gameplayed,
+                   "gameSize" AS gamesize, status,
+                   yourteama, yourteamb, oppteama, oppteamb,
+                   yourscorea, yourscoreb, oppscorea, oppscoreb,
+                   yourplayer, yourshots, oppplayer, oppshots,
+                   youroutcome, oppoutcome
+            FROM bets
+            WHERE status = 'CPU' AND "posterId" = 0 AND %s = 0
         """, (player_id, player_id, player_id, player_id))
         rows = cur.fetchall()
         colnames = [desc[0] for desc in cur.description]
@@ -694,12 +730,23 @@ def submit_stats(bet_id):
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     try:
-        # Fetch the current bet
-        cur.execute("SELECT * FROM bets WHERE id = %s", (bet_id,))
+        # Fetch the current bet — explicit aliases map camelCase columns to lowercase keys
+        cur.execute("""
+            SELECT id, poster, "posterId" AS posterid, "accepterId" AS accepterid,
+                   "timePosted" AS timeposted, matchup, amount,
+                   "lineType" AS linetype, "lineNumber" AS linenumber,
+                   "gameType" AS gametype, "gamePlayed" AS gameplayed,
+                   "gameSize" AS gamesize, status,
+                   yourteama, yourteamb, oppteama, oppteamb,
+                   yourscorea, yourscoreb, oppscorea, oppscoreb,
+                   yourplayer, yourshots, oppplayer, oppshots,
+                   youroutcome, oppoutcome
+            FROM bets WHERE id = %s
+        """, (bet_id,))
         bet = cur.fetchone()
         if not bet:
             return jsonify({"error": "Bet not found"}), 404
-    
+
         is_poster = player_id == bet['posterid']
         is_accepter = player_id == bet['accepterid']
         is_cpu_bet = bet['status'] == 'CPU'
@@ -809,8 +856,19 @@ def submit_stats(bet_id):
             cur.execute(f"UPDATE bets SET {set_clause} WHERE id = %s", (*update_values, bet_id))
             conn.commit()
     
-            # Re-fetch updated bet
-            cur.execute("SELECT * FROM bets WHERE id = %s", (bet_id,))
+            # Re-fetch updated bet — explicit aliases map camelCase columns to lowercase keys
+            cur.execute("""
+                SELECT id, poster, "posterId" AS posterid, "accepterId" AS accepterid,
+                       "timePosted" AS timeposted, matchup, amount,
+                       "lineType" AS linetype, "lineNumber" AS linenumber,
+                       "gameType" AS gametype, "gamePlayed" AS gameplayed,
+                       "gameSize" AS gamesize, status,
+                       yourteama, yourteamb, oppteama, oppteamb,
+                       yourscorea, yourscoreb, oppscorea, oppscoreb,
+                       yourplayer, yourshots, oppplayer, oppshots,
+                       youroutcome, oppoutcome
+                FROM bets WHERE id = %s
+            """, (bet_id,))
             updated_bet = cur.fetchone()
             match = check_stats_match(updated_bet)
             status_message = compute_status_message(updated_bet, player_id, conn)

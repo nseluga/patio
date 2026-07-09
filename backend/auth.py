@@ -139,9 +139,9 @@ def get_current_user():
         return jsonify({'error': 'User not found'}), 404
 
     cur.execute("""
-        SELECT gametype, status, amount, timePosted
-        FROM bets WHERE posterId = %s OR accepterid = %s
-        ORDER BY timePosted DESC LIMIT 5
+        SELECT "gameType" AS gametype, status, amount, "timePosted" AS timeposted
+        FROM bets WHERE "posterId" = %s OR "accepterId" = %s
+        ORDER BY "timePosted" DESC LIMIT 5
     """, (user_id, user_id))
     recent_bets = cur.fetchall()
 
