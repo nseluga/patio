@@ -29,11 +29,13 @@ deletion out of Stage M into unscheduled **X.6**, added **0.8** and **X.7**, and
 | 0 | 0.4 — Cleanup batch (gitignore/stray files/port/logging) | ✅ done full — untrack .pyc, delete .Rhistory, fix :5001 port, print→logging; N+1 batch fix in bet-gen files (commit dc254f5) |
 | 0 | 0.5 — Route auth inventory | ✅ done full — cleanup_bets/bets/pvp_bets gated; create_bet server-side identity + atomic caps debit; route-auth-table produced (commit 7f30fb6) |
 | 0 | 0.6 — Fix/remove broken `/me` | ✅ done in M.2 — verified: Bearer stripped, valid columns only |
-| 0 | 0.7 — Stop leaking secrets in logs + disable debug | not started (`.flaskenv` still `FLASK_ENV=development`) |
-| 0 | **0.8 — Fix camelCase column access breaking core reads** | **NEW (2026-07-05)** — not started; fixes the live 500s |
-| 1 | 1.1 — `@token_required` decorator | not started |
-| 2 | 2.1–2.3 | not started |
-| 3 | 3.1 — Sport module collapse | not started — **design decided** (shared pipeline + per-sport `predict_expected_stat` seam; golden-master parity replaces the STOP; ML deferred) |
+| 0 | 0.7 — Stop leaking secrets in logs + disable debug | ✅ done full — `.flaskenv` → production/debug-off; atomic caps fix in accept_bet/accept_cpu_bet; 90/90 tests (commit 1dc003f) |
+| 0 | **0.8 — Fix camelCase column access breaking core reads** | ✅ done full — explicit quoted aliases in all 4 handlers + submit_stats/accept_bet/cleanup_bets/get_all_bets; 128/128 tests (commit e280b42) |
+| 1 | 1.1 — `@token_required` decorator | ✅ done full — backend/utils/auth.py decorator; all 15 routes converted; get_player_id() removed; 209/209 tests (commit 1445792) |
+| 2 | 2.1 — App-factory + blueprints | ✅ done full — create_app() factory; 5 blueprint files in backend/routes/; 245/245 tests (commit 0f06651) |
+| 2 | 2.2 — Error handlers + CORS scoping + Flask-Limiter | ✅ done full — JSON error handlers, ProxyFix, CORS dynamic origins, rate limits on auth+wallet routes; 272/272 tests (commit c73b38d) |
+| 2 | 2.3 — Input validation layer | ✅ done full — backend/validation.py (require_fields, coerce_int); applied to 4 route files; all crash paths → 400; 322/322 tests (commit 6e127cb) |
+| 3 | 3.1 — Sport module collapse | ✅ done full — backend/bet_generation.py (SportConfig + CAPS/PONG/BEERBALL configs); golden-master 12/12; routes dispatch through seam; 334/334 tests (commit cba0b49) |
 | 4 | 4.1 — SQLAlchemy migration | not started — **now also owns** camelCase→snake_case rename, explicit FKs, `oppOutcome` normalize (still STOP: live DB) |
 | 5 | 5.1 — Wallet/settlement service | not started (STOP retained: concurrency verification) |
 | 5 | 5.2 — Refund/push semantics | not started — **semantics decided** (half-point PvP lines; refund expired/void+refund abandoned; CPU house-keeps; STOP → test) |

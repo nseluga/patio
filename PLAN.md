@@ -110,7 +110,7 @@
 - **done when:** `GET /me` with a valid `Bearer` token returns the user's profile + stats without error; App.js no longer silently falls into the logout/catch path.
 
 ### 0.7 — Stop leaking secrets in logs + disable debug mode (found in audit)
-- **status:** not started
+- **status:** done
 - **track:** full
 - **owns_files:** `app.py` (`get_player_id` print at ~71/80), `auth.py` (~113), `backend/.flaskenv`
 - **blocked_by:** none
@@ -119,7 +119,7 @@
 - **done when:** no log line contains a token or JWT payload; debug mode is off outside local dev.
 
 ### 0.8 — Fix camelCase column access breaking core reads (found in DB audit 2026-07-05)
-- **status:** not started
+- **status:** done
 - **track:** full
 - **owns_files:** `app.py` (the read handlers: `get_pvp_bets`, the CPU/House bet reads, the ongoing-bets read), `auth.py` (`/me` bets query)
 - **blocked_by:** none — standalone patch; do it early so the app stops 500ing before the big 4.1 migration
@@ -132,7 +132,7 @@
 ## STAGE 1 — Auth decorator
 
 ### 1.1 — `@token_required` decorator
-- **status:** not started
+- **status:** done
 - **track:** full
 - **owns_files:** new `utils/auth.py`, plus every route file with a protected endpoint (`app.py` and any blueprint-adjacent route files)
 - **blocked_by:** 0.1 (land the manual fix on `/submit_stats` first, then this item converts it to use the decorator — don't rewrite that handler twice in overlapping passes)
@@ -145,7 +145,7 @@
 ## STAGE 2 — Structural reorganization
 
 ### 2.1 — App-factory + blueprints
-- **status:** not started
+- **status:** done
 - **track:** full
 - **owns_files:** `app.py` (full split into `create_app()` + blueprint files: `auth_routes.py`, `wallet_routes.py`, `bets_routes.py`, `lines_routes.py`, `main_routes.py`)
 - **blocked_by:** 1.1
@@ -154,7 +154,7 @@
 - **done when:** all routes respond identically to before; route logic is unchanged; just relocated.
 
 ### 2.2 — Error handlers + CORS scoping + Flask-Limiter
-- **status:** not started
+- **status:** done
 - **track:** full
 - **owns_files:** new `error_handlers.py`, CORS config block, limiter init (likely in `create_app()`)
 - **blocked_by:** 2.1 (needs `create_app()` to exist as the place to register handlers/limiter)
@@ -163,7 +163,7 @@
 - **done when:** errors return consistent JSON shape; no wildcard CORS remains; rate limiting active on at least auth + wallet-mutating routes.
 
 ### 2.3 — Input validation layer (found in audit)
-- **status:** not started
+- **status:** done
 - **track:** full
 - **owns_files:** new validation helpers/schemas, applied across the route files from 2.1
 - **blocked_by:** 2.1 (apply per-blueprint), pairs with 2.2's error handlers
@@ -175,7 +175,7 @@
 ## STAGE 3 — Sport module collapse
 
 ### 3.1 — Collapse 3 sport modules → 1 parameterized module
-- **status:** not started
+- **status:** done
 - **track:** full
 - **owns_files:** the 3 sport modules + their single replacement file, plus the `/submit_stats` handler (already touched in 0.1/1.1 — this is the third and final touch)
 - **blocked_by:** 0.1, 1.1, 2.1
