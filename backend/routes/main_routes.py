@@ -15,11 +15,13 @@ main_bp = Blueprint('main', __name__)
 def public_leaderboard():
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT username, caps_balance FROM players ORDER BY caps_balance DESC LIMIT 5")
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-    return jsonify([{'username': row[0], 'caps_balance': row[1]} for row in rows])
+    try:
+        cur.execute("SELECT username, caps_balance FROM players ORDER BY caps_balance DESC LIMIT 5")
+        rows = cur.fetchall()
+        return jsonify([{'username': row[0], 'caps_balance': row[1]} for row in rows])
+    finally:
+        cur.close()
+        conn.close()
 
 @main_bp.route("/cleanup_bets", methods=["POST"])
 @token_required

@@ -229,10 +229,32 @@ def get_ongoing_bets():
         rows = cur.fetchall()
         colnames = [desc[0] for desc in cur.description]
 
+        # Batch-fetch all cpu_acceptances rows for CPU bets in this result set
+        # to avoid N extra round-trips inside compute_status_message.
+        cpu_bet_ids = [
+            row[colnames.index("id")]
+            for row in rows
+            if row[colnames.index("status")] == "CPU"
+        ]
+        cpu_acceptance_map = {}
+        if cpu_bet_ids and player_id != 0:
+            cur.execute(
+                """
+                SELECT id, match_confirmed, attempted FROM cpu_acceptances
+                WHERE id = ANY(%s) AND accepter_id = %s
+                """,
+                (cpu_bet_ids, player_id),
+            )
+            for ca_row in cur.fetchall():
+                cpu_acceptance_map[ca_row[0]] = {
+                    "match_confirmed": ca_row[1],
+                    "attempted": ca_row[2],
+                }
+
         result = []
         for row in rows:
             bet = dict(zip(colnames, row))
-            bet["status_message"] = compute_status_message(bet, player_id, conn)
+            bet["status_message"] = compute_status_message(bet, player_id, conn, cpu_acceptance_map)
             result.append({
                 "id": bet["id"],
                 "poster": bet["poster"],
@@ -305,17 +327,29 @@ def check_stats_match(bet):
     return False
 
 
-def compute_status_message(bet, player_id, conn):
+def compute_status_message(bet, player_id, conn, cpu_acceptance_map=None):
+    """Return a human-readable status string for a bet.
+
+    Prefer passing ``cpu_acceptance_map`` — a ``{bet_id: {"match_confirmed": bool,
+    "attempted": bool}}`` dict pre-fetched by the caller (batch query) — so this
+    function performs zero DB I/O.  When ``cpu_acceptance_map`` is ``None`` the
+    function falls back to querying via the provided ``conn`` (one query per call;
+    only used from legacy or test call-sites that pre-date the batch-fetch refactor).
+    No internal connection is ever opened; conn is always the caller-supplied handle.
+    """
     if bet["status"] == "CPU" and player_id != 0:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        try:
-            cur.execute("""
-                SELECT match_confirmed, attempted FROM cpu_acceptances
-                WHERE id = %s AND accepter_id = %s
-            """, (bet["id"], player_id))
-            row = cur.fetchone()
-        finally:
-            cur.close()
+        if cpu_acceptance_map is not None:
+            row = cpu_acceptance_map.get(bet["id"])
+        else:
+            cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+            try:
+                cur.execute("""
+                    SELECT match_confirmed, attempted FROM cpu_acceptances
+                    WHERE id = %s AND accepter_id = %s
+                """, (bet["id"], player_id))
+                row = cur.fetchone()
+            finally:
+                cur.close()
 
         if not row:
             return "You have not submitted stats yet"
