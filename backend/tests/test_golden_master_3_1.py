@@ -6,12 +6,18 @@ float outputs of all six line-generation functions against fixed representative 
 captured from the ORIGINAL modules before the collapse (see golden_master_3_1.json).
 
 The consolidated module must reproduce every output byte-for-byte per sport and line type.
+
+Line generation is exercised through the SportConfig strategy seam
+(CAPS/PONG/BEERBALL .predict_shots / .predict_score), which is the sole
+line-gen entry point the routes now use. Pinning the golden master to the
+config callables means a future ML swap (rebinding predict_shots/predict_score
+on a config) is caught here if it changes any frozen output.
 """
 import json
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from backend import bet_generation as bg
+from backend.bet_generation import BEERBALL, CAPS, PONG
 
 GOLDEN = json.loads((Path(__file__).parent / "golden_master_3_1.json").read_text())
 
@@ -46,54 +52,54 @@ def _beerball_cur():
 
 
 def test_caps_shots_over():
-    assert bg.generate_biased_caps_shots_line(SUBJ, [MATE], [OPP1, OPP2], "Over") == GOLDEN["caps_shots_over"]
+    assert CAPS.predict_shots(SUBJ, [MATE], [OPP1, OPP2], "Over") == GOLDEN["caps_shots_over"]
 
 
 def test_caps_shots_under():
-    assert bg.generate_biased_caps_shots_line(SUBJ, [MATE], [OPP1, OPP2], "Under") == GOLDEN["caps_shots_under"]
+    assert CAPS.predict_shots(SUBJ, [MATE], [OPP1, OPP2], "Under") == GOLDEN["caps_shots_under"]
 
 
 def test_caps_score_over():
-    result = bg.generate_biased_caps_score_line([SP, SP2], [OP, OP2], YOUR_SHOTS, OPP_SHOTS, GLOBAL_AVG_STRENGTH, "Over")
+    result = CAPS.predict_score([SP, SP2], [OP, OP2], YOUR_SHOTS, OPP_SHOTS, GLOBAL_AVG_STRENGTH, "Over")
     assert list(result) == GOLDEN["caps_score_over"]
 
 
 def test_caps_score_under():
-    result = bg.generate_biased_caps_score_line([SP, SP2], [OP, OP2], YOUR_SHOTS, OPP_SHOTS, GLOBAL_AVG_STRENGTH, "Under")
+    result = CAPS.predict_score([SP, SP2], [OP, OP2], YOUR_SHOTS, OPP_SHOTS, GLOBAL_AVG_STRENGTH, "Under")
     assert list(result) == GOLDEN["caps_score_under"]
 
 
 def test_pong_shots_over():
-    assert bg.generate_biased_pong_shots_line(SUBJ, [MATE], [OPP1, OPP2], "Over", 2, _pong_cur()) == GOLDEN["pong_shots_over"]
+    assert PONG.predict_shots(SUBJ, [MATE], [OPP1, OPP2], "Over", 2, _pong_cur()) == GOLDEN["pong_shots_over"]
 
 
 def test_pong_shots_under():
-    assert bg.generate_biased_pong_shots_line(SUBJ, [MATE], [OPP1, OPP2], "Under", 2, _pong_cur()) == GOLDEN["pong_shots_under"]
+    assert PONG.predict_shots(SUBJ, [MATE], [OPP1, OPP2], "Under", 2, _pong_cur()) == GOLDEN["pong_shots_under"]
 
 
 def test_pong_score_over():
-    result = bg.generate_biased_pong_score_line([SP, SP2], [OP, OP2], YOUR_SHOTS, OPP_SHOTS, GLOBAL_AVG_STRENGTH, "Over")
+    result = PONG.predict_score([SP, SP2], [OP, OP2], YOUR_SHOTS, OPP_SHOTS, GLOBAL_AVG_STRENGTH, "Over")
     assert list(result) == GOLDEN["pong_score_over"]
 
 
 def test_pong_score_under():
-    result = bg.generate_biased_pong_score_line([SP, SP2], [OP, OP2], YOUR_SHOTS, OPP_SHOTS, GLOBAL_AVG_STRENGTH, "Under")
+    result = PONG.predict_score([SP, SP2], [OP, OP2], YOUR_SHOTS, OPP_SHOTS, GLOBAL_AVG_STRENGTH, "Under")
     assert list(result) == GOLDEN["pong_score_under"]
 
 
 def test_beerball_shots_over():
-    assert bg.generate_biased_beerball_shots_line(_beerball_cur(), 2, SUBJ, 0.6, 0.5, 0.55, "Over") == GOLDEN["beerball_shots_over"]
+    assert BEERBALL.predict_shots(_beerball_cur(), 2, SUBJ, 0.6, 0.5, 0.55, "Over") == GOLDEN["beerball_shots_over"]
 
 
 def test_beerball_shots_under():
-    assert bg.generate_biased_beerball_shots_line(_beerball_cur(), 2, SUBJ, 0.6, 0.5, 0.55, "Under") == GOLDEN["beerball_shots_under"]
+    assert BEERBALL.predict_shots(_beerball_cur(), 2, SUBJ, 0.6, 0.5, 0.55, "Under") == GOLDEN["beerball_shots_under"]
 
 
 def test_beerball_score_over():
-    result = bg.generate_biased_beerball_score_line([SP, SP2], [OP, OP2], YOUR_SHOTS, OPP_SHOTS, GLOBAL_AVG_STRENGTH, "Over")
+    result = BEERBALL.predict_score([SP, SP2], [OP, OP2], YOUR_SHOTS, OPP_SHOTS, GLOBAL_AVG_STRENGTH, "Over")
     assert list(result) == GOLDEN["beerball_score_over"]
 
 
 def test_beerball_score_under():
-    result = bg.generate_biased_beerball_score_line([SP, SP2], [OP, OP2], YOUR_SHOTS, OPP_SHOTS, GLOBAL_AVG_STRENGTH, "Under")
+    result = BEERBALL.predict_score([SP, SP2], [OP, OP2], YOUR_SHOTS, OPP_SHOTS, GLOBAL_AVG_STRENGTH, "Under")
     assert list(result) == GOLDEN["beerball_score_under"]

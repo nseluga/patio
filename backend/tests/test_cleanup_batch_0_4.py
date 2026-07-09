@@ -268,10 +268,11 @@ def test_jwt_decode_error_only_logs_exception_not_token():
 # Review findings (post-Bug-Fixer): e, f, g, h
 # ---------------------------------------------------------------------------
 
+# Item 3.1 collapsed the three sport modules into backend/bet_generation.py, so
+# the exception-handler scan below now targets the consolidated file (the old
+# per-sport filenames no longer exist and would scan vacuously).
 BET_GEN_FILES = [
-    "caps_bet_generation.py",
-    "pong_bet_generation.py",
-    "beerball_bet_generation.py",
+    "bet_generation.py",
 ]
 
 

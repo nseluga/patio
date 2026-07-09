@@ -13,12 +13,6 @@ from backend.bet_generation import (
     CAPS,
     PONG,
     assemble_matchup,
-    generate_biased_beerball_score_line,
-    generate_biased_beerball_shots_line,
-    generate_biased_caps_score_line,
-    generate_biased_caps_shots_line,
-    generate_biased_pong_score_line,
-    generate_biased_pong_shots_line,
     get_global_beerball_score_strength_average,
     get_global_caps_score_strength_average,
     get_global_pong_score_strength_average,
@@ -72,8 +66,8 @@ def create_cpu_caps_shots_bet():
 
         line_type = choice(["Over", "Under"])
 
-        # Generate line based on team size
-        line = generate_biased_caps_shots_line(
+        # Generate line based on team size (dispatched through the sport's config seam)
+        line = CAPS.predict_shots(
             playerA_stats,
             teammate_stats,
             opp_stats,
@@ -156,8 +150,8 @@ def create_cpu_pong_shots_bet():
 
         line_type = choice(["Over", "Under"])
 
-        # Generate biased line
-        line = generate_biased_pong_shots_line(
+        # Generate biased line (dispatched through the sport's config seam)
+        line = PONG.predict_shots(
             playerA_stats,
             teammate_stats,
             opp_stats,
@@ -264,8 +258,8 @@ def create_cpu_beerball_shots_bet():
 
         line_type = choice(["Over", "Under"])
 
-        # Generate opportunity-adjusted line
-        line = generate_biased_beerball_shots_line(
+        # Generate opportunity-adjusted line (dispatched through the sport's config seam)
+        line = BEERBALL.predict_shots(
             cur,
             team_size,
             playerA_stats,
@@ -361,7 +355,7 @@ def create_cpu_beerball_score_bet():
 
         line_type = choice(["Over", "Under"])
 
-        line, line_type = generate_biased_beerball_score_line(
+        line, line_type = BEERBALL.predict_score(
             your_profiles,
             opp_profiles,
             your_shots,
@@ -454,7 +448,7 @@ def create_cpu_caps_score_bet():
 
         line_type = choice(["Over", "Under"])
 
-        line, line_type = generate_biased_caps_score_line(
+        line, line_type = CAPS.predict_score(
             your_profiles, opp_profiles,
             your_shots, opp_shots,
             global_avg_strength,
@@ -538,7 +532,7 @@ def create_cpu_pong_score_bet():
 
         # 5. Line generation
         line_type = choice(["Over", "Under"])
-        line, line_type = generate_biased_pong_score_line(
+        line, line_type = PONG.predict_score(
             your_profiles, opp_profiles,
             your_shots, opp_shots,
             global_avg,
