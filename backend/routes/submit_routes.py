@@ -159,12 +159,18 @@ def submit_stats(bet_id):
                 _, err = require_fields(data, 'yourTeamA', 'yourTeamB', 'yourScoreA', 'yourScoreB')
                 if err:
                     return err
+                score_a, err = coerce_int(data.get("yourScoreA"), "yourScoreA")
+                if err:
+                    return err
+                score_b, err = coerce_int(data.get("yourScoreB"), "yourScoreB")
+                if err:
+                    return err
                 if is_poster:
                     update_fields += ['"yourTeamA"', '"yourTeamB"', '"yourScoreA"', '"yourScoreB"']
-                    update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
+                    update_values += [data["yourTeamA"], data["yourTeamB"], score_a, score_b]
                 else:
                     update_fields += ['"oppTeamA"', '"oppTeamB"', '"oppScoreA"', '"oppScoreB"']
-                    update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
+                    update_values += [data["yourTeamA"], data["yourTeamB"], score_a, score_b]
 
             elif bet['gametype'] == "Shots Made":
                 _, err = require_fields(data, 'yourPlayer', 'yourShots')
