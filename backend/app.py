@@ -1102,7 +1102,12 @@ def get_all_bets():
     cur = conn.cursor()
     try:
         cur.execute(
-            """SELECT * FROM bets
+            """SELECT id, poster, "posterId" AS posterid, "accepterId" AS accepterid,
+                      "timePosted" AS timeposted, matchup, amount,
+                      "lineType" AS linetype, "lineNumber" AS linenumber,
+                      "gameType" AS gametype, "gamePlayed" AS gameplayed,
+                      "gameSize" AS gamesize, status
+               FROM bets
                WHERE "posterId" = %s OR "accepterId" = %s
                ORDER BY "timePosted" DESC
                LIMIT %s OFFSET %s""",
@@ -1110,8 +1115,25 @@ def get_all_bets():
         )
         rows = cur.fetchall()
         colnames = [desc[0] for desc in cur.description]
-        bets = [dict(zip(colnames, row)) for row in rows]
-        return jsonify(bets), 200
+        result = []
+        for row in rows:
+            bet = dict(zip(colnames, row))
+            result.append({
+                "id": bet["id"],
+                "poster": bet["poster"],
+                "posterId": bet["posterid"],
+                "accepterId": bet.get("accepterid"),
+                "timePosted": bet["timeposted"],
+                "matchup": bet["matchup"],
+                "amount": bet["amount"],
+                "lineType": bet["linetype"],
+                "lineNumber": bet["linenumber"],
+                "gameType": bet["gametype"],
+                "gamePlayed": bet["gameplayed"],
+                "gameSize": bet["gamesize"],
+                "status": bet["status"],
+            })
+        return jsonify(result), 200
     except Exception as e:
         logger.exception("Failed to fetch bets")
         return jsonify({"error": str(e)}), 500

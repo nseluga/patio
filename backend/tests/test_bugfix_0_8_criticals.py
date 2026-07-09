@@ -167,10 +167,11 @@ def test_get_all_bets_no_bare_posterid_in_where():
 
 def test_get_all_bets_returns_200_with_mocked_data(client):
     """GET /bets: returns 200 with a list when caller is matched by quoted column WHERE."""
-    # Use a raw cursor (not RealDictCursor) since get_all_bets uses fetchall + description
-    colnames = ["id", "poster", "posterId", "accepterId", "timePosted", "matchup",
-                "amount", "lineType", "lineNumber", "gameType", "gamePlayed",
-                "gameSize", "status"]
+    # Use a raw cursor (not RealDictCursor) since get_all_bets uses fetchall + description.
+    # Column names match the explicit aliases in the SELECT (lowercase, matching get_pvp_bets pattern).
+    colnames = ["id", "poster", "posterid", "accepterid", "timeposted", "matchup",
+                "amount", "linetype", "linenumber", "gametype", "gameplayed",
+                "gamesize", "status"]
     description = [(name,) for name in colnames]
     row = ("bet-001", "alice", 1, 2, "2024-01-01", "alice vs bob", 50,
            "Over", 10.5, "Score", "Caps", 2, "accepted")
