@@ -1,5 +1,31 @@
 ---
 # QA Report
+**Task:** Item 0.8 — Fix camelCase column access breaking core reads
+**Branch:** auto/stage0-0.8
+**Date:** 2026-07-09
+**Gate mode:** tests+behavioral
+
+## VERDICT: PASS
+
+## Criteria Checked
+
+- `/pvp_bets` returns 200 with real data; no camelCase KeyError — `test_pvp_bets_200_with_real_row` + `test_pvp_bets_no_select_star` + regression check — PASS
+- `/cpu_bets` returns 200 with real data; no camelCase KeyError — `test_cpu_bets_200_with_real_row` + `test_cpu_bets_no_select_star` + regression check — PASS
+- `/ongoing_bets` returns 200 with real data; no camelCase KeyError — `test_ongoing_bets_200_with_accepted_bet` + `test_ongoing_bets_no_select_star` + regression check — PASS
+- `/me` returns 200 with real data; no camelCase KeyError — `test_me_200_with_bets` + `test_auth_me_gametype_is_quoted` — PASS
+- No camelCase `KeyError`/`column does not exist` remains in those paths — static analysis confirms `SELECT *` gone, quoted identifiers present, no camelCase dict-key access in handler bodies — PASS
+
+## Tests Added
+
+- `backend/tests/test_camelcase_fix_0_8.py` — 23 tests in 6 groups: (A) static source analysis verifying no `SELECT *`, quoted camelCase identifiers, lowercase aliases in all four handlers; (B-E) behavioral tests for `/pvp_bets`, `/cpu_bets`, `/ongoing_bets`, `/me` using mocked cursors returning aliased lowercase rows, asserting 200 and correct JSON shape; (F) regression checks confirming no camelCase dict-key access (`bet["gameType"]` etc.) remains in any handler body
+
+## Not Verifiable
+
+- Live smoke pass against a real Supabase DB was not performed (no live credentials available). The behavioral tests mock psycopg2 cursors to return aliased lowercase column names — the exact shape Postgres emits for aliased columns. Static checks verify SQL strings contain quoted identifiers and lowercase aliases. Live verification is deferred to the next deploy.
+
+---
+
+# Previous QA Report
 **Task:** Item 0.7 — Stop leaking secrets in logs + disable debug mode
 **Branch:** conversion
 **Date:** 2026-07-09
