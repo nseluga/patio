@@ -174,21 +174,21 @@ def cleanup_bets():
         # 🧼 Delete PvP bets that were never accepted
         cur.execute("""
             DELETE FROM bets
-            WHERE status = 'posted' AND accepterId IS NULL AND timePosted < %s
+            WHERE status = 'posted' AND "accepterId" IS NULL AND "timePosted" < %s
         """, (cutoff,))
         logger.info("Deleted unaccepted PvP bets older than 1 week")
 
         # 🧼 Delete resolved bets (already submitted by both players)
         cur.execute("""
             DELETE FROM bets
-            WHERE status = 'submitted' AND timePosted < %s
+            WHERE status = 'submitted' AND "timePosted" < %s
         """, (cutoff,))
         logger.info("Deleted submitted bets older than 1 week")
 
         # 🧼 Delete CPU bets after 30s no matter what
         cur.execute("""
             DELETE FROM bets
-            WHERE status = 'CPU' AND timePosted < %s
+            WHERE status = 'CPU' AND "timePosted" < %s
         """, (cutoff,))
         logger.info("Deleted expired CPU bets older than 1 week")
 
@@ -394,7 +394,7 @@ def accept_bet(bet_id):
 
     try:
         # Get amount and poster ID
-        cur.execute("SELECT amount, posterId FROM bets WHERE id = %s AND status = 'posted'", (bet_id,))
+        cur.execute('SELECT amount, "posterId" AS posterid FROM bets WHERE id = %s AND status = \'posted\'', (bet_id,))
         bet = cur.fetchone()
         if not bet:
             return jsonify({"error": "Bet not found or already accepted"}), 404
@@ -413,7 +413,7 @@ def accept_bet(bet_id):
         # Accept the bet and store accepter's line type
         cur.execute("""
             UPDATE bets
-            SET accepterId = %s,
+            SET "accepterId" = %s,
                 accepter_line_type = %s,
                 status = 'accepted'
             WHERE id = %s
@@ -650,7 +650,7 @@ def compute_status_message(bet, player_id, conn):
     is_poster = player_id == bet.get("posterid")
     is_accepter = player_id == bet.get("accepterid")
 
-    if (is_poster or is_accepter) is None:
+    if not is_poster and not is_accepter:
         return "Unknown user"
 
     # Score Game
@@ -831,21 +831,21 @@ def submit_stats(bet_id):
     
             if bet['gametype'] == "Score":
                 if is_poster:
-                    update_fields += ["yourTeamA", "yourTeamB", "yourScoreA", "yourScoreB"]
+                    update_fields += ['"yourTeamA"', '"yourTeamB"', '"yourScoreA"', '"yourScoreB"']
                     update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
                 else:
-                    update_fields += ["oppTeamA", "oppTeamB", "oppScoreA", "oppScoreB"]
+                    update_fields += ['"oppTeamA"', '"oppTeamB"', '"oppScoreA"', '"oppScoreB"']
                     update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
-    
+
             elif bet['gametype'] == "Shots Made":
-                update_fields += ["yourPlayer" if is_poster else "oppPlayer",
-                                "yourShots" if is_poster else "oppShots"]
+                update_fields += ['"yourPlayer"' if is_poster else '"oppPlayer"',
+                                '"yourShots"' if is_poster else '"oppShots"']
                 update_values += [data["yourPlayer"], data["yourShots"]]
-    
+
             elif bet['gametype'] == "Other":
-                update_fields += ["yourOutcome" if is_poster else "oppOutcome"]
+                update_fields += ['"yourOutcome"' if is_poster else '"oppOutcome"']
                 update_values += [data["yourOutcome"]]
-    
+
             # Execute update
             set_clause = ", ".join(f"{field} = %s" for field in update_fields)
     
@@ -1103,8 +1103,8 @@ def get_all_bets():
     try:
         cur.execute(
             """SELECT * FROM bets
-               WHERE posterid = %s OR accepterid = %s
-               ORDER BY timeposted DESC
+               WHERE "posterId" = %s OR "accepterId" = %s
+               ORDER BY "timePosted" DESC
                LIMIT %s OFFSET %s""",
             (player_id, player_id, per_page, offset)
         )

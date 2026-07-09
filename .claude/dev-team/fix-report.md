@@ -25,4 +25,46 @@ None.
 
 ## Deferred
 None.
+
+---
+
+# Fix Report — Item 0.7 Review Findings
+**Date:** 2026-07-09
+**Findings addressed:** 3 of 3: 0 QA failures + 3 review findings (2 Critical, 1 Minor)
+
+## Changes Made
+
+- `backend/app.py:396-402` — Replaced non-atomic SELECT+UPDATE caps deduction in `accept_bet` with `UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s AND caps_balance >= %s`; `rowcount == 0` → 400 "Insufficient caps" — review Critical
+- `backend/app.py:461-469` — Replaced non-atomic SELECT+UPDATE caps deduction in `accept_cpu_bet` with the same atomic guard pattern — review Critical
+- `backend/app.py:376` — Moved `logger.debug("PvP accept_bet triggered by player_id: %s", player_id)` to after the `if player_id is None` auth guard so it never fires with `None` — review Minor
+
+## Disputed
+
+None.
+
+## Deferred
+
+None. All three cited findings were applied. Commit `1dc003f` on branch `conversion`.
+---
+
+# Fix Report — Item 0.8 Review Findings
+**Date:** 2026-07-09
+**Findings addressed:** 6 of 6: 0 QA failures + 6 review findings (2 Critical, 2 Important, 2 Minor)
+
+## Changes Made
+
+- `backend/app.py:834–846` — Quoted all camelCase column names in `submit_stats` dynamic UPDATE `update_fields` list (e.g., `'"yourTeamA"'`, `'"oppTeamA"'`, `'"yourPlayer"'`, etc.) so the f-string SET clause emits `"yourTeamA" = %s` instead of `yourTeamA = %s` — review Critical
+- `backend/app.py:1105–1107` — Changed `get_all_bets` WHERE clause from unquoted `posterid`/`accepterid` to `"posterId"`/`"accepterId"`; also quoted `timePosted` in ORDER BY — review Critical
+- `backend/app.py:397` — Changed `accept_bet` SELECT from `SELECT amount, posterId` to `SELECT amount, "posterId" AS posterid`; prevents `column "posterid" does not exist` runtime error on every PvP bet acceptance — review Important
+- `backend/app.py:653` — Fixed dead-code boolean guard `(is_poster or is_accepter) is None` to `not is_poster and not is_accepter`; the original expression is always `False` so the "Unknown user" branch was unreachable — review Important
+- `backend/app.py:416` — Quoted `accepterId` in `accept_bet` UPDATE SET clause: `"accepterId" = %s` — review Minor
+- `backend/app.py:176–191` — Quoted `"accepterId"`, `"timePosted"` in all three `cleanup_bets` DELETE WHERE clauses — review Minor
+
+## Disputed
+
+None.
+
+## Deferred
+
+None. All 6 cited findings applied. 113/113 tests pass on branch `auto/stage0-0.8`.
 ---
