@@ -85,31 +85,56 @@ def client():
 # ===========================================================================
 
 
+def _route_has_decorator(func_name: str, decorator_name: str) -> bool:
+    """Return True if the given function in app.py is decorated with decorator_name."""
+    source = APP_PY.read_text()
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == func_name:
+            for dec in node.decorator_list:
+                dec_src = ast.unparse(dec)
+                if decorator_name in dec_src:
+                    return True
+    return False
+
+
 def test_cleanup_bets_source_has_auth_guard():
-    """/cleanup_bets must call get_player_id() and return 401 if None."""
+    """/cleanup_bets must use @token_required and return 401 without valid JWT."""
     src = _function_source("cleanup_bets")
     assert src, "cleanup_bets function not found in app.py"
-    assert "get_player_id()" in src, "cleanup_bets does not call get_player_id()"
-    assert "401" in src, "cleanup_bets has no 401 response guard"
+    assert _route_has_decorator("cleanup_bets", "token_required"), (
+        "cleanup_bets is missing @token_required decorator"
+    )
+    assert "get_player_id()" not in src, (
+        "cleanup_bets still calls get_player_id() — should use @token_required + g.player_id"
+    )
 
 
 def test_get_all_bets_source_has_auth_guard():
-    """/bets (get_all_bets) must call get_player_id() and return 401 if None."""
+    """/bets (get_all_bets) must use @token_required."""
     src = _function_source("get_all_bets")
     assert src, "get_all_bets function not found in app.py"
-    assert "get_player_id()" in src, "get_all_bets does not call get_player_id()"
-    assert "401" in src, "get_all_bets has no 401 response guard"
+    assert _route_has_decorator("get_all_bets", "token_required"), (
+        "get_all_bets is missing @token_required decorator"
+    )
+    assert "get_player_id()" not in src, (
+        "get_all_bets still calls get_player_id() — should use @token_required + g.player_id"
+    )
 
 
 def test_pvp_bets_source_uses_jwt_not_query_param():
-    """/pvp_bets must call get_player_id() and must NOT read from request.args."""
+    """/pvp_bets must use @token_required and must NOT read from request.args."""
     src = _function_source("get_pvp_bets")
     assert src, "get_pvp_bets function not found in app.py"
-    assert "get_player_id()" in src, "get_pvp_bets does not call get_player_id()"
+    assert _route_has_decorator("get_pvp_bets", "token_required"), (
+        "get_pvp_bets is missing @token_required decorator"
+    )
     assert "request.args" not in src, (
         "get_pvp_bets still reads from request.args — identity must come from JWT"
     )
-    assert "401" in src, "get_pvp_bets has no 401 guard"
+    assert "get_player_id()" not in src, (
+        "get_pvp_bets still calls get_player_id() — should use @token_required + g.player_id"
+    )
 
 
 def test_create_bet_source_server_side_identity():
@@ -129,7 +154,12 @@ def test_create_bet_source_server_side_identity():
 
     assert "uuid4()" in src, "create_bet does not generate a UUID via uuid4()"
     assert "'posted'" in src, "create_bet does not hardcode status='posted'"
-    assert "get_player_id()" in src, "create_bet does not call get_player_id()"
+    assert _route_has_decorator("create_bet", "token_required"), (
+        "create_bet is missing @token_required decorator"
+    )
+    assert "get_player_id()" not in src, (
+        "create_bet still calls get_player_id() — should use @token_required + g.player_id"
+    )
 
 
 # ===========================================================================

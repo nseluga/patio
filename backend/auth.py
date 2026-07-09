@@ -1,9 +1,10 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, g, request, jsonify
 from psycopg2.extras import RealDictCursor
 import jwt
 import logging
 from backend.db import get_db
 from backend.config import SECRET_KEY
+from backend.utils.auth import token_required
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime, timedelta, timezone
 
@@ -110,19 +111,9 @@ def login():
 
 
 @auth.route('/me', methods=['GET'])
+@token_required
 def get_current_user():
-    auth_header = request.headers.get('Authorization', '')
-    token = auth_header.replace('Bearer ', '').strip()
-    if not token:
-        return jsonify({'error': 'Missing token'}), 401
-
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
-        user_id = payload['id']
-    except jwt.ExpiredSignatureError:
-        return jsonify({'error': 'Token expired'}), 401
-    except jwt.InvalidTokenError:
-        return jsonify({'error': 'Invalid token'}), 401
+    user_id = g.player_id
 
     conn = get_db()
     cur = conn.cursor()

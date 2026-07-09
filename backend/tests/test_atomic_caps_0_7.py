@@ -62,6 +62,19 @@ def _function_source(func_name: str) -> str:
     return ""
 
 
+def _route_has_decorator(func_name: str, decorator_name: str) -> bool:
+    """Return True if the function in app.py is decorated with decorator_name."""
+    source = APP_PY.read_text()
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == func_name:
+            for dec in node.decorator_list:
+                dec_src = ast.unparse(dec)
+                if decorator_name in dec_src:
+                    return True
+    return False
+
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -295,24 +308,29 @@ def test_accept_cpu_bet_no_auth_returns_401(client):
 
 def test_accept_bet_debug_log_after_auth_guard():
     """
-    logger.debug('PvP accept_bet triggered by player_id: %s', ...) must appear
-    AFTER the `if player_id is None: return 401` auth guard — not before it.
+    The debug log in accept_bet must not fire before auth is validated.
 
-    This prevents the log from firing with player_id=None and emitting misleading noise.
+    With @token_required, auth is enforced before the function body runs, which
+    satisfies the ordering requirement. If the function uses an inline auth guard
+    ('if player_id is None') instead, it must come before the debug log.
     """
     src = _function_source("accept_bet")
     assert src, "accept_bet function not found in app.py"
-    lines = src.splitlines()
 
+    # If the function uses @token_required, auth precedes the function body entirely
+    # — the debug log is guaranteed to fire only after auth succeeds.
+    if _route_has_decorator("accept_bet", "token_required"):
+        return
+
+    # Fallback: inline guard check (pre-decorator style)
+    lines = src.splitlines()
     auth_guard_lineno = None
     debug_log_lineno = None
 
     for i, line in enumerate(lines):
         stripped = line.strip()
-        # Detect the auth guard: `if player_id is None:`
         if auth_guard_lineno is None and re.search(r"if player_id is None", stripped):
             auth_guard_lineno = i
-        # Detect the debug log referencing player_id
         if debug_log_lineno is None and re.search(r"logger\.debug.*player_id", stripped):
             debug_log_lineno = i
 
@@ -321,7 +339,8 @@ def test_accept_bet_debug_log_after_auth_guard():
         return
 
     assert auth_guard_lineno is not None, (
-        "accept_bet has no 'if player_id is None' auth guard — auth check missing"
+        "accept_bet has no 'if player_id is None' auth guard and no @token_required — "
+        "auth check is missing"
     )
     assert debug_log_lineno > auth_guard_lineno, (
         f"debug log (line {debug_log_lineno + 1} in function) appears BEFORE the auth guard "

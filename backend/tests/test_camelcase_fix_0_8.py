@@ -389,7 +389,7 @@ def test_me_200_with_bets(client):
     mock_conn.cursor.return_value = mock_cursor
 
     with patch("backend.auth.get_db", return_value=mock_conn), \
-         patch("backend.auth.SECRET_KEY", TEST_SECRET):
+         patch("backend.app.SECRET_KEY", TEST_SECRET):
         token = make_jwt(player_id=1)
         resp = client.get("/me", headers={"Authorization": f"Bearer {token}"})
 
@@ -417,7 +417,7 @@ def test_me_200_empty_bets(client):
     mock_conn.cursor.return_value = mock_cursor
 
     with patch("backend.auth.get_db", return_value=mock_conn), \
-         patch("backend.auth.SECRET_KEY", TEST_SECRET):
+         patch("backend.app.SECRET_KEY", TEST_SECRET):
         token = make_jwt(player_id=2)
         resp = client.get("/me", headers={"Authorization": f"Bearer {token}"})
 

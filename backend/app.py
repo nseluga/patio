@@ -1,7 +1,8 @@
-from flask import Flask, request, jsonify
+from flask import Flask, g, request, jsonify
 from flask_cors import CORS
 from backend.auth import auth
 from backend.db import get_db
+from backend.utils.auth import token_required
 import jwt
 import logging
 import os
@@ -94,26 +95,6 @@ app.register_blueprint(auth)
 # /cpu/create_pong_score_bet         POST    JWT (player_id=0) CPU account only
 # ---------------------------------------------------------------------------
 
-# Helper function to get player ID from JWT
-def get_player_id():
-    auth_header = request.headers.get('Authorization')
-
-    if not auth_header or not auth_header.startswith("Bearer "):
-        logger.warning("Missing or invalid Authorization header format")
-        return None
-
-    token = auth_header.split(" ")[1]
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        return payload["id"]
-    except (jwt.exceptions.DecodeError, jwt.exceptions.InvalidTokenError, KeyError) as e:
-        logger.warning("JWT decode failed: %s", e)
-        return None
-    except Exception as e:
-        logger.exception("Unexpected error in get_player_id")
-        return None
-
-
 # ---------------- Existing Endpoints ---------------- #
 
 # @app.route('/me', methods=['GET'])
@@ -157,13 +138,9 @@ def public_leaderboard():
     return jsonify([{'username': row[0], 'caps_balance': row[1]} for row in rows])
 
 @app.route("/cleanup_bets", methods=["POST"])
+@token_required
 def cleanup_bets():
-    # Auth gate — destructive route; valid JWT required.
-    # Item 1.1 will apply a proper decorator; for now a manual check suffices.
-    player_id = get_player_id()
-    if player_id is None:
-        return jsonify({"error": "Unauthorized"}), 401
-    if player_id != 0:
+    if g.player_id != 0:
         return jsonify({"error": "Forbidden"}), 403
 
     cutoff = datetime.now(timezone.utc) - timedelta(days=7)
@@ -207,11 +184,9 @@ def cleanup_bets():
 # ---------------- New Bets Endpoints ---------------- #
 
 @app.route("/create_bet", methods=["POST"])
+@token_required
 def create_bet():
-    player_id = get_player_id()
-    if player_id is None:
-        return jsonify({"error": "Unauthorized"}), 401
-
+    player_id = g.player_id
     bet = request.json
     amount = bet.get('amount', 0)
     if not isinstance(amount, int) or amount <= 0:
@@ -282,12 +257,9 @@ def create_bet():
         conn.close()
 
 @app.route("/pvp_bets", methods=["GET"])
+@token_required
 def get_pvp_bets():
-    # Identity derived from JWT — never trusted from query params.
-    player_id = get_player_id()
-    if player_id is None:
-        return jsonify({"error": "Unauthorized"}), 401
-
+    player_id = g.player_id
     conn = get_db()
     cur = conn.cursor()
     try:
@@ -329,11 +301,9 @@ def get_pvp_bets():
         conn.close()
     
 @app.route("/cpu_bets", methods=["GET"])
+@token_required
 def get_cpu_bets():
-    player_id = get_player_id()
-    if player_id is None:
-        return jsonify({"error": "Unauthorized"}), 401
-
+    player_id = g.player_id
     conn = get_db()
     cur = conn.cursor()
 
@@ -380,10 +350,9 @@ def get_cpu_bets():
         conn.close()
 
 @app.route("/accept_bet/<bet_id>", methods=["POST"])
+@token_required
 def accept_bet(bet_id):
-    player_id = get_player_id()
-    if player_id is None:
-        return jsonify({"error": "Unauthorized"}), 401
+    player_id = g.player_id
     logger.debug("PvP accept_bet triggered by player_id: %s", player_id)
 
     data = request.get_json()
@@ -440,11 +409,9 @@ def accept_bet(bet_id):
         conn.close()
 
 @app.route("/accept_cpu_bet/<bet_id>", methods=["POST"])
+@token_required
 def accept_cpu_bet(bet_id):
-    player_id = get_player_id()
-    if not player_id:
-        return jsonify({"error": "Unauthorized"}), 401
-
+    player_id = g.player_id
     conn = get_db()
     cur = conn.cursor()
 
@@ -502,11 +469,9 @@ def accept_cpu_bet(bet_id):
         conn.close()
 
 @app.route("/ongoing_bets", methods=["GET"])
+@token_required
 def get_ongoing_bets():
-    player_id = get_player_id()
-    if player_id is None:
-        return jsonify({"error": "Unauthorized"}), 401
-
+    player_id = g.player_id
     conn = get_db()
     cur = conn.cursor()
     try:
@@ -717,14 +682,12 @@ def compute_status_message(bet, player_id, conn):
     return "Unknown game type"
 
 @app.route('/submit_stats/<bet_id>', methods=['POST'])
+@token_required
 def submit_stats(bet_id):
     data = request.json
 
-    # Authenticate via JWT — do not trust playerId from the request body
-    player_id = get_player_id()
-    if player_id is None:
-        return jsonify({"error": "Unauthorized"}), 401
-    player_id = int(player_id)
+    # Identity comes from JWT via @token_required — do not trust playerId from the request body
+    player_id = g.player_id
 
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -1087,13 +1050,9 @@ def submit_stats(bet_id):
         conn.close()
 
 @app.route("/bets", methods=["GET"])
+@token_required
 def get_all_bets():
-    # Auth gate — full bet dump; valid JWT required.
-    # Item 1.1 will apply a proper decorator; for now a manual check suffices.
-    player_id = get_player_id()
-    if player_id is None:
-        return jsonify({"error": "Unauthorized"}), 401
-
+    player_id = g.player_id
     page = request.args.get('page', 1, type=int)
     per_page = min(request.args.get('per_page', 50, type=int), 100)
     offset = (page - 1) * per_page
@@ -1142,9 +1101,9 @@ def get_all_bets():
         conn.close()
 
 @app.route("/cpu/create_caps_shots_bet", methods=["POST"])
+@token_required
 def create_cpu_caps_shots_bet():
-    player_id = get_player_id()
-    if player_id != 0:
+    if g.player_id != 0:
         return jsonify({"error": "Unauthorized"}), 401
     
     data = request.get_json()
@@ -1222,9 +1181,9 @@ def create_cpu_caps_shots_bet():
         conn.close()
 
 @app.route("/cpu/create_pong_shots_bet", methods=["POST"])
+@token_required
 def create_cpu_pong_shots_bet():
-    player_id = get_player_id()
-    if player_id != 0:
+    if g.player_id != 0:
         return jsonify({"error": "Unauthorized"}), 401
 
     data = request.get_json()
@@ -1304,9 +1263,9 @@ def create_cpu_pong_shots_bet():
         conn.close()
 
 @app.route("/cpu/create_beerball_shots_bet", methods=["POST"])
+@token_required
 def create_cpu_beerball_shots_bet():
-    player_id = get_player_id()
-    if player_id != 0:
+    if g.player_id != 0:
         return jsonify({"error": "Unauthorized"}), 401
 
     data = request.get_json()
@@ -1412,9 +1371,9 @@ def create_cpu_beerball_shots_bet():
         conn.close()
 
 @app.route("/cpu/create_beerball_score_bet", methods=["POST"])
+@token_required
 def create_cpu_beerball_score_bet():
-    player_id = get_player_id()
-    if player_id != 0:
+    if g.player_id != 0:
         return jsonify({"error": "Unauthorized"}), 401
 
     data = request.get_json()
@@ -1491,9 +1450,9 @@ def create_cpu_beerball_score_bet():
         conn.close()
 
 @app.route("/cpu/create_caps_score_bet", methods=["POST"])
+@token_required
 def create_cpu_caps_score_bet():
-    player_id = get_player_id()
-    if player_id != 0:
+    if g.player_id != 0:
         return jsonify({"error": "Unauthorized"}), 401
 
     data = request.get_json()
@@ -1578,9 +1537,9 @@ def create_cpu_caps_score_bet():
         conn.close()
 
 @app.route("/cpu/create_pong_score_bet", methods=["POST"])
+@token_required
 def create_cpu_pong_score_bet():
-    player_id = get_player_id()
-    if player_id != 0:
+    if g.player_id != 0:
         return jsonify({"error": "Unauthorized"}), 401
 
     data = request.get_json()
