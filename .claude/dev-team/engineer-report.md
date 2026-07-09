@@ -1,32 +1,39 @@
----
 # Engineer Report
-**Task:** Item 0.8 — Fix camelCase column access breaking core reads
+**Task:** Item 1.1 — Build `@token_required` decorator and apply to all protected routes
 **Branch:** auto/stage0-0.8
 **Date:** 2026-07-09
 
 ## Design Decisions
 
-- **Alias approach over RealDictCursor casing fix:** Replaced `SELECT *` with explicit column lists using double-quoted camelCase identifiers aliased to lowercase (e.g., `"posterId" AS posterid`). This means all existing lowercase dict-key accesses (`bet["posterid"]`, `bet["gametype"]`, etc.) work without touching the rest of the handler logic — lower blast radius than renaming dict keys throughout.
-- **Consistent alias set across all handlers:** Defined the same alias pattern across `get_pvp_bets`, `get_cpu_bets`, `get_ongoing_bets`, and both `SELECT` calls in `submit_stats` so the behavior is uniform and predictable.
-- **Extended UNION queries with full explicit columns:** The UNION in `get_ongoing_bets` required repeating the column list three times (one per UNION arm) to ensure column alignment. Also pulled in all stat fields (`yourteama`, `yourshots`, etc.) needed by `compute_status_message` — `SELECT *` was silently including these; they must be kept.
-- **auth.py WHERE clause also fixed:** Changed unquoted `posterId` and `accepterid` in the WHERE clause to `"posterId"` and `"accepterId"` — unquoted identifiers fold to lowercase in Postgres, which would silently fail or return wrong rows.
-- **Stopgap only:** This fix is an interim measure. Item 4.1 will rename all columns to snake_case, at which point these aliases and quotes can be removed.
+- **New module `backend/utils/auth.py`** — decorator lives here to avoid circular imports; `backend/utils/__init__.py` created as empty package marker
+- **SECRET_KEY resolved lazily at request time** via `import backend.app as _app_module; secret_key = _app_module.SECRET_KEY` inside the `decorated()` closure — this respects existing `patch("backend.app.SECRET_KEY", ...)` patterns in 20+ tests without any changes to those files
+- **g.player_id stored as int** — `int(payload['id'])` in the decorator eliminates the `player_id = int(player_id)` coercion that was previously in `submit_stats` only; now all routes get consistent int typing
+- **get_player_id() removed entirely** from app.py — no route callers remain, so the function was deleted rather than kept as dead code
+- **Inline jwt.decode() block removed from auth.py `/me`** — replaced with `@token_required` + `user_id = g.player_id`
+- **CPU-only routes keep `if g.player_id != 0: return 401`** — this is a role check (not auth), so it stays in the route handler; the decorator only validates the JWT
+- **accept_cpu_bet `if not player_id:` guard removed** — was a None check made redundant by the decorator; the player_id == 0 edge case (CPU account itself) was never blocked here anyway
+- **Test compatibility layer** — 3 test files needed updates for static analysis assertions that previously checked for `get_player_id()` calls:
+  - `test_route_auth_0_5.py`: replaced `assert "get_player_id()" in src` with `_route_has_decorator()` AST check
+  - `test_camelcase_fix_0_8.py`: 2 `/me` tests patched `backend.auth.SECRET_KEY`; changed to `backend.app.SECRET_KEY` to match the decorator's lookup path
+  - `test_atomic_caps_0_7.py`: `test_accept_bet_debug_log_after_auth_guard` checked for `if player_id is None:` before debug log; updated to accept `@token_required` presence as equivalent
 
 ## Files Changed
 
-- `backend/app.py` — Fixed `SELECT *` in `get_pvp_bets`, `get_cpu_bets`, `get_ongoing_bets`, and both `SELECT * FROM bets` calls in `submit_stats` (initial fetch + re-fetch after update) with explicit column lists and lowercase aliases; also fixed quoted identifiers in WHERE clauses (`"posterId"`, `"accepterId"`, `"timePosted"`)
-- `backend/auth.py` — Fixed `/me` bets query: changed `SELECT gametype` to `SELECT "gameType" AS gametype`, added quotes to `"posterId"`, `"accepterId"`, `"timePosted"` throughout
+- `backend/utils/__init__.py` — new empty package marker file
+- `backend/utils/auth.py` — new file: `token_required` decorator with lazy SECRET_KEY lookup, populates `g.player_id` as int, returns 401 on any JWT failure
+- `backend/app.py` — removed `get_player_id()` function; added `from backend.utils.auth import token_required`; added `@token_required` to 14 routes; replaced `player_id = get_player_id() / if player_id is None` boilerplate with `player_id = g.player_id`
+- `backend/auth.py` — added `from backend.utils.auth import token_required`; converted `/me` from inline `jwt.decode()` block to `@token_required` + `user_id = g.player_id`
+- `backend/tests/test_route_auth_0_5.py` — added `_route_has_decorator()` helper; updated 4 static analysis tests to check for `@token_required` instead of `get_player_id()` calls
+- `backend/tests/test_camelcase_fix_0_8.py` — 2 `/me` test patches changed from `backend.auth.SECRET_KEY` to `backend.app.SECRET_KEY`
+- `backend/tests/test_atomic_caps_0_7.py` — added `_route_has_decorator()` helper; updated `test_accept_bet_debug_log_after_auth_guard` to treat `@token_required` presence as satisfying the "auth before debug log" ordering requirement
 
 ## Deferred / Out of Scope
 
-- `cleanup_bets`: Uses unquoted camelCase identifiers in DELETE WHERE clauses (`accepterId`, `timePosted`) — not in scope for 0.8 but may cause runtime errors; flagged for 4.1 or a dedicated fix
-- `accept_bet`: `SELECT amount, posterId FROM bets` uses unquoted `posterId` in SELECT — may work by accident or fail; out of scope
-- `UPDATE bets SET accepterId = %s` in `accept_bet`: unquoted column in SET clause — out of scope
-- Column rename to snake_case (item 4.1) will make all these fixes obsolete
+- No Flask `app.config['SECRET_KEY']` integration — the lazy-import approach works and avoids changing how the app initializes
+- No tests for the decorator itself in isolation — coverage comes from the 128 existing behavioral tests that all exercise protected routes
 
 ## Flags for Reviewer
 
-- The UNION query in `get_ongoing_bets` is now verbose — three near-identical SELECT arms. If Postgres column count mismatches (UNION requires same number of columns), the query will error at runtime even if syntax is valid; verify the column count matches across all three arms (28 columns each).
-- `compute_status_message` is called with the `bet` dict from `get_ongoing_bets` (regular cursor + manual dict) and also from `submit_stats` (RealDictCursor). Both now produce lowercase aliases, so the same lowercase key access in `compute_status_message` works for both callers.
-- `check_stats_match` is called with `updated_bet` from `submit_stats` re-fetch — also lowercase-aliased, so `bet.get('gametype')` etc. are correct.
----
+- The lazy `import backend.app` inside `decorated()` runs on every request — negligible cost (Python module import cache), but worth noting as an unconventional pattern
+- `accept_cpu_bet` previously had `if not player_id:` which would have blocked player_id==0 (the CPU account) from accepting; this check is now gone since the decorator allows any valid JWT through; the CPU account cannot call `/accept_cpu_bet` in normal flow but this could be flagged as a subtle behavior change
+- Public routes (`/register`, `/login`, `/leaderboard`) correctly have no decorator applied
