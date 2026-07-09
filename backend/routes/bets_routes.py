@@ -231,11 +231,15 @@ def get_ongoing_bets():
 
         # Batch-fetch all cpu_acceptances rows for CPU bets in this result set
         # to avoid N extra round-trips inside compute_status_message.
-        cpu_bet_ids = [
-            row[colnames.index("id")]
-            for row in rows
-            if row[colnames.index("status")] == "CPU"
-        ]
+        cpu_bet_ids = []
+        if rows:
+            _id_idx = colnames.index("id")
+            _status_idx = colnames.index("status")
+            cpu_bet_ids = [
+                row[_id_idx]
+                for row in rows
+                if row[_status_idx] == "CPU"
+            ]
         cpu_acceptance_map = {}
         if cpu_bet_ids and player_id != 0:
             cur.execute(
