@@ -176,16 +176,22 @@ def submit_stats(bet_id):
                 _, err = require_fields(data, 'yourPlayer', 'yourShots')
                 if err:
                     return err
+                shots, err = coerce_int(data.get("yourShots"), "yourShots")
+                if err:
+                    return err
                 update_fields += ['"yourPlayer"' if is_poster else '"oppPlayer"',
                                 '"yourShots"' if is_poster else '"oppShots"']
-                update_values += [data["yourPlayer"], data["yourShots"]]
+                update_values += [data["yourPlayer"], shots]
 
             elif bet['gametype'] == "Other":
                 _, err = require_fields(data, 'yourOutcome')
                 if err:
                     return err
+                outcome, err = coerce_int(data.get("yourOutcome"), "yourOutcome")
+                if err:
+                    return err
                 update_fields += ['"yourOutcome"' if is_poster else '"oppOutcome"']
-                update_values += [data["yourOutcome"]]
+                update_values += [outcome]
 
             # Execute update
             set_clause = ", ".join(f"{field} = %s" for field in update_fields)

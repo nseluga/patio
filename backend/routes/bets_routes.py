@@ -12,6 +12,8 @@ from backend.routes._db import get_db
 from backend.utils.auth import token_required
 from backend.validation import require_fields
 
+VALID_LINE_TYPES = {"Over", "Under"}
+
 logger = logging.getLogger(__name__)
 
 bets_bp = Blueprint('bets', __name__)
@@ -28,6 +30,16 @@ def create_bet():
     amount = bet.get('amount', 0)
     if not isinstance(amount, int) or amount <= 0:
         return jsonify({"error": "Invalid or missing amount"}), 400
+
+    line_number = bet.get('lineNumber')
+    try:
+        float(line_number)
+    except (TypeError, ValueError):
+        return jsonify({"error": "lineNumber must be a number"}), 400
+
+    line_type = bet.get('lineType')
+    if not line_type or line_type not in VALID_LINE_TYPES:
+        return jsonify({"error": f"lineType must be one of: {', '.join(sorted(VALID_LINE_TYPES))}"}), 400
 
     conn = get_db()
     cur = conn.cursor()

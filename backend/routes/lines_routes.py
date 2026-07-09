@@ -58,6 +58,8 @@ def create_cpu_caps_shots_bet():
     if not game_size or not game_size[0:1].isdigit():
         return jsonify({"error": "Invalid gameSize"}), 400
     team_size = int(game_size[0])  # "1v1" -> 1
+    if team_size < 1:
+        return jsonify({"error": "Invalid gameSize"}), 400
 
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -140,6 +142,8 @@ def create_cpu_pong_shots_bet():
     if not game_size or not game_size[0:1].isdigit():
         return jsonify({"error": "Invalid gameSize"}), 400
     team_size = int(game_size[0])  # "1v1" -> 1
+    if team_size < 1:
+        return jsonify({"error": "Invalid gameSize"}), 400
 
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -224,6 +228,8 @@ def create_cpu_beerball_shots_bet():
     if not game_size or not game_size[0:1].isdigit():
         return jsonify({"error": "Invalid gameSize"}), 400
     team_size = int(game_size[0])  # "1v1" → 1
+    if team_size < 1:
+        return jsonify({"error": "Invalid gameSize"}), 400
 
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -334,6 +340,8 @@ def create_cpu_beerball_score_bet():
     if not game_size or not game_size[0:1].isdigit():
         return jsonify({"error": "Invalid gameSize"}), 400
     team_size = int(game_size[0])
+    if team_size < 1:
+        return jsonify({"error": "Invalid gameSize"}), 400
 
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -415,6 +423,8 @@ def create_cpu_caps_score_bet():
     if not game_size or not game_size[0:1].isdigit():
         return jsonify({"error": "Invalid gameSize"}), 400
     team_size = int(game_size[0])
+    if team_size < 1:
+        return jsonify({"error": "Invalid gameSize"}), 400
 
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -504,6 +514,8 @@ def create_cpu_pong_score_bet():
     if not game_size or not game_size[0:1].isdigit():
         return jsonify({"error": "Invalid gameSize"}), 400
     team_size = int(game_size[0])
+    if team_size < 1:
+        return jsonify({"error": "Invalid gameSize"}), 400
 
     conn = get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
