@@ -1,0 +1,15 @@
+{
+  "_comment": "Golden-master outputs captured from the ORIGINAL caps/pong/beerball_bet_generation.py modules (item 3.1) using fixed representative inputs defined in test_golden_master_3_1.py. The consolidated backend/bet_generation.py must reproduce these byte-for-byte.",
+  "caps_shots_over": 4.5,
+  "caps_shots_under": 6.5,
+  "caps_score_over": [0.5, "Under"],
+  "caps_score_under": [0.5, "Under"],
+  "pong_shots_over": 5.5,
+  "pong_shots_under": 6.5,
+  "pong_score_over": [0.5, "Over"],
+  "pong_score_under": [1.5, "Under"],
+  "beerball_shots_over": 5.5,
+  "beerball_shots_under": 6.5,
+  "beerball_score_over": [0.5, "Over"],
+  "beerball_score_under": [1.5, "Under"]
+}

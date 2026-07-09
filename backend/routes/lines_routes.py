@@ -8,37 +8,25 @@ import psycopg2.extras
 from flask import Blueprint, g, jsonify, request
 from psycopg2.extras import Json
 
-from backend.beerball_bet_generation import (
-    assemble_beerball_matchup,
+from backend.bet_generation import (
+    BEERBALL,
+    CAPS,
+    PONG,
+    assemble_matchup,
     generate_biased_beerball_score_line,
     generate_biased_beerball_shots_line,
-    get_beerball_score_players,
-    get_beerball_shots_players,
-    get_global_beerball_score_strength_average,
-    get_player_beerball_score_profile,
-    get_player_beerball_shots_profile,
-)
-from backend.caps_bet_generation import (
-    assemble_caps_matchup,
     generate_biased_caps_score_line,
     generate_biased_caps_shots_line,
-    get_caps_score_players,
-    get_caps_shots_players,
-    get_global_caps_score_strength_average,
-    get_player_caps_score_profile,
-    get_player_caps_shots_profile,
-)
-from backend.routes._db import get_db
-from backend.pong_bet_generation import (
-    assemble_pong_shots_matchup,
     generate_biased_pong_score_line,
     generate_biased_pong_shots_line,
+    get_global_beerball_score_strength_average,
+    get_global_caps_score_strength_average,
     get_global_pong_score_strength_average,
+    get_player_beerball_score_profile,
+    get_player_caps_score_profile,
     get_player_pong_score_profile,
-    get_player_pong_shots_profile,
-    get_pong_score_players,
-    get_pong_shots_players,
 )
+from backend.routes._db import get_db
 from backend.utils.auth import token_required
 from backend.validation import require_fields
 
@@ -66,21 +54,21 @@ def create_cpu_caps_shots_bet():
 
     try:
         # Fetch eligible players
-        players = get_caps_shots_players(cur, team_size)
+        players = CAPS.get_shots_players(cur, team_size)
         if len(players) < 2 * team_size:
             return jsonify({"error": "Not enough players with stats"}), 400
 
         # Assemble teams and matchup
-        matchup_info = assemble_caps_matchup(players, team_size)
+        matchup_info = assemble_matchup(players, team_size)
         your_team = matchup_info["your_team"]
         opp_team = matchup_info["opp_team"]
         playerA = matchup_info["line_subject"]
         matchup = matchup_info["matchup"]
 
         # Get player stats
-        playerA_stats = get_player_caps_shots_profile(cur, playerA, team_size)
-        teammate_stats = [get_player_caps_shots_profile(cur, p, team_size) for p in your_team if p != playerA]
-        opp_stats = [get_player_caps_shots_profile(cur, p, team_size) for p in opp_team]
+        playerA_stats = CAPS.get_shots_profile(cur, playerA, team_size)
+        teammate_stats = [CAPS.get_shots_profile(cur, p, team_size) for p in your_team if p != playerA]
+        opp_stats = [CAPS.get_shots_profile(cur, p, team_size) for p in opp_team]
 
         line_type = choice(["Over", "Under"])
 
@@ -150,21 +138,21 @@ def create_cpu_pong_shots_bet():
 
     try:
         # Get players
-        players = get_pong_shots_players(cur, team_size)
+        players = PONG.get_shots_players(cur, team_size)
         if len(players) < 2 * team_size:
             return jsonify({"error": "Not enough players with stats"}), 400
 
         # Assemble matchup
-        matchup_info = assemble_pong_shots_matchup(players, team_size)
+        matchup_info = assemble_matchup(players, team_size)
         your_team = matchup_info["your_team"]
         opp_team = matchup_info["opp_team"]
         playerA = matchup_info["line_subject"]
         matchup = matchup_info["matchup"]
 
         # Get stat profiles
-        playerA_stats = get_player_pong_shots_profile(cur, playerA, team_size)
-        teammate_stats = [get_player_pong_shots_profile(cur, p, team_size) for p in your_team if p != playerA]
-        opp_stats = [get_player_pong_shots_profile(cur, p, team_size) for p in opp_team]
+        playerA_stats = PONG.get_shots_profile(cur, playerA, team_size)
+        teammate_stats = [PONG.get_shots_profile(cur, p, team_size) for p in your_team if p != playerA]
+        opp_stats = [PONG.get_shots_profile(cur, p, team_size) for p in opp_team]
 
         line_type = choice(["Over", "Under"])
 
@@ -236,19 +224,19 @@ def create_cpu_beerball_shots_bet():
 
     try:
         # Fetch players with Beerball shots made data
-        players = get_beerball_shots_players(cur, team_size)
+        players = BEERBALL.get_shots_players(cur, team_size)
         if len(players) < 2 * team_size:
             return jsonify({"error": "Not enough players with stats"}), 400
 
         # Build teams and matchup string
-        matchup_info = assemble_beerball_matchup(players, team_size)
+        matchup_info = assemble_matchup(players, team_size)
         your_team = matchup_info["your_team"]
         opp_team = matchup_info["opp_team"]
         playerA = matchup_info["line_subject"]
         matchup = matchup_info["matchup"]
 
         # Get subject player stats
-        playerA_stats = get_player_beerball_shots_profile(cur, playerA, team_size)
+        playerA_stats = BEERBALL.get_shots_profile(cur, playerA, team_size)
         if not playerA_stats:
             return jsonify({"error": "Missing stats for line subject"}), 400
 
@@ -347,11 +335,11 @@ def create_cpu_beerball_score_bet():
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     try:
-        players = get_beerball_score_players(cur, team_size)
+        players = BEERBALL.get_score_players(cur, team_size)
         if len(players) < 2 * team_size:
             return jsonify({"error": "Not enough players with stats"}), 400
 
-        matchup_info = assemble_beerball_matchup(players, team_size)
+        matchup_info = assemble_matchup(players, team_size)
         your_team = matchup_info["your_team"]
         opp_team = matchup_info["opp_team"]
         matchup = matchup_info["matchup"]
@@ -362,7 +350,7 @@ def create_cpu_beerball_score_bet():
 
         # Get shots made profile (default 0 if missing)
         def safe_shots(p):
-            row = get_player_beerball_shots_profile(cur, p, team_size)
+            row = BEERBALL.get_shots_profile(cur, p, team_size)
             return row["mean"] if row else 0.0
 
         your_shots = [safe_shots(p) for p in your_team]
@@ -431,11 +419,11 @@ def create_cpu_caps_score_bet():
 
     try:
         # Get eligible players
-        players = get_caps_score_players(cur, team_size)
+        players = CAPS.get_score_players(cur, team_size)
         if len(players) < 2 * team_size:
             return jsonify({"error": "Not enough players with stats"}), 400
 
-        matchup_info = assemble_caps_matchup(players, team_size)
+        matchup_info = assemble_matchup(players, team_size)
         your_team = matchup_info["your_team"]
         opp_team = matchup_info["opp_team"]
         matchup = matchup_info["matchup"]
@@ -522,11 +510,11 @@ def create_cpu_pong_score_bet():
 
     try:
         # 1. Get players
-        players = get_pong_score_players(cur, team_size)
+        players = PONG.get_score_players(cur, team_size)
         if len(players) < 2 * team_size:
             return jsonify({"error": "Not enough players with stats"}), 400
 
-        matchup_info = assemble_pong_shots_matchup(players, team_size)
+        matchup_info = assemble_matchup(players, team_size)
         your_team = matchup_info["your_team"]
         opp_team = matchup_info["opp_team"]
         matchup = matchup_info["matchup"]
@@ -539,7 +527,7 @@ def create_cpu_pong_score_bet():
 
         # 3. Shots made profiles (default 0 if missing)
         def safe_shots(p):
-            row = get_player_pong_shots_profile(cur, p, team_size)
+            row = PONG.get_shots_profile(cur, p, team_size)
             return row["mean"] if row else 0.0
 
         your_shots = [safe_shots(p) for p in your_team]

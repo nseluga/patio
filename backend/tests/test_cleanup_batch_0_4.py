@@ -390,37 +390,42 @@ def _function_source(filepath: Path, func_name: str) -> str:
     return ""
 
 
+# Item 3.1 collapsed the three sport modules into backend/bet_generation.py.
+# The anti-N+1 (ANY(%s) batch) guarantee now lives in the consolidated module.
+BET_GEN_MODULE = "bet_generation.py"
+
+
 def test_caps_bet_gen_uses_batch_query():
     """get_global_caps_score_strength_average must use ANY(%s) not a per-player loop query."""
-    fpath = BACKEND_DIR / "caps_bet_generation.py"
+    fpath = BACKEND_DIR / BET_GEN_MODULE
     func_src = _function_source(fpath, "get_global_caps_score_strength_average")
-    assert func_src, "get_global_caps_score_strength_average not found in caps_bet_generation.py"
+    assert func_src, f"get_global_caps_score_strength_average not found in {BET_GEN_MODULE}"
     assert re.search(r'ANY\s*\(\s*%s\s*\)', func_src), (
-        "caps_bet_generation.py: get_global_caps_score_strength_average does not use "
+        f"{BET_GEN_MODULE}: get_global_caps_score_strength_average does not use "
         "ANY(%s) batch query — N+1 per-player queries may still be present"
     )
 
 
 def test_pong_bet_gen_uses_batch_query():
     """get_global_pong_score_strength_average must use ANY(%s) not a per-player loop query."""
-    fpath = BACKEND_DIR / "pong_bet_generation.py"
+    fpath = BACKEND_DIR / BET_GEN_MODULE
     func_src = _function_source(fpath, "get_global_pong_score_strength_average")
-    assert func_src, "get_global_pong_score_strength_average not found in pong_bet_generation.py"
+    assert func_src, f"get_global_pong_score_strength_average not found in {BET_GEN_MODULE}"
     assert re.search(r'ANY\s*\(\s*%s\s*\)', func_src), (
-        "pong_bet_generation.py: get_global_pong_score_strength_average does not use "
+        f"{BET_GEN_MODULE}: get_global_pong_score_strength_average does not use "
         "ANY(%s) batch query — N+1 per-player queries may still be present"
     )
 
 
 def test_beerball_bet_gen_uses_batch_query():
     """get_global_beerball_score_strength_average must use ANY(%s) not a per-player loop query."""
-    fpath = BACKEND_DIR / "beerball_bet_generation.py"
+    fpath = BACKEND_DIR / BET_GEN_MODULE
     func_src = _function_source(fpath, "get_global_beerball_score_strength_average")
     assert func_src, (
-        "get_global_beerball_score_strength_average not found in beerball_bet_generation.py"
+        f"get_global_beerball_score_strength_average not found in {BET_GEN_MODULE}"
     )
     assert re.search(r'ANY\s*\(\s*%s\s*\)', func_src), (
-        "beerball_bet_generation.py: get_global_beerball_score_strength_average does not use "
+        f"{BET_GEN_MODULE}: get_global_beerball_score_strength_average does not use "
         "ANY(%s) batch query — N+1 per-player queries may still be present"
     )
 
