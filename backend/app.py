@@ -373,9 +373,9 @@ def get_cpu_bets():
 @app.route("/accept_bet/<bet_id>", methods=["POST"])
 def accept_bet(bet_id):
     player_id = get_player_id()
-    logger.debug("PvP accept_bet triggered by player_id: %s", player_id)
     if player_id is None:
         return jsonify({"error": "Unauthorized"}), 401
+    logger.debug("PvP accept_bet triggered by player_id: %s", player_id)
 
     data = request.get_json()
     accepter_line_type = data.get("accepterLineType")  # Get flipped lineType from frontend
@@ -392,14 +392,14 @@ def accept_bet(bet_id):
 
         amount, poster_id = bet
 
-        # Check caps of accepter
-        cur.execute("SELECT caps_balance FROM players WHERE id = %s", (player_id,))
-        caps = cur.fetchone()
-        if not caps or caps[0] < amount:
+        # Atomic caps debit — prevents TOCTOU race between balance check and update.
+        # The WHERE caps_balance >= %s guard makes the check and debit a single atomic step.
+        cur.execute(
+            "UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s AND caps_balance >= %s",
+            (amount, player_id, amount)
+        )
+        if cur.rowcount == 0:
             return jsonify({"error": "Insufficient caps"}), 400
-
-        # Deduct caps from accepter
-        cur.execute("UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s", (amount, player_id))
 
         # Accept the bet and store accepter's line type
         cur.execute("""
@@ -457,16 +457,14 @@ def accept_cpu_bet(bet_id):
 
         amount = row[0]
 
-        # Check user has enough caps
-        cur.execute("SELECT caps_balance FROM players WHERE id = %s", (player_id,))
-        caps = cur.fetchone()
-        if not caps or caps[0] < amount:
+        # Atomic caps debit — prevents TOCTOU race between balance check and update.
+        # The WHERE caps_balance >= %s guard makes the check and debit a single atomic step.
+        cur.execute(
+            "UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s AND caps_balance >= %s",
+            (amount, player_id, amount)
+        )
+        if cur.rowcount == 0:
             return jsonify({"error": "Insufficient caps"}), 400
-
-        # Deduct caps
-        cur.execute("""
-            UPDATE players SET caps_balance = caps_balance - %s WHERE id = %s
-        """, (amount, player_id))
 
         # Record the acceptance
         cur.execute("""
