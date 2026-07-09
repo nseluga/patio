@@ -1,23 +1,32 @@
+---
 # Engineer Report
-**Task:** Item 0.7 — Stop leaking secrets in logs + disable debug mode
-**Branch:** auto/stage0
-**Commit:** 4a8f507
-**Date:** 2026-07-07
+**Task:** Item 0.8 — Fix camelCase column access breaking core reads
+**Branch:** auto/stage0-0.8
+**Date:** 2026-07-09
 
 ## Design Decisions
 
-- **No log-scrubbing needed**: Item 0.4 already converted all `print()` calls in `get_player_id()` to `logger.warning()` calls that emit only a generic message string — no token, header value, payload, or SECRET_KEY. Confirmed clean by grep across both `backend/app.py` and `backend/auth.py`.
-- **`.flaskenv` only**: Production mode is set via `.flaskenv` (`FLASK_ENV=production`, `FLASK_DEBUG=0`). No `app.run()` call exists in `app.py` — Flask is launched via CLI — so no source code change was needed. The Procfile has no `--debug` flag. These two env vars are the only levers that matter.
-- **`FLASK_DEBUG=0` is explicit**: Even though `FLASK_ENV=production` implicitly disables debug, setting `FLASK_DEBUG=0` makes the intent unambiguous and guards against Flask version differences.
+- **Alias approach over RealDictCursor casing fix:** Replaced `SELECT *` with explicit column lists using double-quoted camelCase identifiers aliased to lowercase (e.g., `"posterId" AS posterid`). This means all existing lowercase dict-key accesses (`bet["posterid"]`, `bet["gametype"]`, etc.) work without touching the rest of the handler logic — lower blast radius than renaming dict keys throughout.
+- **Consistent alias set across all handlers:** Defined the same alias pattern across `get_pvp_bets`, `get_cpu_bets`, `get_ongoing_bets`, and both `SELECT` calls in `submit_stats` so the behavior is uniform and predictable.
+- **Extended UNION queries with full explicit columns:** The UNION in `get_ongoing_bets` required repeating the column list three times (one per UNION arm) to ensure column alignment. Also pulled in all stat fields (`yourteama`, `yourshots`, etc.) needed by `compute_status_message` — `SELECT *` was silently including these; they must be kept.
+- **auth.py WHERE clause also fixed:** Changed unquoted `posterId` and `accepterid` in the WHERE clause to `"posterId"` and `"accepterId"` — unquoted identifiers fold to lowercase in Postgres, which would silently fail or return wrong rows.
+- **Stopgap only:** This fix is an interim measure. Item 4.1 will rename all columns to snake_case, at which point these aliases and quotes can be removed.
 
 ## Files Changed
 
-- `backend/.flaskenv` — Changed `FLASK_ENV=development` to `FLASK_ENV=production` and added `FLASK_DEBUG=0`; also committed pre-existing `PLAN.md` + `PROGRESS.md` updates from items 0.1–0.6
+- `backend/app.py` — Fixed `SELECT *` in `get_pvp_bets`, `get_cpu_bets`, `get_ongoing_bets`, and both `SELECT * FROM bets` calls in `submit_stats` (initial fetch + re-fetch after update) with explicit column lists and lowercase aliases; also fixed quoted identifiers in WHERE clauses (`"posterId"`, `"accepterId"`, `"timePosted"`)
+- `backend/auth.py` — Fixed `/me` bets query: changed `SELECT gametype` to `SELECT "gameType" AS gametype`, added quotes to `"posterId"`, `"accepterId"`, `"timePosted"` throughout
 
 ## Deferred / Out of Scope
 
-- Log level configuration: `logging` is set up but no handler/level is configured in `app.py` — Flask provides a default. A production-appropriate log level (e.g. WARNING) and structured log handler can be added in a later hardening pass; it doesn't affect the secret-leak gate.
+- `cleanup_bets`: Uses unquoted camelCase identifiers in DELETE WHERE clauses (`accepterId`, `timePosted`) — not in scope for 0.8 but may cause runtime errors; flagged for 4.1 or a dedicated fix
+- `accept_bet`: `SELECT amount, posterId FROM bets` uses unquoted `posterId` in SELECT — may work by accident or fail; out of scope
+- `UPDATE bets SET accepterId = %s` in `accept_bet`: unquoted column in SET clause — out of scope
+- Column rename to snake_case (item 4.1) will make all these fixes obsolete
 
 ## Flags for Reviewer
 
-- `.flaskenv` is committed to the repo; Render reads its env vars from the dashboard, so this file is only used locally. Production safety on Render is already handled by the dashboard vars. The change is still correct for any developer running locally.
+- The UNION query in `get_ongoing_bets` is now verbose — three near-identical SELECT arms. If Postgres column count mismatches (UNION requires same number of columns), the query will error at runtime even if syntax is valid; verify the column count matches across all three arms (28 columns each).
+- `compute_status_message` is called with the `bet` dict from `get_ongoing_bets` (regular cursor + manual dict) and also from `submit_stats` (RealDictCursor). Both now produce lowercase aliases, so the same lowercase key access in `compute_status_message` works for both callers.
+- `check_stats_match` is called with `updated_bet` from `submit_stats` re-fetch — also lowercase-aliased, so `bet.get('gametype')` etc. are correct.
+---
