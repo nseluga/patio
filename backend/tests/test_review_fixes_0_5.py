@@ -31,7 +31,18 @@ from backend.app import app
 
 TEST_SECRET = "test-secret-qa-0-5"
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-APP_PY = REPO_ROOT / "backend" / "app.py"
+BACKEND_DIR = REPO_ROOT / "backend"
+APP_PY = BACKEND_DIR / "app.py"
+
+# After the blueprint split, route functions live in backend/routes/*.py.
+_SEARCH_PATHS = [
+    APP_PY,
+    BACKEND_DIR / "routes" / "bets_routes.py",
+    BACKEND_DIR / "routes" / "accept_routes.py",
+    BACKEND_DIR / "routes" / "submit_routes.py",
+    BACKEND_DIR / "routes" / "main_routes.py",
+    BACKEND_DIR / "routes" / "lines_routes.py",
+]
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -43,13 +54,14 @@ def make_jwt(player_id: int) -> str:
 
 
 def _function_source(func_name: str) -> str:
-    """Return the full source of a top-level function in app.py."""
-    source = APP_PY.read_text()
-    tree = ast.parse(source)
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name == func_name:
-            lines = source.splitlines()
-            return "\n".join(lines[node.lineno - 1 : node.end_lineno])
+    """Return the full source of a named function, searching blueprint files too."""
+    for path in _SEARCH_PATHS:
+        source = path.read_text()
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == func_name:
+                lines = source.splitlines()
+                return "\n".join(lines[node.lineno - 1 : node.end_lineno])
     return ""
 
 
@@ -314,7 +326,7 @@ def test_compute_status_message_source_no_get_db_call():
 
 def test_compute_status_message_uses_passed_conn():
     """compute_status_message creates a cursor from the conn it was passed, not a new connection."""
-    from backend.app import compute_status_message
+    from backend.routes.bets_routes import compute_status_message
 
     mock_conn = MagicMock()
     mock_cursor = MagicMock()

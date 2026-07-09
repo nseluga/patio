@@ -29,7 +29,18 @@ from backend.auth import auth  # noqa: F401 — registers blueprint
 
 TEST_SECRET = "test-secret-qa-0-8b"
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-APP_PY = REPO_ROOT / "backend" / "app.py"
+BACKEND_DIR = REPO_ROOT / "backend"
+APP_PY = BACKEND_DIR / "app.py"
+
+# After the blueprint split, route functions live in backend/routes/*.py.
+_SEARCH_PATHS = [
+    APP_PY,
+    BACKEND_DIR / "routes" / "bets_routes.py",
+    BACKEND_DIR / "routes" / "accept_routes.py",
+    BACKEND_DIR / "routes" / "submit_routes.py",
+    BACKEND_DIR / "routes" / "main_routes.py",
+    BACKEND_DIR / "routes" / "lines_routes.py",
+]
 
 
 def make_jwt(player_id: int) -> str:
@@ -37,12 +48,14 @@ def make_jwt(player_id: int) -> str:
 
 
 def _source(func_name: str) -> str:
-    text = APP_PY.read_text()
-    tree = ast.parse(text)
-    lines = text.splitlines()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name == func_name:
-            return "\n".join(lines[node.lineno - 1: node.end_lineno])
+    """Return the full source of a named function, searching blueprint files too."""
+    for path in _SEARCH_PATHS:
+        text = path.read_text()
+        tree = ast.parse(text)
+        lines = text.splitlines()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == func_name:
+                return "\n".join(lines[node.lineno - 1: node.end_lineno])
     return ""
 
 

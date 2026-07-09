@@ -43,6 +43,16 @@ BACKEND_DIR = REPO_ROOT / "backend"
 APP_PY = BACKEND_DIR / "app.py"
 AUTH_PY = BACKEND_DIR / "auth.py"
 
+# After the blueprint split, route functions live in backend/routes/*.py.
+_SEARCH_PATHS = [
+    APP_PY,
+    BACKEND_DIR / "routes" / "bets_routes.py",
+    BACKEND_DIR / "routes" / "accept_routes.py",
+    BACKEND_DIR / "routes" / "submit_routes.py",
+    BACKEND_DIR / "routes" / "main_routes.py",
+    BACKEND_DIR / "routes" / "lines_routes.py",
+]
+
 # The lowercase aliases the SELECT queries must produce.
 PVP_CPU_COLS = [
     "id", "poster", "posterid", "accepterid", "timeposted",
@@ -67,13 +77,15 @@ def make_jwt(player_id: int) -> str:
 
 
 def _source(path: Path, func_name: str) -> str:
-    """Return source of a top-level function by name."""
-    text = path.read_text()
-    tree = ast.parse(text)
-    lines = text.splitlines()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name == func_name:
-            return "\n".join(lines[node.lineno - 1: node.end_lineno])
+    """Return source of a named function, searching blueprint files if not found in path."""
+    search = [path] + [p for p in _SEARCH_PATHS if p != path]
+    for p in search:
+        text = p.read_text()
+        tree = ast.parse(text)
+        lines = text.splitlines()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == func_name:
+                return "\n".join(lines[node.lineno - 1: node.end_lineno])
     return ""
 
 

@@ -39,6 +39,16 @@ BACKEND_DIR = REPO_ROOT / "backend"
 APP_PY = BACKEND_DIR / "app.py"
 AUTH_PY = BACKEND_DIR / "auth.py"
 
+# After the blueprint split, route functions live in backend/routes/*.py.
+_SEARCH_PATHS = [
+    APP_PY,
+    BACKEND_DIR / "routes" / "bets_routes.py",
+    BACKEND_DIR / "routes" / "accept_routes.py",
+    BACKEND_DIR / "routes" / "submit_routes.py",
+    BACKEND_DIR / "routes" / "main_routes.py",
+    BACKEND_DIR / "routes" / "lines_routes.py",
+]
+
 # All 14 protected routes in app.py (the auth blueprint's /me makes 15 total,
 # but it lives in auth.py — we check that separately).
 PROTECTED_ROUTES_APP_PY = [
@@ -101,15 +111,17 @@ def _route_has_decorator(func_name: str, decorator_name: str, tree: ast.Module) 
 
 
 def _function_body_source(func_name: str, path: Path) -> str:
-    """Return the source lines of only the function BODY (not the decorator lines)."""
-    source = path.read_text()
-    tree = ast.parse(source)
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == func_name:
-            # node.body starts at the first statement after the def + decorators
-            first_body_line = node.body[0].lineno
-            lines = source.splitlines()
-            return "\n".join(lines[first_body_line - 1 : node.end_lineno])
+    """Return function body source. Searches blueprint files if not found in path."""
+    search = [path] + [p for p in _SEARCH_PATHS if p != path]
+    for p in search:
+        source = p.read_text()
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == func_name:
+                # node.body starts at the first statement after the def + decorators
+                first_body_line = node.body[0].lineno
+                lines = source.splitlines()
+                return "\n".join(lines[first_body_line - 1 : node.end_lineno])
     return ""
 
 
@@ -175,9 +187,15 @@ class TestProtectedRoutesHaveDecorator:
 
     @pytest.mark.parametrize("func_name", PROTECTED_ROUTES_APP_PY)
     def test_protected_route_has_token_required(self, func_name):
-        tree = _parse_file(APP_PY)
-        assert _route_has_decorator(func_name, "token_required", tree), (
-            f"Protected route '{func_name}' in app.py is missing @token_required"
+        # Search blueprint files too since routes were moved out of app.py
+        found = False
+        for path in _SEARCH_PATHS:
+            tree = _parse_file(path)
+            if _route_has_decorator(func_name, "token_required", tree):
+                found = True
+                break
+        assert found, (
+            f"Protected route '{func_name}' is missing @token_required in all blueprint files"
         )
 
     def test_me_handler_has_token_required(self):
@@ -205,11 +223,13 @@ class TestPublicRoutesLackDecorator:
 
     @pytest.mark.parametrize("func_name", PUBLIC_ROUTES_APP_PY)
     def test_public_app_route_no_token_required(self, func_name):
-        tree = _parse_file(APP_PY)
-        has_it = _route_has_decorator(func_name, "token_required", tree)
-        assert not has_it, (
-            f"Public route '{func_name}' in app.py incorrectly has @token_required"
-        )
+        # Search blueprint files too since routes were moved out of app.py
+        for path in _SEARCH_PATHS:
+            tree = _parse_file(path)
+            has_it = _route_has_decorator(func_name, "token_required", tree)
+            assert not has_it, (
+                f"Public route '{func_name}' in {path.name} incorrectly has @token_required"
+            )
 
 
 # ===========================================================================

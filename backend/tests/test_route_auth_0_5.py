@@ -36,6 +36,17 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 BACKEND_DIR = REPO_ROOT / "backend"
 APP_PY = BACKEND_DIR / "app.py"
 
+# After the blueprint split, route functions live in backend/routes/*.py.
+# Search these files in order so static-analysis helpers still find them.
+_SEARCH_PATHS = [
+    APP_PY,
+    BACKEND_DIR / "routes" / "bets_routes.py",
+    BACKEND_DIR / "routes" / "accept_routes.py",
+    BACKEND_DIR / "routes" / "submit_routes.py",
+    BACKEND_DIR / "routes" / "main_routes.py",
+    BACKEND_DIR / "routes" / "lines_routes.py",
+]
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -58,13 +69,14 @@ def make_mock_conn(fetchone_return=None, fetchall_return=None, description=None)
 
 
 def _function_source(func_name: str) -> str:
-    """Return the full source of a top-level function in app.py."""
-    source = APP_PY.read_text()
-    tree = ast.parse(source)
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name == func_name:
-            lines = source.splitlines()
-            return "\n".join(lines[node.lineno - 1 : node.end_lineno])
+    """Return the full source of a named function, searching blueprint files too."""
+    for path in _SEARCH_PATHS:
+        source = path.read_text()
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == func_name:
+                lines = source.splitlines()
+                return "\n".join(lines[node.lineno - 1 : node.end_lineno])
     return ""
 
 
@@ -86,15 +98,16 @@ def client():
 
 
 def _route_has_decorator(func_name: str, decorator_name: str) -> bool:
-    """Return True if the given function in app.py is decorated with decorator_name."""
-    source = APP_PY.read_text()
-    tree = ast.parse(source)
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name == func_name:
-            for dec in node.decorator_list:
-                dec_src = ast.unparse(dec)
-                if decorator_name in dec_src:
-                    return True
+    """Return True if the named function (in any blueprint file) has decorator_name."""
+    for path in _SEARCH_PATHS:
+        source = path.read_text()
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == func_name:
+                for dec in node.decorator_list:
+                    dec_src = ast.unparse(dec)
+                    if decorator_name in dec_src:
+                        return True
     return False
 
 

@@ -306,19 +306,31 @@ def test_no_logger_error_in_exception_handlers():
     )
 
 
+def _find_function_in_backend(func_name: str):
+    """Search app.py and blueprint files for a function; return (source_text, func_node)."""
+    search_paths = [
+        BACKEND_DIR / "app.py",
+        BACKEND_DIR / "routes" / "bets_routes.py",
+        BACKEND_DIR / "routes" / "accept_routes.py",
+        BACKEND_DIR / "routes" / "submit_routes.py",
+        BACKEND_DIR / "routes" / "main_routes.py",
+        BACKEND_DIR / "routes" / "lines_routes.py",
+    ]
+    for path in search_paths:
+        if not path.exists():
+            continue
+        source = path.read_text()
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == func_name:
+                return source, node
+    return None, None
+
+
 def test_accept_cpu_bet_has_logger_exception():
     """accept_cpu_bet's except block must call logger.exception() (was absent before fix)."""
-    app_py = BACKEND_DIR / "app.py"
-    source = app_py.read_text()
+    source, func_node = _find_function_in_backend("accept_cpu_bet")
 
-    # Find the accept_cpu_bet function and confirm logger.exception is in its except block.
-    # We use AST to locate the function, then scan its source lines.
-    tree = ast.parse(source)
-    func_node = None
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name == "accept_cpu_bet":
-            func_node = node
-            break
     assert func_node is not None, "accept_cpu_bet function not found in app.py"
 
     lines = source.splitlines()
@@ -342,15 +354,7 @@ def test_compute_status_message_closes_connection():
     review finding), eliminating the internal get_db() call and the connection leak.
     The cursor is still wrapped in try/finally to ensure it is closed.
     """
-    app_py = BACKEND_DIR / "app.py"
-    source = app_py.read_text()
-    tree = ast.parse(source)
-
-    func_node = None
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef) and node.name == "compute_status_message":
-            func_node = node
-            break
+    source, func_node = _find_function_in_backend("compute_status_message")
     assert func_node is not None, "compute_status_message function not found in app.py"
 
     lines = source.splitlines()
