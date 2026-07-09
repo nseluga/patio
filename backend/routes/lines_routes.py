@@ -40,6 +40,7 @@ from backend.pong_bet_generation import (
     get_pong_shots_players,
 )
 from backend.utils.auth import token_required
+from backend.validation import require_fields
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +53,10 @@ def create_cpu_caps_shots_bet():
     if g.player_id != 0:
         return jsonify({"error": "Forbidden"}), 403
 
-    data = request.get_json()
+    data = request.get_json() or {}
     game_size = data.get("gameSize", "1v1")
+    if not game_size or not game_size[0:1].isdigit():
+        return jsonify({"error": "Invalid gameSize"}), 400
     team_size = int(game_size[0])  # "1v1" -> 1
 
     conn = get_db()
@@ -132,8 +135,10 @@ def create_cpu_pong_shots_bet():
     if g.player_id != 0:
         return jsonify({"error": "Forbidden"}), 403
 
-    data = request.get_json()
+    data = request.get_json() or {}
     game_size = data.get("gameSize", "1v1")
+    if not game_size or not game_size[0:1].isdigit():
+        return jsonify({"error": "Invalid gameSize"}), 400
     team_size = int(game_size[0])  # "1v1" -> 1
 
     conn = get_db()
@@ -214,8 +219,10 @@ def create_cpu_beerball_shots_bet():
     if g.player_id != 0:
         return jsonify({"error": "Forbidden"}), 403
 
-    data = request.get_json()
+    data = request.get_json() or {}
     game_size = data.get("gameSize", "1v1")
+    if not game_size or not game_size[0:1].isdigit():
+        return jsonify({"error": "Invalid gameSize"}), 400
     team_size = int(game_size[0])  # "1v1" → 1
 
     conn = get_db()
@@ -322,8 +329,10 @@ def create_cpu_beerball_score_bet():
     if g.player_id != 0:
         return jsonify({"error": "Forbidden"}), 403
 
-    data = request.get_json()
+    data = request.get_json() or {}
     game_size = data.get("gameSize", "2v2")
+    if not game_size or not game_size[0:1].isdigit():
+        return jsonify({"error": "Invalid gameSize"}), 400
     team_size = int(game_size[0])
 
     conn = get_db()
@@ -401,8 +410,10 @@ def create_cpu_caps_score_bet():
     if g.player_id != 0:
         return jsonify({"error": "Forbidden"}), 403
 
-    data = request.get_json()
+    data = request.get_json() or {}
     game_size = data.get("gameSize", "2v2")
+    if not game_size or not game_size[0:1].isdigit():
+        return jsonify({"error": "Invalid gameSize"}), 400
     team_size = int(game_size[0])
 
     conn = get_db()
@@ -488,8 +499,10 @@ def create_cpu_pong_score_bet():
     if g.player_id != 0:
         return jsonify({"error": "Forbidden"}), 403
 
-    data = request.get_json()
+    data = request.get_json() or {}
     game_size = data.get("gameSize", "2v2")
+    if not game_size or not game_size[0:1].isdigit():
+        return jsonify({"error": "Invalid gameSize"}), 400
     team_size = int(game_size[0])
 
     conn = get_db()

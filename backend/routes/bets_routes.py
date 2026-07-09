@@ -10,6 +10,7 @@ from psycopg2.extras import Json
 from backend.extensions import limiter
 from backend.routes._db import get_db
 from backend.utils.auth import token_required
+from backend.validation import require_fields
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,9 @@ bets_bp = Blueprint('bets', __name__)
 @token_required
 def create_bet():
     player_id = g.player_id
-    bet = request.json
+    bet, err = require_fields(request.json, 'matchup', 'gameType', 'gamePlayed', 'gameSize')
+    if err:
+        return err
     amount = bet.get('amount', 0)
     if not isinstance(amount, int) or amount <= 0:
         return jsonify({"error": "Invalid or missing amount"}), 400

@@ -256,6 +256,8 @@ def test_create_bet_insufficient_caps_returns_400(client):
                     "lineType": "Over",
                     "lineNumber": 10.5,
                     "gameType": "Caps",
+                    "gamePlayed": "Caps",
+                    "gameSize": "1v1",
                 },
                 headers={"Authorization": f"Bearer {token}"},
             )
@@ -289,6 +291,8 @@ def test_create_bet_sufficient_caps_succeeds(client):
                     "lineType": "Over",
                     "lineNumber": 10.5,
                     "gameType": "Caps",
+                    "gamePlayed": "Caps",
+                    "gameSize": "1v1",
                 },
                 headers={"Authorization": f"Bearer {token}"},
             )

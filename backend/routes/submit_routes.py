@@ -13,6 +13,7 @@ from backend.stats_utils import (
     update_player_aggregate,
 )
 from backend.utils.auth import token_required
+from backend.validation import coerce_int, require_fields
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,8 @@ submit_bp = Blueprint('submit', __name__)
 @token_required
 def submit_stats(bet_id):
     data = request.json
+    if not data:
+        return jsonify({"error": "Request body required"}), 400
 
     # Identity comes from JWT via @token_required — do not trust playerId from the request body
     player_id = g.player_id
@@ -66,21 +69,42 @@ def submit_stats(bet_id):
             match = False
 
             if game_type == "Score":
+                _, err = require_fields(data, 'yourTeamA', 'yourTeamB', 'yourScoreA', 'yourScoreB')
+                if err:
+                    return err
+                score_a, err = coerce_int(data.get("yourScoreA"), "yourScoreA")
+                if err:
+                    return err
+                score_b, err = coerce_int(data.get("yourScoreB"), "yourScoreB")
+                if err:
+                    return err
                 match = (
                     data["yourTeamA"] == bet["yourteama"] and
                     data["yourTeamB"] == bet["yourteamb"] and
-                    int(data["yourScoreA"]) == bet["yourscorea"] and
-                    int(data["yourScoreB"]) == bet["yourscoreb"]
+                    score_a == bet["yourscorea"] and
+                    score_b == bet["yourscoreb"]
                 )
 
             elif game_type == "Shots Made":
+                _, err = require_fields(data, 'yourPlayer', 'yourShots')
+                if err:
+                    return err
+                shots, err = coerce_int(data.get("yourShots"), "yourShots")
+                if err:
+                    return err
                 match = (
                     data["yourPlayer"].strip().lower() == bet["yourplayer"].strip().lower() and
-                    int(data["yourShots"]) == bet["yourshots"]
+                    shots == bet["yourshots"]
                 )
 
             elif game_type == "Other":
-                match = int(data["yourOutcome"]) == bet["youroutcome"]
+                _, err = require_fields(data, 'yourOutcome')
+                if err:
+                    return err
+                outcome, err = coerce_int(data.get("yourOutcome"), "yourOutcome")
+                if err:
+                    return err
+                match = outcome == bet["youroutcome"]
 
             if match:
                 cur.execute("""
@@ -95,11 +119,11 @@ def submit_stats(bet_id):
                 game_type = bet['gametype']
 
                 if game_type == "Shots Made":
-                    user_stat = int(data["yourShots"])
+                    user_stat = shots
                 elif game_type == "Score":
-                    user_stat = int(data["yourScoreA"]) + int(data["yourScoreB"])
+                    user_stat = score_a + score_b
                 elif game_type == "Other":
-                    user_stat = int(data["yourOutcome"])
+                    user_stat = outcome
                 else:
                     user_stat = None
 
@@ -132,6 +156,9 @@ def submit_stats(bet_id):
             update_values = []
 
             if bet['gametype'] == "Score":
+                _, err = require_fields(data, 'yourTeamA', 'yourTeamB', 'yourScoreA', 'yourScoreB')
+                if err:
+                    return err
                 if is_poster:
                     update_fields += ['"yourTeamA"', '"yourTeamB"', '"yourScoreA"', '"yourScoreB"']
                     update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
@@ -140,11 +167,17 @@ def submit_stats(bet_id):
                     update_values += [data["yourTeamA"], data["yourTeamB"], data["yourScoreA"], data["yourScoreB"]]
 
             elif bet['gametype'] == "Shots Made":
+                _, err = require_fields(data, 'yourPlayer', 'yourShots')
+                if err:
+                    return err
                 update_fields += ['"yourPlayer"' if is_poster else '"oppPlayer"',
                                 '"yourShots"' if is_poster else '"oppShots"']
                 update_values += [data["yourPlayer"], data["yourShots"]]
 
             elif bet['gametype'] == "Other":
+                _, err = require_fields(data, 'yourOutcome')
+                if err:
+                    return err
                 update_fields += ['"yourOutcome"' if is_poster else '"oppOutcome"']
                 update_values += [data["yourOutcome"]]
 

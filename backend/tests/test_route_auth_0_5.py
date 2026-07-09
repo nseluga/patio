@@ -382,6 +382,8 @@ def test_create_bet_client_identity_fields_ignored(client):
                     "lineType": "Over",
                     "lineNumber": 10.5,
                     "gameType": "Caps",
+                    "gamePlayed": "Caps",
+                    "gameSize": "1v1",
                 },
                 headers={"Authorization": f"Bearer {token}"},
             )

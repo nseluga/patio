@@ -4,7 +4,9 @@ import jwt
 import logging
 from backend.db import get_db
 from backend.config import SECRET_KEY
+from backend.extensions import limiter
 from backend.utils.auth import token_required
+from backend.validation import require_fields
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime, timedelta, timezone
 
@@ -15,8 +17,12 @@ auth = Blueprint('auth', __name__)
 
 # Route to register a new player
 @auth.route('/register', methods=['POST'])
+@limiter.limit("10 per minute")
 def register():
-    data = request.json
+    data, err = require_fields(request.json, 'username', 'email', 'password')
+    if err:
+        return err
+
     hashed_pw = generate_password_hash(data['password'], method='pbkdf2:sha256')
 
     conn = get_db()
@@ -37,8 +43,11 @@ def register():
 
 # Route to log in an existing player
 @auth.route('/login', methods=['POST'])
+@limiter.limit("10 per minute")
 def login():
-    data = request.json
+    data, err = require_fields(request.json, 'email', 'password')
+    if err:
+        return err
 
     conn = get_db()
     cur = conn.cursor()
