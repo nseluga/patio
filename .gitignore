@@ -30,3 +30,8 @@ yarn-error.log*
 node_modules/
 build/
 .env
+
+# Personal planning/progress/spec — local only, never on GitHub
+/PLAN.md
+/PROGRESS.md
+/SPEC.md
