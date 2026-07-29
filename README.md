@@ -8,7 +8,7 @@ A full-stack social sports betting app for backyard games (Caps, Beerball, Pong,
 
 - **Authentication** — JWT-based login & registration
 - **PvP Bets** — Create and accept bets against other players
-- **CPU/House Bets** — Automated odds with ~4% house edge
+- **CPU/House Bets** — Automated odds, lines skewed toward the House by design (~4% percentile shift in line generation; not yet backtested against real outcomes)
 - **Ongoing Bets** — Track accepted bets, enter stats, confirm results
 - **Leaderboard** — See who's up and who owes
 - **Profile** — Stats, bet history, profile photo
