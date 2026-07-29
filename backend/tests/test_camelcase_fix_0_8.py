@@ -80,7 +80,7 @@ def _source(path: Path, func_name: str) -> str:
     """Return source of a named function, searching blueprint files if not found in path."""
     search = [path] + [p for p in _SEARCH_PATHS if p != path]
     for p in search:
-        text = p.read_text()
+        text = p.read_text(encoding="utf-8")
         tree = ast.parse(text)
         lines = text.splitlines()
         for node in ast.walk(tree):
@@ -211,7 +211,7 @@ def test_ongoing_bets_has_three_union_arms():
 
 def test_auth_me_gametype_is_quoted():
     """auth.py /me must use quoted \"gameType\" AS gametype — not bare gametype."""
-    text = AUTH_PY.read_text()
+    text = AUTH_PY.read_text(encoding="utf-8")
     # Bare unquoted `gametype` in a SELECT would fail on a case-sensitive Postgres column.
     # The fix must use the quoted form.
     assert '"gameType"' in text, 'auth.py is missing quoted "gameType" in the /me bets query'
@@ -223,7 +223,7 @@ def test_auth_me_gametype_is_quoted():
 
 def test_auth_me_poster_id_where_is_quoted():
     """auth.py /me WHERE clause must use quoted \"posterId\" and \"accepterId\"."""
-    text = AUTH_PY.read_text()
+    text = AUTH_PY.read_text(encoding="utf-8")
     assert '"posterId"' in text, 'auth.py missing quoted "posterId" in /me query'
     assert '"accepterId"' in text, 'auth.py missing quoted "accepterId" in /me query'
 

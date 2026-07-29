@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 
 from backend.bet_generation import BEERBALL, CAPS, PONG
 
-GOLDEN = json.loads((Path(__file__).parent / "golden_master_3_1.json").read_text())
+GOLDEN = json.loads((Path(__file__).parent / "golden_master_3_1.json").read_text(encoding="utf-8"))
 
 # ---------------------------------------------------------------------------
 # Fixed representative inputs (identical to those used to capture the golden master)

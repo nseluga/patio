@@ -66,7 +66,7 @@ def test_no_pyc_files_tracked():
 def test_venv_in_gitignore():
     """venv/ must appear in .gitignore."""
     assert GITIGNORE.exists(), ".gitignore not found at repo root"
-    content = GITIGNORE.read_text()
+    content = GITIGNORE.read_text(encoding="utf-8")
     lines = [ln.strip() for ln in content.splitlines()]
     assert "venv/" in lines, (
         f"'venv/' not found in .gitignore. Current ignore entries: {lines}"
@@ -121,7 +121,7 @@ def test_rhistory_was_in_git_history():
 def test_app_js_uses_5001():
     """src/App.js localhost fallback must reference port 5001."""
     assert SRC_APP_JS.exists(), f"src/App.js not found at {SRC_APP_JS}"
-    content = SRC_APP_JS.read_text()
+    content = SRC_APP_JS.read_text(encoding="utf-8")
     assert "localhost:5001" in content, (
         "src/App.js does not contain 'localhost:5001' — port fix may be missing"
     )
@@ -129,7 +129,7 @@ def test_app_js_uses_5001():
 
 def test_app_js_no_5000():
     """src/App.js must contain no reference to port 5000."""
-    content = SRC_APP_JS.read_text()
+    content = SRC_APP_JS.read_text(encoding="utf-8")
     assert "5000" not in content, (
         "src/App.js still references port 5000 — old fallback not removed"
     )
@@ -159,7 +159,7 @@ def test_no_print_calls_in_backend():
     """No uncommented print() calls must remain in any backend/*.py file."""
     violations: dict[str, list[int]] = {}
     for py_file in BACKEND_PY_FILES:
-        source = py_file.read_text()
+        source = py_file.read_text(encoding="utf-8")
         bad_lines = _get_active_print_calls(source)
         if bad_lines:
             violations[py_file.name] = bad_lines
@@ -183,7 +183,7 @@ def test_logging_imported_in_backend_files():
         fpath = BACKEND_DIR / fname
         if not fpath.exists():
             continue
-        source = fpath.read_text()
+        source = fpath.read_text(encoding="utf-8")
         if "import logging" not in source:
             missing.append(fname)
 
@@ -204,7 +204,7 @@ def test_logger_instance_per_file():
         fpath = BACKEND_DIR / fname
         if not fpath.exists():
             continue
-        source = fpath.read_text()
+        source = fpath.read_text(encoding="utf-8")
         if "logging.getLogger(" not in source:
             missing.append(fname)
 
@@ -226,7 +226,7 @@ def test_no_sensitive_data_in_log_calls():
     ]
     violations: list[str] = []
     for py_file in BACKEND_PY_FILES:
-        source = py_file.read_text()
+        source = py_file.read_text(encoding="utf-8")
         for lineno, line in enumerate(source.splitlines(), start=1):
             stripped = line.strip()
             if stripped.startswith("#"):
@@ -245,7 +245,7 @@ def test_jwt_decode_error_only_logs_exception_not_token():
     """JWT decode failure must log the exception, not the raw token string."""
     app_py = BACKEND_DIR / "app.py"
     assert app_py.exists()
-    source = app_py.read_text()
+    source = app_py.read_text(encoding="utf-8")
 
     # Find the except block in get_player_id
     # The log line must NOT contain `token` as a format argument after %s or f-string
@@ -286,7 +286,7 @@ def test_no_logger_error_in_exception_handlers():
         fpath = BACKEND_DIR / fname
         if not fpath.exists():
             continue
-        source = fpath.read_text()
+        source = fpath.read_text(encoding="utf-8")
         in_except = False
         for lineno, line in enumerate(source.splitlines(), start=1):
             stripped = line.strip()
@@ -320,7 +320,7 @@ def _find_function_in_backend(func_name: str):
     for path in search_paths:
         if not path.exists():
             continue
-        source = path.read_text()
+        source = path.read_text(encoding="utf-8")
         tree = ast.parse(source)
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef) and node.name == func_name:
@@ -382,7 +382,7 @@ def test_compute_status_message_closes_connection():
 
 def _function_source(filepath: Path, func_name: str) -> str:
     """Return the source lines for a top-level function in a Python file."""
-    source = filepath.read_text()
+    source = filepath.read_text(encoding="utf-8")
     tree = ast.parse(source)
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef) and node.name == func_name:
@@ -433,7 +433,7 @@ def test_beerball_bet_gen_uses_batch_query():
 
 def test_dotvenv_in_gitignore():
     """.venv/ (dotted variant) must appear in .gitignore alongside venv/."""
-    content = GITIGNORE.read_text()
+    content = GITIGNORE.read_text(encoding="utf-8")
     lines = [ln.strip() for ln in content.splitlines()]
     assert ".venv/" in lines, (
         "'.venv/' not found in .gitignore — Poetry / python -m venv dotted variant is unignored"

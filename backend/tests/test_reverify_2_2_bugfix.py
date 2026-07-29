@@ -57,7 +57,7 @@ class TestProxyFixInChain:
 
     def test_proxyfix_in_app_py_source(self):
         """app.py source must contain ProxyFix import and assignment."""
-        src = (BACKEND_DIR / "app.py").read_text()
+        src = (BACKEND_DIR / "app.py").read_text(encoding="utf-8")
         assert "ProxyFix" in src, "ProxyFix must be imported in app.py"
         assert "app.wsgi_app = ProxyFix" in src, (
             "app.wsgi_app must be assigned to a ProxyFix instance in app.py"
@@ -83,7 +83,7 @@ class TestRetryAfterStatic:
 
     def test_429_handler_has_static_60_in_source(self):
         """error_handlers.py must have static 'retry_after': 60, not e.retry_after."""
-        src = (BACKEND_DIR / "error_handlers.py").read_text()
+        src = (BACKEND_DIR / "error_handlers.py").read_text(encoding="utf-8")
         # The fix: static 60, not the dynamic e.retry_after (which is None in Flask-Limiter 4.x)
         assert '"retry_after": 60' in src or "'retry_after': 60" in src, (
             "error_handlers.py must contain static 'retry_after': 60 "
@@ -156,7 +156,7 @@ class TestDecoratorOrderOnWalletRoutes:
 
     def _parse_func_decorators(self, path: Path, func_name: str):
         """Return the list of decorator AST nodes for the named function."""
-        tree = ast.parse(path.read_text())
+        tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef) and node.name == func_name:
                 return node.decorator_list

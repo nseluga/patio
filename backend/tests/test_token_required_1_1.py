@@ -97,7 +97,7 @@ def make_mock_conn(fetchone_return=None, fetchall_return=None, description=None)
 
 
 def _parse_file(path: Path) -> ast.Module:
-    return ast.parse(path.read_text())
+    return ast.parse(path.read_text(encoding="utf-8"))
 
 
 def _route_has_decorator(func_name: str, decorator_name: str, tree: ast.Module) -> bool:
@@ -114,7 +114,7 @@ def _function_body_source(func_name: str, path: Path) -> str:
     """Return function body source. Searches blueprint files if not found in path."""
     search = [path] + [p for p in _SEARCH_PATHS if p != path]
     for p in search:
-        source = p.read_text()
+        source = p.read_text(encoding="utf-8")
         tree = ast.parse(source)
         for node in ast.walk(tree):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == func_name:

@@ -65,7 +65,7 @@ def make_jwt(player_id: int) -> str:
 def _function_source(func_name: str) -> str:
     """Return the full source of a named function, searching blueprint files too."""
     for path in _SEARCH_PATHS:
-        source = path.read_text()
+        source = path.read_text(encoding="utf-8")
         tree = ast.parse(source)
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef) and node.name == func_name:
@@ -77,7 +77,7 @@ def _function_source(func_name: str) -> str:
 def _route_has_decorator(func_name: str, decorator_name: str) -> bool:
     """Return True if the named function (in any blueprint file) has decorator_name."""
     for path in _SEARCH_PATHS:
-        source = path.read_text()
+        source = path.read_text(encoding="utf-8")
         tree = ast.parse(source)
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef) and node.name == func_name:

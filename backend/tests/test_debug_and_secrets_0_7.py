@@ -46,7 +46,7 @@ def test_no_raw_token_in_logger_calls():
 
     for path in AUTH_FILES:
         assert path.exists(), f"Expected file not found: {path}"
-        lines = path.read_text().splitlines()
+        lines = path.read_text(encoding="utf-8").splitlines()
         for lineno, line in enumerate(lines, start=1):
             stripped = line.strip()
             if stripped.startswith("#"):
@@ -70,7 +70,7 @@ def test_no_secret_key_in_logger_calls():
     violations: list[str] = []
 
     for path in AUTH_FILES:
-        lines = path.read_text().splitlines()
+        lines = path.read_text(encoding="utf-8").splitlines()
         for lineno, line in enumerate(lines, start=1):
             stripped = line.strip()
             if stripped.startswith("#"):
@@ -93,7 +93,7 @@ def test_no_print_with_token_in_auth_files():
     violations: list[str] = []
 
     for path in AUTH_FILES:
-        lines = path.read_text().splitlines()
+        lines = path.read_text(encoding="utf-8").splitlines()
         for lineno, line in enumerate(lines, start=1):
             stripped = line.strip()
             if stripped.startswith("#"):
@@ -119,7 +119,7 @@ def test_jwt_except_block_does_not_log_token():
     Scans each except clause and checks the first logger call following it.
     """
     app_py = BACKEND_DIR / "app.py"
-    lines = app_py.read_text().splitlines()
+    lines = app_py.read_text(encoding="utf-8").splitlines()
 
     in_except = False
     for lineno, line in enumerate(lines, start=1):
@@ -148,7 +148,7 @@ def test_flaskenv_exists():
 
 def test_flaskenv_debug_is_zero():
     """FLASK_DEBUG must be set to 0 in backend/.flaskenv."""
-    content = FLASKENV.read_text()
+    content = FLASKENV.read_text(encoding="utf-8")
     # Accept "FLASK_DEBUG=0" with or without the leading `export `
     matches = re.findall(r"(?:export\s+)?FLASK_DEBUG\s*=\s*(\S+)", content)
     assert matches, "FLASK_DEBUG is not set in backend/.flaskenv"
@@ -161,7 +161,7 @@ def test_flaskenv_debug_is_zero():
 
 def test_flaskenv_env_is_production():
     """FLASK_ENV must be set to 'production' in backend/.flaskenv."""
-    content = FLASKENV.read_text()
+    content = FLASKENV.read_text(encoding="utf-8")
     matches = re.findall(r"(?:export\s+)?FLASK_ENV\s*=\s*(\S+)", content)
     assert matches, "FLASK_ENV is not set in backend/.flaskenv"
     non_prod = [v for v in matches if v != "production"]
@@ -176,7 +176,7 @@ def test_no_app_run_with_debug_true():
     source level overrides env-var settings.
     """
     app_py = BACKEND_DIR / "app.py"
-    source = app_py.read_text()
+    source = app_py.read_text(encoding="utf-8")
     bad = re.search(r"app\.run\s*\(.*debug\s*=\s*True", source)
     assert not bad, (
         "app.run(debug=True) found in app.py — remove or set debug=False"
@@ -188,7 +188,7 @@ def test_procfile_has_no_debug_flag():
     procfile = REPO_ROOT / "Procfile"
     if not procfile.exists():
         pytest.skip("Procfile not found — skipping")
-    content = procfile.read_text()
+    content = procfile.read_text(encoding="utf-8")
     assert "--debug" not in content, (
         "Procfile contains --debug flag; remove it for production safety"
     )

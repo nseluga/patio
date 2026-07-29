@@ -177,7 +177,7 @@ class TestCORSOrigins:
     def test_no_placeholder_when_frontend_url_unset(self):
         """When FRONTEND_URL is not set, cors_origins must not contain any placeholder."""
         # Inspect the create_app source directly via AST to verify the dynamic-only path
-        app_src = (BACKEND_DIR / "app.py").read_text()
+        app_src = (BACKEND_DIR / "app.py").read_text(encoding="utf-8")
         # The hardcoded placeholder that was removed
         assert "your-app.vercel.app" not in app_src, (
             "Hardcoded 'your-app.vercel.app' placeholder found in app.py — "
@@ -276,7 +276,7 @@ class TestRequirementsTxt:
         """flask-limiter must appear in backend/requirements.txt."""
         req_path = BACKEND_DIR / "requirements.txt"
         assert req_path.exists(), "backend/requirements.txt must exist"
-        content = req_path.read_text().lower()
+        content = req_path.read_text(encoding="utf-8").lower()
         assert "flask-limiter" in content, (
             "flask-limiter not found in backend/requirements.txt"
         )
@@ -309,7 +309,7 @@ class TestLimiterDecoratorsAST:
 
     def _get_func_nodes(self, source_path: Path) -> dict:
         """Return {func_name: FunctionDef} for all top-level and class-level functions."""
-        tree = ast.parse(source_path.read_text())
+        tree = ast.parse(source_path.read_text(encoding="utf-8"))
         funcs = {}
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef):

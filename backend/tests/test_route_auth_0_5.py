@@ -71,7 +71,7 @@ def make_mock_conn(fetchone_return=None, fetchall_return=None, description=None)
 def _function_source(func_name: str) -> str:
     """Return the full source of a named function, searching blueprint files too."""
     for path in _SEARCH_PATHS:
-        source = path.read_text()
+        source = path.read_text(encoding="utf-8")
         tree = ast.parse(source)
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef) and node.name == func_name:
@@ -100,7 +100,7 @@ def client():
 def _route_has_decorator(func_name: str, decorator_name: str) -> bool:
     """Return True if the named function (in any blueprint file) has decorator_name."""
     for path in _SEARCH_PATHS:
-        source = path.read_text()
+        source = path.read_text(encoding="utf-8")
         tree = ast.parse(source)
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef) and node.name == func_name:

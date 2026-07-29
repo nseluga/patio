@@ -47,7 +47,7 @@ CPU_ONLY_ROUTES = [
 
 def test_no_dead_jwt_import_in_app_py():
     """app.py must not import jwt at the top level; only utils/auth.py uses it."""
-    src = APP_PY.read_text()
+    src = APP_PY.read_text(encoding="utf-8")
     tree = ast.parse(src)
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -67,7 +67,7 @@ def test_no_dead_jwt_import_in_app_py():
 
 def test_invalid_key_error_in_catch_tuple():
     """The decorator's except clause must include jwt.exceptions.InvalidKeyError."""
-    src = UTILS_AUTH_PY.read_text()
+    src = UTILS_AUTH_PY.read_text(encoding="utf-8")
     # Text check is sufficient — the AST form would be a tuple of Attribute nodes.
     assert "InvalidKeyError" in src, (
         "jwt.exceptions.InvalidKeyError not found in utils/auth.py — "

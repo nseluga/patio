@@ -50,7 +50,7 @@ def make_jwt(player_id: int) -> str:
 def _source(func_name: str) -> str:
     """Return the full source of a named function, searching blueprint files too."""
     for path in _SEARCH_PATHS:
-        text = path.read_text()
+        text = path.read_text(encoding="utf-8")
         tree = ast.parse(text)
         lines = text.splitlines()
         for node in ast.walk(tree):
