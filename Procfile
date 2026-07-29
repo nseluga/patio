@@ -1,1 +1,1 @@
-web: flask --app backend/app run --host=0.0.0.0 --port=$PORT
+web: gunicorn -w 2 -b 0.0.0.0:$PORT 'backend.app:app'
