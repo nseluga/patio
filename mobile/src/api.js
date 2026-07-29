@@ -1,8 +1,13 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
+// EXPO_PUBLIC_-prefixed env vars are inlined at build time (see mobile/app.config.js
+// and AGENTS.md's SDK-54 note). Falls back to production so an unset var during
+// local dev with no override still points somewhere real, matching prior behavior.
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://patio-backend-y4ft.onrender.com';
+
 const api = axios.create({
-  baseURL: 'https://patio-backend-y4ft.onrender.com',
+  baseURL: API_BASE_URL,
 });
 
 api.interceptors.request.use(async (config) => {
