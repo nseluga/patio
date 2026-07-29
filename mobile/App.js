@@ -7,7 +7,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Swords, Home, Clock, Trophy, User } from 'lucide-react-native';
 
 import UserContext from './src/UserContext';
-import api from './src/api';
+import api, { setOnUnauthorized } from './src/api';
 
 import Login from './src/screens/Login';
 import Register from './src/screens/Register';
@@ -85,6 +85,14 @@ export default function App() {
     }
 
     bootstrap();
+  }, []);
+
+  useEffect(() => {
+    // A 401 from any API call (expired/invalid token) drops the user back to
+    // the login screen instead of leaving a screen stuck on a dead session —
+    // SecureStore is already cleared by the interceptor before this fires.
+    setOnUnauthorized(() => setUser(null));
+    return () => setOnUnauthorized(null);
   }, []);
 
   if (loading) {
